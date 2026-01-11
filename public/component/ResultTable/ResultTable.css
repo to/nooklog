@@ -1,0 +1,146 @@
+.ResultTable {
+	display: table;
+	width: 100%;
+	border-collapse: collapse;
+
+	.tr {
+		display: table-row;
+		border-bottom: 1px solid var(--ink-1);
+
+		&:hover {
+			background-color: oklch(from var(--ink-0) calc(l * (1 + (var(--hover-on) - 1) * 0.10)) c h);
+		}
+
+		&.is-selected {
+			background-color: var(--ink-1);
+		}
+
+		&:hover,
+		&.is-selected {
+			box-shadow: inset -1px 0 0 var(--ink-0);
+		}
+
+		&:last-child {
+			border-bottom: none;
+		}
+	}
+
+	.td {
+		display: table-cell;
+		padding: var(--space-s) 0 var(--space-s) var(--space-m);
+		vertical-align: top;
+		border: none;
+	}
+
+	.col-rating {
+		width: 1%;
+		white-space: nowrap;
+
+		.RatingInput {
+			flex-flow: row-reverse;
+			--RatingInput_color-inactive: transparent;
+
+			&[data-rating="4"]{
+				opacity: 0.9;
+			}
+
+			&[data-rating="3"]{
+				opacity: 0.8;
+			}
+
+			&[data-rating="2"]{
+				opacity: 0.6;
+			}
+
+			&[data-rating="1"]{
+				opacity: 0.4;
+			}
+
+			.icon{
+				line-height: var(--line-height-m);
+			}
+		}
+	}
+
+	.col-favicon {
+		width: 1%;
+		font-size: var(--font-size-m);
+		line-height: var(--line-height-m);
+
+		.host {
+			display: inline-block;
+			line-height: 0;
+			vertical-align: middle;
+			cursor: pointer;
+			border-radius: var(--radius-s);
+			transform: translateY(calc(var(--font-size-m) * -0.1));
+
+			img {
+				/* Specify size in advance to reserve image space */
+				width: 16px;
+				height: 16px;
+				background-color: var(--color-bg-image);
+				border-radius: var(--radius-s);
+			}
+
+			&:hover img {
+				filter: brightness(var(--hover-up));
+			}
+
+			&:active img {
+				filter: unset;
+			}
+		}
+	}
+
+	.title {
+		font-family: var(--font-sans-m);
+		font-size: var(--font-size-m);
+		font-weight: bold;
+	}
+
+	.memo {
+		font-size: var(--font-size-s);
+		color: var(--ink-5);
+		overflow-wrap: anywhere;
+		white-space: pre-wrap;
+	}
+
+	.summary,
+	.chunk {
+		padding: var(--space-s);
+		margin: var(--space-2s) 0;
+		font-size: var(--font-size-2s);
+		overflow-wrap: anywhere;
+		white-space: pre-wrap;
+		background-color: var(--ink-1);
+		border-radius: var(--radius-m);
+	}
+
+	.tag {
+		font-size: var(--font-size-2s);
+		font-weight: bold;
+		--color: var(--ink-3);
+
+		line-height: var(--line-height-m);
+	}
+
+	.col-content{
+		.score,
+		.dates {
+			font-size: var(--font-size-2s);
+			font-weight: bold;
+			font-variant-numeric: tabular-nums;
+			color: var(--ink-3);
+			white-space: nowrap;
+		}
+
+		.icon{
+			line-height: 1.05;
+		}
+
+		button.delete {
+			color: var(--ink-3);
+		}
+	}
+}

@@ -1,0 +1,360 @@
+<header class="flex justify-end items-end">
+	<button class="open flat icon none">settings</button>
+</header>
+
+<dialog closedby="any" class="overflow-hidden">
+	<form class="flex flex-col h-full overflow-y-auto">
+		<header class="flex shrink-0">
+			<button type="button" class="close flat icon">close</button>
+		</header>
+
+		<div class="grid items-center">
+			<h2>Client</h2>
+
+			<div>
+				<label>Theme</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.theme" value="system"> System</label>
+					<label><input type="radio" name="client.theme" value="light"> Light</label>
+					<label><input type="radio" name="client.theme" value="dark"> Dark</label>
+					<label><input type="radio" name="client.theme" value="light-gray"> Gray(Light)</label>
+					<label><input type="radio" name="client.theme" value="dark-gray"> Gray(Dark)</label>
+				</div>
+			</div>
+
+			<div>
+				<label>Tint</label>
+				<div class="radio-flat flex-wrap" style="gap: 4px">
+					<label title="Tomato"><input type="radio" name="client.tint" value="tomato"
+							style="background-color:var(--tomato-11);"></label>
+					<label title="Red"><input type="radio" name="client.tint" value="red"
+							style="background-color:var(--red-11);"></label>
+					<label title="Ruby"><input type="radio" name="client.tint" value="ruby"
+							style="background-color:var(--ruby-11);"></label>
+					<label title="Crimson"><input type="radio" name="client.tint" value="crimson"
+							style="background-color:var(--crimson-11);"></label>
+					<label title="Pink"><input type="radio" name="client.tint" value="pink"
+							style="background-color:var(--pink-11);"></label>
+					<label title="Plum"><input type="radio" name="client.tint" value="plum"
+							style="background-color:var(--plum-11);"></label>
+					<label title="Purple"><input type="radio" name="client.tint" value="purple"
+							style="background-color:var(--purple-11);"></label>
+					<label title="Violet"><input type="radio" name="client.tint" value="violet"
+							style="background-color:var(--violet-11);"></label>
+					<label title="Iris"><input type="radio" name="client.tint" value="iris"
+							style="background-color:var(--iris-11);"></label>
+					<label title="Indigo"><input type="radio" name="client.tint" value="indigo"
+							style="background-color:var(--indigo-11);"></label>
+					<label title="Blue"><input type="radio" name="client.tint" value="blue"
+							style="background-color:var(--blue-11);"></label>
+					<label title="Cyan"><input type="radio" name="client.tint" value="cyan"
+							style="background-color:var(--cyan-11);"></label>
+					<label title="Teal"><input type="radio" name="client.tint" value="teal"
+							style="background-color:var(--teal-11);"></label>
+					<label title="Jade"><input type="radio" name="client.tint" value="jade"
+							style="background-color:var(--jade-11);"></label>
+					<label title="Green"><input type="radio" name="client.tint" value="green"
+							style="background-color:var(--green-11);"></label>
+					<label title="Grass"><input type="radio" name="client.tint" value="grass"
+							style="background-color:var(--grass-11);"></label>
+					<label title="Bronze"><input type="radio" name="client.tint" value="bronze"
+							style="background-color:var(--bronze-11);"></label>
+					<label title="Gold"><input type="radio" name="client.tint" value="gold"
+							style="background-color:var(--gold-11);"></label>
+					<label title="Brown"><input type="radio" name="client.tint" value="brown"
+							style="background-color:var(--brown-11);"></label>
+					<label title="Orange"><input type="radio" name="client.tint" value="orange"
+							style="background-color:var(--orange-11);"></label>
+					<label title="Amber"><input type="radio" name="client.tint" value="amber"
+							style="background-color:var(--amber-11);"></label>
+					<label title="Yellow"><input type="radio" name="client.tint" value="yellow"
+							style="background-color:var(--yellow-11);"></label>
+					<label title="Lime"><input type="radio" name="client.tint" value="lime"
+							style="background-color:var(--lime-11);"></label>
+					<label title="Mint"><input type="radio" name="client.tint" value="mint"
+							style="background-color:var(--mint-11);"></label>
+					<label title="Sky"><input type="radio" name="client.tint" value="sky"
+							style="background-color:var(--sky-11);"></label>
+				</div>
+			</div>
+
+			<div>
+				<label>Window Position</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.windowPosition" value="bottom-right"> Bottom Right</label>
+					<label><input type="radio" name="client.windowPosition" value="top-right"> Top Right</label>
+				</div>
+			</div>
+
+			<hr>
+
+			<div>
+				<label>Rating Input Mode</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.ratingInputMode" value="stars"> Stars</label>
+					<label><input type="radio" name="client.ratingInputMode" value="tags"> Tags</label>
+					<label><input type="radio" name="client.ratingInputMode" value="both"> Both</label>
+					<label><input type="radio" name="client.ratingInputMode" value="none"> None</label>
+				</div>
+				<span class="description"><span class="value">Tags: </span>Input ratings by selecting numeric tags</span>
+				<span class="description"><span class="value">None: </span>Ratings are neither input nor displayed</span>
+			</div>
+
+			<div>
+				<label>Tag Match Mode</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.tagMatchMode" value="smart"> Smart</label>
+					<label><input type="radio" name="client.tagMatchMode" value="contains"> Contains</label>
+					<label><input type="radio" name="client.tagMatchMode" value="starts-with"> Starts-with</label>
+				</div>
+				<span class="description"><span class="value">Smart: </span>Search with subsequence matching (e.g., "js" matches
+					"javascript")</span>
+			</div>
+
+			<div>
+				<label>Auto Complete Tags</label>
+				<label class="toggle">
+					<input type="checkbox" name="client.autoCompleteTags">
+					<span></span>
+				</label>
+				<span class="description">Automatically select when tag candidates are narrowed down (active only in Smart
+					mode). Note: Adding new tags may become difficult.</span>
+			</div>
+
+			<h2>Extension</h2>
+
+			<div>
+				<label>Server Address</label>
+				<input type="text" name="extension.serverAddress" placeholder="http://localhost:5050" autofocus>
+			</div>
+
+			<div class="bookmarklet">
+				<label>Bookmarklet</label>
+				<div class="flex items-center gap-m">
+					<a href="#" class="button flat" title="Drag this to your bookmarks bar">Save to Nooklog</a>
+				</div>
+				<span class="description">Drag this button to your bookmarks bar. It quickly saves current page URL and title to
+					Nooklog, even on pages with strict security.</span>
+			</div>
+
+			<div class="shortcut-info">
+				<label>Shortcut Key</label>
+				<a href="chrome://extensions/shortcuts" target="_blank" class="shortcut-key">...</a>
+			</div>
+
+			<div>
+				<label>Open Search in Foreground</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.openSearchInForeground">
+					<span></span>
+				</label>
+			</div>
+
+			<div>
+				<label>Auto Append Selection</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.autoAppendSelection">
+					<span></span>
+				</label>
+				<span class="description">Automatically append selected text from the target page to the memo</span>
+			</div>
+
+			<div>
+				<label>Focus Memo on Selection</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.focusMemoOnSelection">
+					<span></span>
+				</label>
+				<span class="description">Move focus to the memo field when automatically appending</span>
+			</div>
+
+			<div>
+				<label>Selection Delimiter</label>
+				<input type="text" name="extension.selectionDelimiter">
+				<span class="description">String to prepend to the selected text</span>
+			</div>
+
+			<h2>Server</h2>
+
+			<div>
+				<label>Port</label>
+				<input type="number" name="server.port">
+				<span class="description error none">Requires server restart & extension config update.</span>
+			</div>
+
+			<div>
+				<label>Data Path</label>
+				<input type="text" name="server.data.path" autocomplete="off" readonly>
+				<span class="description">Set via the <code>NOOKLOG_DATA_PATH</code> environment variable.</span>
+			</div>
+
+			<div>
+				<label>Password</label>
+				<input type="password" name="server.password" placeholder="No password (public)" autocomplete="new-password">
+				<span class="description">If set, Basic Authentication is enabled (User: any).
+					Requires page reload to prompt.</span>
+			</div>
+
+			<h2>Vector Search</h2>
+
+			<div>
+				<label>Enable Vector Search</label>
+				<label class="toggle">
+					<input type="checkbox" name="sentence.vector.enabled">
+					<span></span>
+				</label>
+				<span class="description">Enables searching for similar concepts and synonyms (e.g., matching 'cat',
+					'feline', and 'kitten') beyond exact keyword matches.</span>
+				<span class="description">Note: Building advanced search indexes requires more storage space than the original
+					text.</span>
+				<span class="description error none">Enabling this or changing the model will cause background
+					re-indexing.</span>
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>OpenAI (Ollama) Base URL</label>
+				<input type="text" name="sentence.vector.baseUrl" placeholder="http://localhost:11434/">
+				<span class="description">Appends <code>/v1/embeddings</code> to the base URL.</span>
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Vector API Key</label>
+				<input type="password" name="sentence.vector.apiKey" placeholder="sk-...">
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Vector Model</label>
+				<select name="sentence.vector.model"></select>
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
+					background re-indexing.</span>
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Query Prefix</label>
+				<input type="text" name="sentence.vector.queryPrefix" placeholder="Default">
+				<span class="description">Empty to use preset defaults based on model name:</span>
+				<span class="description"><span class="value">gemma: </span>
+					<code>task: search result | query: </code></span>
+				<span class="description"><span class="value">arctic:
+					</span><code>Represent this sentence for searching relevant passages: </code></span>
+				<span class="description"><span class="value">qwen3: </span>
+					<code>Instruct: Retrieve relevant documents for the given query Query: </code></span>
+				<span class="description">
+					<span class="value">multilingual-e5: </span><code>query: </code> /
+					<span class="value">ruri: </span><code>検索クエリ: </code>
+				</span>
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Document Title Prefix</label>
+				<input type="text" name="sentence.vector.documentTitlePrefix" placeholder="Default">
+				<span class="description">Empty to use preset defaults.</span>
+				<span class="description">
+					<span class="value">gemma: </span><code>title: </code> /
+					<span class="value">multilingual-e5: </span><code>passage: </code> /
+					<span class="value">ruri: </span><code>検索クエリ: </code>
+				</span>
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Document Text Prefix</label>
+				<input type="text" name="sentence.vector.documentTextPrefix" placeholder="Default">
+				<span class="description">Separator between title and text (default: <code>\n</code>).</span>
+				<span class="description">
+					<span class="value">gemma: </span><code>text: </code>
+				</span>
+			</div>
+
+			<h2>Database</h2>
+
+			<div>
+				<label>Search Result Limit</label>
+				<input type="number" name="database.searchLimit">
+				<span class="description">Maximum number of results to display in the table (default: 300)</span>
+			</div>
+
+			<div>
+				<label>Search Tokenizer</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="database.tokenizer" value="word"> Word</label>
+					<label><input type="radio" name="database.tokenizer" value="unigram"> Unigram</label>
+				</div>
+				<span class="description">
+					<span class="value">Word: </span>Standard for space-separated languages (English, etc.).
+				</span>
+				<span class="description">
+					<span class="value">Unigram: </span>Recommended for CJK languages or when search recall is prioritized.
+					Supports matching any part of a word.
+				</span>
+				<span class="description error none">Changing this setting will trigger a background re-indexing.</span>
+			</div>
+
+			<h2>Tools</h2>
+
+			<div>
+				<label>Import</label>
+				<div class="flex items-center gap-m">
+					<select class="folder-tag">
+						<option value="true">Folders as Tags</option>
+						<option value="false">Ignore Folders</option>
+					</select>
+					<button type="button" class="import">Import</button>
+				</div>
+				<span class="description">Import from Bookmark HTML (Chrome/Firefox/Hatena), Pinboard, Linkwarden, Karakeep,
+					Session Buddy, or Tab
+					Session Manager.</span>
+			</div>
+
+			<div>
+				<label>Export Bookmarks</label>
+				<div class="container flex items-center gap-m">
+					<select class="export-range">
+						<option value="all">All</option>
+						<option value="search">Search</option>
+					</select>
+					<select class="export-format">
+						<option value="json">JSON</option>
+						<option value="html">HTML</option>
+					</select>
+					<button type="button" class="export-bookmarks">Export</button>
+				</div>
+				<span class="description">"Search" follows the current search filters.<br />HTML format does not include
+					document content.</span>
+			</div>
+
+			<div>
+				<label>Export Documents</label>
+				<div class="container flex items-center gap-m">
+					<select class="export-range">
+						<option value="search">Search</option>
+						<option value="all">All</option>
+					</select>
+					<select class="export-meta">
+						<option value="plain">Plain</option>
+						<option value="full">+ Metadata</option>
+					</select>
+					<select class="export-structure">
+						<option value="flat">Flat</option>
+						<option value="folders">Folders</option>
+					</select>
+					<button type="button" class="export-documents">Export</button>
+				</div>
+				<span class="description">Export bookmarked content as Markdown(.md) files.<br />"Search" follows the current
+					search
+					filters.</span>
+			</div>
+
+			<div>
+				<label>API Reference</label>
+				<div class="flex items-center gap-m">
+					<a href="/openapi.html" target="_blank" class="button">Open OpenAPI UI (Scalar)</a>
+				</div>
+				<span class="description">Interactive API documentation (oRPC) powered by Scalar.</span>
+			</div>
+		</div>
+
+		<footer class="flex">
+			<button type="submit" class="ml-auto">Save</button>
+		</footer>
+	</form>
+</dialog>

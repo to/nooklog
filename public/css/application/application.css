@@ -1,0 +1,340 @@
+@charset "UTF-8";
+
+/* Change display state from script */
+.none { display: none !important; }
+
+/* ---- Base ---- */
+html,
+body {
+	height: 100%;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-m);
+	padding: var(--space-m);
+	font-family: var(--font-sans-s);
+	font-size: var(--font-size-s);
+	color: var(--ink-5);
+	background-color: var(--ink-0);
+}
+
+h2 {
+	margin: var(--space-m) 0;
+	font-size: var(--font-size-l);
+	color: var(--ink-6);
+	border-bottom: 1px solid var(--ink-1);
+}
+
+a {
+	color: var(--color-1);
+}
+
+/* ---- Form ---- */
+form {
+	gap: var(--space-s);
+}
+
+input,
+textarea,
+select {
+	width: 100%;
+	padding: var(--space-s);
+	font-size: var(--font-size-s);
+	color: inherit;
+	outline: none;
+	background-color: var(--ink-0);
+	border: 1px solid var(--ink-2);
+	border-radius: var(--radius-m);
+
+	&::placeholder {
+		color: var(--ink-3);
+	}
+
+	&:focus::placeholder {
+		color: var(--ink-2);
+	}
+}
+
+input:focus-visible,
+textarea:focus-visible {
+	border-color: color-mix(in oklch, var(--ink-2) 60%, var(--ink-3) 40%);
+}
+
+input:read-only {
+	color: var(--ink-3);
+	cursor: default;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+	/* Chrome/Safari/Edge/Opera */
+	margin: 0;
+	appearance: none;
+}
+
+input[type='number'] {
+	/* Firefox */
+	appearance: textfield;
+}
+
+select {
+	width: fit-content;
+	cursor: pointer;
+
+	& option::checkmark {
+		display: none;
+	}
+
+	& option:checked {
+		color: var(--ink-0);
+		background-color: var(--ink-4);
+	}
+
+	& option:hover,
+	& option:focus-visible {
+		color: var(--ink-0);
+		outline: none;
+		background-color: var(--ink-5);
+	}
+}
+
+/* Adjust select width in forms */
+form select {
+	width: 100%;
+}
+
+textarea {
+	flex: 1;
+}
+
+button {
+	/* Derived styles change color via CSS variables */
+	--color: var(--ink-0);
+	--background-color: var(--ink-5);
+
+	display: flex; /* Remove minor line margins */
+	padding: var(--space-2s) var(--space-s);
+	font-weight: bold;
+	color: var(--color);
+	background-color: var(--background-color);
+	border-radius: var(--radius-m);
+
+	&:hover {
+		background-color: oklch(from var(--background-color) calc(l * var(--hover-up)) c h);
+	}
+
+	&:active {
+		background-color: var(--background-color);
+	}
+
+	&.flat {
+		--color: var(--ink-5);
+
+		padding: 0;
+		color: var(--color);
+		background-color: transparent;
+	}
+
+	&.flat:hover {
+		color: oklch(from var(--color) calc(l * var(--hover-up)) c h);
+	}
+
+	&.flat:active {
+		color: var(--color);
+	}
+
+	&:focus-visible {
+		position: relative;
+		outline: none;
+	}
+
+	&:focus-visible::after {
+		position: absolute;
+		inset: -3px; /* 2px + 1px */
+		pointer-events: none;
+		content: '';
+		border: 2px solid var(--ink-5);
+		border-radius: var(--radius-m);
+	}
+}
+
+header {
+	button {
+		align-self: flex-end;
+	}
+}
+
+.select-flat label input,
+.radio-flat label input,
+.toggle input{
+	/* Make invisible */
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	white-space: nowrap;
+	border-width: 0;
+	clip: rect(0, 0, 0, 0);
+}
+
+/* ---- Select/Radio ---- */
+.select-flat,
+.radio-flat {
+	display: flex;
+	font-weight: bold;
+	color: var(--ink-3);
+
+	label {
+		position: relative;
+		font-size: var(--font-size-s);
+		line-height: 1;
+		cursor: pointer;
+		user-select: none;
+	}
+}
+
+.select-flat{
+	gap: var(--space-2s);
+
+	label {
+		padding: var(--space-2s);
+		border: 1px solid var(--ink-3);
+		border-radius: var(--radius-m);
+
+		&:hover,
+		&:has(input:focus-visible) {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+			border-color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
+
+		&:active{
+			color: var(--ink-5);
+			border-color: var(--ink-5);
+		}
+
+		&:has(input:checked) {
+			color: var(--ink-0);
+			background-color: var(--ink-5);
+			border-color: var(--ink-5);
+		}
+
+		&:has(input:checked):hover,
+		&:has(input:checked:focus-visible) {
+			background-color: oklch(from var(--ink-5) calc(l * var(--hover-off)) c h);
+		}
+
+		&:has(input:checked):active {
+			background-color: var(--ink-3);
+			border-color: var(--ink-3);
+		}
+	}
+}
+
+.radio-flat {
+	gap: var(--space-s);
+
+	label {
+		padding: var(--space-2s) 0;
+
+		&:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
+
+		&:active {
+			color: var(--ink-5);
+		}
+
+		&:has(input:checked) {
+			color: var(--ink-5);
+			text-decoration: underline;
+			text-decoration-thickness: 2px;
+			text-underline-offset: calc(var(--space-2s) * 1.5);
+		}
+
+		&:has(input:focus-visible) {
+			text-decoration: double underline;
+		}
+	}
+}
+
+/* ---- Toggle ---- */
+.toggle {
+	display: inline-flex;
+	cursor: pointer;
+
+	span {
+		position: relative;
+		width: calc((var(--space-m) * 2) + 4px);
+		height: calc(var(--space-m) + 4px);
+		background: var(--ink-3);
+		border-radius: 999px;
+	}
+
+	span::after {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: var(--space-m);
+		height: var(--space-m);
+		content: "";
+		background: var(--ink-0);
+		border-radius: 50%;
+	}
+
+	input:checked+span {
+		background: var(--ink-5);
+	}
+
+	input:checked+span::after {
+		transform: translateX(14px);
+	}
+
+	span:hover,
+	&:has(input:focus-visible) span {
+		background-color: oklch(from var(--ink-3) calc(l * var(--hover-on)) c h);
+	}
+
+	input:checked+span:hover,
+	&:has(input:checked:focus-visible) span {
+		background-color: oklch(from var(--ink-5) calc(l * var(--hover-off)) c h);
+	}
+}
+
+.error {
+	color: var(--color-error) !important;
+}
+
+/* ---- Icon(Material Symbols) ---- */
+.icon {
+	display: inline-block;
+	font-family: 'Material Symbols Outlined';
+	font-size: var(--font-size-m);
+	font-style: normal;
+	font-weight: normal;
+	font-feature-settings: 'liga';
+	line-height: 1;
+	text-transform: none;
+	letter-spacing: normal;
+	overflow-wrap: normal;
+	white-space: nowrap;
+	direction: ltr;
+	-webkit-font-smoothing: antialiased;
+}
+
+header .icon,
+footer .icon {
+	font-size: var(--font-size-l);
+}
+
+/* ---- Animation ---- */
+@keyframes animate-spin {
+	to { transform: rotate(1turn); }
+}
+
+.animate-spin {
+	animation: animate-spin 1s linear infinite;
+}

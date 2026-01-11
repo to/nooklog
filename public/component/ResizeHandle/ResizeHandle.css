@@ -1,0 +1,74 @@
+.ResizeHandle {
+	position: relative;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ink-2);
+	touch-action: none;
+	user-select: none;
+	background-color: var(--ink-0);
+
+	--ResizeHandle_space : 0;
+
+	hr {
+		flex: none;
+		margin: 0;
+		background-color: var(--ink-1);
+		border: none;
+		transition: background-color 0.1s;
+	}
+
+	&.vertical hr {
+		width: 2px;
+		height: 50%;;
+	}
+
+	&.horizontal hr {
+		width: 50%;;
+		height: 2px;
+	}
+
+	&.vertical {
+		flex-direction: row;
+		width: 100%;
+		height: 0;
+		margin-top: calc(var(--ResizeHandle_space) * -0.5);
+		margin-bottom: calc(var(--ResizeHandle_space) * -0.5);
+		cursor: ns-resize;
+	}
+
+	&.horizontal {
+		flex-direction: column;
+		width: 0;
+		height: 100%;
+		margin-right: calc(var(--ResizeHandle_space) * -0.5);
+		margin-left: calc(var(--ResizeHandle_space) * -0.5);
+		cursor: ew-resize;
+	}
+
+	&::before {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		content: "";
+		transform: translate(-50%, -50%);
+	}
+
+	&.vertical::before {
+		width: 100%;
+		height: var(--space-m);
+	}
+
+	&.horizontal::before {
+		width: var(--space-m);
+		height: 100%;
+	}
+
+	&:hover,
+	&:active {
+		hr {
+			background-color: oklch(from var(--ink-1) calc(l * 0.96) c h);
+		}
+	}
+}

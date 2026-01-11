@@ -1,0 +1,36 @@
+@charset "UTF-8";
+
+:root{
+	--_fluid-space : (100vh - 380px) * 0.01;
+	--space-s : clamp(var(--space-2s), var(--space-2s) + var(--_fluid-space), var(--space-S));
+	--font-size-s : clamp(var(--font-size-2s), var(--font-size-2s) + var(--_fluid-space), var(--font-size-S));
+}
+
+body {
+	gap: var(--space-s);
+	padding: calc(var(--space-s) * 2);
+	overflow: hidden; /* Handle many tag candidates */
+}
+
+.UpdateForm {
+	.markdown {
+		--space-l : clamp(var(--space-2s), var(--space-2s) + var(--_fluid-space), var(--space-L));
+		--space-m : clamp(var(--space-2s), var(--space-2s) + var(--_fluid-space), var(--space-M));
+		--font-size-l : clamp(var(--font-size-2s), var(--font-size-2s) + var(--_fluid-space), var(--font-size-L));
+		--font-size-m : clamp(var(--font-size-2s), var(--font-size-2s) + var(--_fluid-space), var(--font-size-M));
+	}
+}
+
+.frame {
+	.UpdateForm {
+		header {
+			display: flex;
+			gap: var(--space-s);
+
+			.icon{
+				font-size: var(--font-size-m);
+				font-weight: bold;
+			}
+		}
+	}
+}

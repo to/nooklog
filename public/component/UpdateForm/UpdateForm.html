@@ -1,0 +1,33 @@
+<header class="hidden shrink-0 justify-end">
+	<button class="detach flat icon">open_in_new</button>
+	<button class="close flat icon">close</button>
+</header>
+
+<form class="flex flex-col h-full min-h-0">
+	<input type="hidden" name="id">
+	<input type="text" name="url" required>
+	<input type="text" name="title" placeholder="Title" required>
+	<nl-optional-field>
+		<textarea name="summary" placeholder="Summary" class="flex-none"></textarea>
+	</nl-optional-field>
+	<div class="flex items-center">
+		<nl-rating name="rating"></nl-rating>
+		<nl-tag-input name="tags" placeholder="Tags" class="flex-1"></nl-tag-input>
+	</div>
+
+	<textarea name="memo" placeholder="Memo" class="flex-1 min-h-0"></textarea>
+
+	<textarea name="markdown" placeholder="Markdown" class="flex-1 min-h-0 none"></textarea>
+	<div class="preview overflow-auto flex-1 min-h-0 none"></div>
+
+	<footer class="flex justify-end items-center">
+		<div class="radio-flat">
+			<label class="icon" title="Markdown"><input type="radio" name="mode" value="markdown">code</label>
+			<label class="icon" title="Memo"><input type="radio" name="mode" value="memo" checked>notes</label>
+			<label class="icon" title="Preview"><input type="radio" name="mode" value="preview">visibility</label>
+		</div>
+		<button type="submit" title="Ctrl + Enter">Save</button>
+	</footer>
+
+	<input type="hidden" name="html">
+</form>

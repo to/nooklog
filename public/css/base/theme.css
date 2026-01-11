@@ -1,0 +1,80 @@
+@charset "UTF-8";
+
+:root {
+	--font-sans-s: "Helvetica Neue", helvetica, "Hiragino Sans", arial, meiryo, system-ui, sans-serif;
+	--font-sans-m: var(--font-sans-s);
+
+	/* Size */
+	--space-2s: .25rem;
+	--space-s: .5rem;
+	--space-m: 1rem;
+	--space-l: 1.5rem;
+	--space-2l: 2rem;
+
+	--space-S: .5rem;
+	--space-M: 1rem;
+	--space-L: 1.5rem;
+
+	/* Radius */
+	--radius-s: 0.125rem;
+	--radius-m: 0.25rem;
+
+	/* Font Size */
+	--font-size-3s: 0.625rem;
+	--font-size-2s: 0.75rem;
+	--font-size-s: 0.875rem;
+	--font-size-m: 1rem;
+	--font-size-l: 1.125rem;
+	--font-size-2l: 1.25rem;
+	--font-size-3l: 1.5rem;
+
+	--font-size-S: 0.875rem;
+	--font-size-M: 1rem;
+	--font-size-L: 1.125rem;
+
+	/* Line Height */
+	--line-height-s: 1.25;
+	--line-height-m: 1.5;
+
+	--ink-6: var(--gray-12); /* Emphasis/Highlight */
+	--ink-5: var(--gray-11); /* Primary info/Button bg */
+	--ink-4: var(--gray-9); /* Secondary info/Description */
+	--ink-3: var(--gray-8); /* Tertiary info */
+	--ink-2: var(--gray-6); /* Border/Placeholder */
+	--ink-1: var(--gray-3); /* Ruled line */
+	--ink-0: var(--gray-2); /* Background */
+
+	--color-1: var(--ink-6);
+
+	--color-error: var(--red-11);
+
+	--color-bg-image: transparent;
+
+	/* Let user predict transition outcome */
+	--hover-off: 1.15;
+	--hover-on: 0.85;
+
+	/* For items with no transition (like buttons), pop up and revert */
+	--hover-up: 1.15;
+}
+
+:root:lang(ja){
+	--font-sans-m: "BIZ UDPGothic", "Hiragino Sans", meiryo, system-ui, sans-serif;
+	--font-sans-s: meiryo, system-ui, sans-serif;
+
+	letter-spacing: 0.02em;
+}
+
+@media (resolution >= 1.5dppx) {
+	:root:lang(ja) {
+		--font-sans-s: var(--font-sans-m);
+	}
+}
+
+html.dark {
+	/* Transparent image background */
+	--color-bg-image: var(--ink-6);
+
+	--hover-off: 0.9;
+	--hover-on: 1.15;
+}

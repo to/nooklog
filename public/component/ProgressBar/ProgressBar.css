@@ -1,0 +1,37 @@
+.ProgressBar {
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--space-2s) * 0.5);
+	width: 10rem;
+
+	&.none {
+		display: none;
+	}
+
+	.label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-size: var(--font-size-3s);
+		color: var(--ink-4);
+		white-space: nowrap;
+	}
+
+	.bar {
+		position: relative;
+		width: 6rem;
+		height: var(--space-2s);
+		overflow: hidden;
+		background-color: var(--ink-2);
+
+		&::after {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			width: var(--progress, 0%);
+			content: '';
+			background-color: var(--ink-5);
+			transition: width 0.2s ease-out;
+		}
+	}
+}

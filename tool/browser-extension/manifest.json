@@ -1,0 +1,60 @@
+{
+	"manifest_version": 3,
+	"name": "Nooklog",
+	"version": "0.1",
+	"description": "Nooklog Official Extension",
+	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsTR19fUKu5nmCLGX2CKrpvFYVZHwlztwO2eQXrx+VroPM/mnSaSJ82vaIjtjmMN4yJdBJCXFt1m0JLK5rZKGYKqS1JRwI6sbliwuFsVAUJikfSs6R0W7JtdiqrTBhPEF/CZPIRYEcbw2JRJ1wMtSL64WXIRtYz55hgu9qckfBWslA1p1ViivXuLPO8dmijPNprKgrrX7vAMQ3sui2sNNSAEPyC+qmFRZdT0zDwjbrukrxKgwS5HBt/i/Dy9QUuNasbtMiEWPZ2S6dszGM5/BmdrNRz4EZSIuqlW096HLlWwkFWMZZgiiLDZ3KgPnOUlJIoyAzEdbrreO89VhzAbOKQIDAQAB",
+	"permissions": [
+		"tabs",
+		"contextMenus",
+		"scripting",
+		"activeTab",
+		"system.display",
+		"storage"
+	],
+	"host_permissions": [
+		"<all_urls>"
+	],
+	"background": {
+		"service_worker": "background.js",
+		"type": "module"
+	},
+	"options_ui": {
+		"page": "page/setting.html",
+		"open_in_tab": true
+	},
+	"action": {
+		"default_icon": {
+			"16": "image/icon_32.png",
+			"32": "image/icon_32.png"
+		}
+	},
+	"icons": {
+		"16": "image/icon_32.png",
+		"32": "image/icon_32.png",
+		"48": "image/icon_48.png",
+		"128": "image/icon_128.png"
+	},
+	"commands": {
+		"open-update-page": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+E",
+				"mac": "Command+Shift+E"
+			},
+			"description": "Open update page"
+		}
+	},
+	"web_accessible_resources": [
+		{
+			"resources": [
+				"content/content.js",
+				"content/frame.html",
+				"content/frame.js",
+				"content/bridge.js"
+			],
+			"matches": [
+				"<all_urls>"
+			]
+		}
+	]
+}

@@ -1,0 +1,31 @@
+<form class="flex flex-col search-form w-full">
+	<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
+		<div class="flex gap-s">
+			<input type="text" name="url" placeholder="URL">
+			<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
+		</div>
+		<div class="select-flat invisible">
+			<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
+			<label><input type="checkbox" name="mode" value="vector">Vector</label>
+		</div>
+		<input type="text" name="query" placeholder="Query">
+		<div class="select-flat">
+			<label><input type="checkbox" name="field" value="title" checked>Title</label>
+			<label><input type="checkbox" name="field" value="memo" checked>Memo</label>
+			<label><input type="checkbox" name="field" value="markdown" checked>Content</label>
+		</div>
+	</div>
+	<div class="hidden">
+		<button type="submit">Search</button>
+	</div>
+	<div class="flex items-end">
+		<span class="count flex items-center none"></span>
+		<span class="icon loading animate-spin none">progress_activity</span>
+		<div class="radio-flat ml-auto">
+			<label><input type="radio" name="sortBy" value="relevance" checked>Relevance</label>
+			<label><input type="radio" name="sortBy" value="created_at">Created</label>
+			<label><input type="radio" name="sortBy" value="updated_at">Updated</label>
+			<label><input type="radio" name="sortBy" value="rating">Rating</label>
+		</div>
+	</div>
+</form>
