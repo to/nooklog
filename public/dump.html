@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nookmark Dump</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            background: #f0f2f5; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background: white; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+        }
+        th, td { 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            text-align: left; 
+            vertical-align: top; 
+        }
+        th { 
+            background: #f8f9fa; 
+            font-weight: bold; 
+            position: sticky; 
+            top: 0; 
+        }
+        tr:nth-child(even) { 
+            background: #f9f9f9; 
+        }
+        .content-cell { 
+            max-height: 200px; 
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            font-family: monospace; 
+            font-size: 12px; 
+            display: block; 
+            border: 1px solid #eee; 
+            padding: 5px; 
+            background: #fafafa; 
+        }
+        .meta { 
+            font-size: 12px; 
+            color: #666; 
+        }
+        a { 
+            color: #0066cc; 
+            text-decoration: none; 
+        }
+        a:hover { 
+            text-decoration: underline; 
+        }
+        #loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nookmark Database Dump (Latest 20)</h1>
+    <div id="loading">Loading...</div>
+    <table id="dataTable" style="display: none;">
+        <thead>
+            <tr>
+                <th style="width: 200px;">Title / URL</th>
+                <th>Content (Markdown)</th>
+                <th style="width: 150px;">Metadata</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script>
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        fetch('/api/pages')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('tableBody');
+                const loading = document.getElementById('loading');
+                const table = document.getElementById('dataTable');
+
+                data.forEach(r => {
+                    const date = new Date(r.created_at).toLocaleString();
+                    const safeContent = escapeHtml(r.content || '');
+                    const safeTitle = escapeHtml(r.title);
+                    const safeUrl = escapeHtml(r.url);
+                    const safeId = escapeHtml(r.id);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <b>${safeTitle}</b><br>
+                            <a href="${r.url}" target="_blank" style="font-size:12px;">${safeUrl}</a><br>
+                            <span style="font-size:10px; color:#999;">ID: ${safeId}</span>
+                        </td>
+                        <td>
+                            <div class="content-cell">${safeContent}</div>
+                        </td>
+                        <td class="meta">
+                            Created: ${date}<br>
+                            Rating: ${r.rating}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                loading.style.display = 'none';
+                table.style.display = 'table';
+            })
+            .catch(error => {
+                document.getElementById('loading').textContent = 'Error loading data: ' + error.message;
+            });
+    </script>
+</body>
+</html>
