@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { processHtml } from './lib/librarian.js';
 import Pinboard from './lib/pinboard.js';
 import db from './lib/database.js';
+import _ from './lib/util.js';
 
 const pinboard = new Pinboard();
 
@@ -31,12 +32,13 @@ const nookmark = {
 		if (isNew) {
 			if (!url)
 				throw new Error('URL is required for new pages');
+
 			page = {
 				id: crypto.randomUUID(),
 				url: url,
 				title: title || '',
 				memo: '',
-				rating: rating != undefined ? rating : 3,
+				rating: 3,
 				ai_keywords: [],
 				keywords: [],
 				tags: [],
@@ -54,39 +56,26 @@ const nookmark = {
 			if (isNew)
 				page.keywords = parsed.keywords || [];
 			// page.ai_keywords get populated later
-
 		}
 
-		// メタデータの更新 (明示的に渡された値で上書き)
-		// undefinedチェックを使うことで、空文字""による更新を許可する
-		if (title !== undefined)
-			page.title = title;
-		if (memo !== undefined)
-			page.memo = memo;
-		if (rating !== undefined)
-			page.rating = rating;
-		if (tags !== undefined)
-			page.tags = tags;
-
-		// DBに保存 (Upsert)
+		// DBに保存または更新
+		_.merge(page, { title, memo, rating, tags });
 		await db.upsert(page);
 
-		// Pinboard連携 (常に送る)
+		// Pinboard連携
 		if (process.env.PINBOARD_TOKEN) {
 			pinboard.add({
 				url: page.url,
 				description: page.title,
 				extended: page.memo,
-				tags: page.tags,
+				tags: `${(rating != null) ? rating : ''} ${page.tags ? Array.from(page.tags).join(' ') : ''}`,
 				replace: 'yes',
 			}).catch(() => { });
 		} else {
-			console.log(`Pinboard: skipped.\n${page.title}\n${page.url}`);
+			console.log(`Pinboard: skipped.\n${page.title} \n${page.url} `);
 		}
 
 		return {
-			success: true,
-			id: page.id,
 			isNew: isNew,
 			page: page,
 		};

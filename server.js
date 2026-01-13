@@ -6,7 +6,7 @@ import nookmark from './nookmark.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-console.warn('Pinboard Token:', process.env.PINBOARD_TOKEN ? 'Loaded' : 'Missing');
+console.log('Pinboard Token:', process.env.PINBOARD_TOKEN ? 'Loaded' : 'Missing');
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -14,7 +14,7 @@ app.use(express.static('public'));
 
 // 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
 process.on('unhandledRejection', (reason, promise) => {
-	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+	// console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 const handle = (handler, errorContext) => async (req, res) => {
@@ -48,9 +48,7 @@ app.post('/api/bookmarks/:id?', handle(async (req, res) => {
 
 	const result = await nookmark.upsertPage({ id, url, title, memo, rating, tags, html });
 	res.json({
-		success: true,
-		id: result.id,
-		page: result.page,
+		id: result.page.id,
 	});
 }, 'Error: POST /api/bookmarks/:id?'));
 
