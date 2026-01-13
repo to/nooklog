@@ -1,0 +1,30 @@
+body {
+	font-family: sans-serif;
+	padding: 1rem;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+input,
+textarea {
+	width: 100%;
+	margin-bottom: 0.5rem;
+	padding: 0.5rem;
+	box-sizing: border-box;
+}
+
+textarea {
+	height: 100px;
+	resize: vertical;
+}
+
+button {
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+}
+
+.error {
+	color: red;
+	margin-top: 0.5rem;
+	display: none;
+}

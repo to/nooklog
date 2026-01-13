@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Nookmark Capture
+// @name         Nookmark
 // @namespace    http://tampermonkey.net/
 // @version      0.1
-// @description  Save current page to Nookmark local brain
+// @description  Save current page to Nookmark
 // @author       Gemini 3 Pro
 // @match        *://*/*
 // @noframes
@@ -18,8 +18,8 @@
 	const API_ENDPOINT = 'http://localhost:3000/api/save';
 
 	// Register Menu Commands
-	GM_registerMenuCommand('Nookmark + Pinboard', () => capturePage(true));
-	GM_registerMenuCommand('Nookmark', () => capturePage(false));
+	GM_registerMenuCommand('Edit', () => capturePage(true));
+	GM_registerMenuCommand('Add ★★★', () => capturePage(false));
 
 	// Keyboard Shortcut: Ctrl + Shift + P
 	document.addEventListener('keydown', e => {
@@ -27,8 +27,8 @@
 			capturePage(true);
 	});
 
-	function capturePage(openPinboard = false) {
-		const modeLabel = openPinboard ? '+ Pinboard' : '(Only)';
+	function capturePage(openEdit = false) {
+		const modeLabel = openEdit ? '+ Edit' : '(Quick)';
 		console.log(`[Nookmark] Capturing page... ${modeLabel}`);
 
 		const payload = {
@@ -42,17 +42,18 @@
 			url: API_ENDPOINT,
 			headers: { 'Content-Type': 'application/json' },
 			data: JSON.stringify(payload),
-			onload: response => handleResponse(response, payload, openPinboard),
+			onload: response => handleResponse(response, payload, openEdit),
 			onerror: err => handleError(err),
 		});
 	}
 
-	function handleResponse(response, payload, openPinboard) {
+	function handleResponse(response, payload, openEdit) {
 		if (response.status === 200) {
-			console.log('[Nookmark] Success:', JSON.parse(response.responseText));
+			const data = JSON.parse(response.responseText);
+			console.log('[Nookmark] Success:', data);
 
-			if (openPinboard) {
-				openPinboardWindow(payload.url, payload.title);
+			if (openEdit) {
+				openUpdateWindow(data.id);
 			} else {
 				GM_notification({
 					text: 'Saved to Nookmark successfully!',
@@ -71,9 +72,8 @@
 		alert('Nookmark unreachable. Is server running?');
 	}
 
-	function openPinboardWindow(url, title) {
-		const pinboardUrl =
-			`https://pinboard.in/add?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
-		window.open(pinboardUrl, '_blank', 'width=700,height=550,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=100,top=100');
+	function openUpdateWindow(id) {
+		const updateUrl = `http://localhost:3000/update.html?id=${id}`;
+		window.open(updateUrl, '_blank', 'width=600,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=100,top=100');
 	}
 })();

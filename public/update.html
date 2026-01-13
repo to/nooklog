@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nookmark Update</title>
+    <link rel="stylesheet" href="app.css">
+</head>
+
+<body>
+    <form id="updateForm">
+        <input type="text" id="url" readonly style="background: #f0f0f0; color: #666;">
+        <input type="text" id="title" placeholder="Title" required>
+        <textarea id="memo" placeholder="Memo"></textarea>
+        <input type="text" id="tags" placeholder="Tags (space separated)">
+        <button type="submit">Save (Ctrl+Enter)</button>
+        <div id="error" class="error"></div>
+    </form>
+
+    <script src="update.js"></script>
+</body>
+
+</html>
