@@ -15,26 +15,30 @@
 (function () {
 	'use strict';
 
-	const API_ENDPOINT = 'http://localhost:3000/api/save';
+	const API_ENDPOINT = 'http://localhost:3000/api/bookmarks';
 
-	// Register Menu Commands
-	GM_registerMenuCommand('Edit', () => capturePage(true));
-	GM_registerMenuCommand('Add ★★★', () => capturePage(false));
+	GM_registerMenuCommand('Edit', () => capturePage({ openEdit: true }));
+	GM_registerMenuCommand('Add ★', () => capturePage({ rating: 1 }));
+	GM_registerMenuCommand('Add ★★', () => capturePage({ rating: 2 }));
+	GM_registerMenuCommand('Add ★★★', () => capturePage({ rating: 3 }));
+	GM_registerMenuCommand('Add ★★★★', () => capturePage({ rating: 4 }));
+	GM_registerMenuCommand('Add ★★★★★', () => capturePage({ rating: 5 }));
 
 	// Keyboard Shortcut: Ctrl + Shift + P
 	document.addEventListener('keydown', e => {
 		if (e.ctrlKey && e.shiftKey && (e.key === 'p' || e.key === 'P'))
-			capturePage(true);
+			capturePage({ openEdit: true });
 	});
 
-	function capturePage(openEdit = false) {
-		const modeLabel = openEdit ? '+ Edit' : '(Quick)';
+	function capturePage({ openEdit = false, rating = 3 } = {}) {
+		const modeLabel = openEdit ? '+ Edit' : `(Rating: ${rating})`;
 		console.log(`[Nookmark] Capturing page... ${modeLabel}`);
 
 		const payload = {
 			url: window.location.href,
 			title: document.title,
 			html: document.documentElement.outerHTML,
+			rating: rating,
 		};
 
 		GM_xmlhttpRequest({
@@ -56,8 +60,9 @@
 				openUpdateWindow(data.id);
 			} else {
 				GM_notification({
+					title: 'Nookmark',
 					text: 'Saved to Nookmark successfully!',
-					title: 'Nookmark Captured',
+					url: window.location.href,
 					timeout: 2000,
 				});
 			}

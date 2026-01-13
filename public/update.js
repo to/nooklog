@@ -10,7 +10,7 @@ else
 
 async function loadBookmark(id) {
 	try {
-		const res = await fetch(`/api/bookmark/${id}`);
+		const res = await fetch(`/api/bookmarks/${id}`);
 		if (!res.ok)
 			throw new Error('Failed to load bookmark');
 		const data = await res.json();
@@ -39,13 +39,27 @@ async function saveBookmark() {
 	errorDiv.style.display = 'none';
 	const title = document.getElementById('title').value;
 	const memo = document.getElementById('memo').value;
-	const tags = document.getElementById('tags').value;
+
+	// 数値だけのタグの中で最大のものをレートとする
+	let tags = document.getElementById('tags').value.split(/\s+/).filter(t => t !== '');
+	let rating = null;
+	tags = tags.filter(t => {
+		if (!/^\d$/.test(t))
+			return true;
+
+		rating = t > rating ? t : rating;
+	});
 
 	try {
-		const res = await fetch(`/api/bookmark/${id}`, {
+		const res = await fetch(`/api/bookmarks/${id}`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ title, memo, tags }),
+			body: JSON.stringify({
+				title,
+				memo,
+				tags,
+				rating,
+			}),
 		});
 
 		if (!res.ok) {

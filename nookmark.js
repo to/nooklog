@@ -18,7 +18,7 @@ const nookmark = {
 		return await db.findById(id);
 	},
 
-	async upsertPage({ id, url, title, memo, tags, html }) {
+	async upsertPage({ id, url, title, memo, rating, tags, html }) {
 		let page = null;
 		page = id ?
 			await db.findById(id) :
@@ -36,7 +36,7 @@ const nookmark = {
 				url: url,
 				title: title || '',
 				memo: '',
-				rating: 3,
+				rating: rating != undefined ? rating : 3,
 				ai_keywords: [],
 				keywords: [],
 				tags: [],
@@ -63,10 +63,10 @@ const nookmark = {
 			page.title = title;
 		if (memo !== undefined)
 			page.memo = memo;
-		if (tags !== undefined) {
-			// 文字列なら配列に変換、配列ならそのまま
-			page.tags = Array.isArray(tags) ? tags : tags.split(' ').filter(t => t.trim() !== '');
-		}
+		if (rating !== undefined)
+			page.rating = rating;
+		if (tags !== undefined)
+			page.tags = tags;
 
 		// DBに保存 (Upsert)
 		await db.upsert(page);
@@ -77,7 +77,7 @@ const nookmark = {
 				url: page.url,
 				description: page.title,
 				extended: page.memo,
-				tags: Array.isArray(page.tags) ? page.tags.join(' ') : page.tags,
+				tags: page.tags,
 				replace: 'yes',
 			}).catch(() => { });
 		} else {

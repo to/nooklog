@@ -94,7 +94,7 @@
             return div.innerHTML;
         }
 
-        fetch('/api/pages')
+        fetch('/api/bookmarks')
             .then(response => response.json())
             .then(data => {
                 const tableBody = document.getElementById('tableBody');
