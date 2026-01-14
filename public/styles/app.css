@@ -1,0 +1,98 @@
+@import 'theme.css';
+
+body {
+	max-width: 600px;
+	padding: var(--space-sm);
+	margin: 0 auto;
+	color: var(--color-text-main);
+	background-color: var(--color-background-main);
+}
+
+input,
+textarea {
+	width: 100%;
+	padding: var(--space-xs);
+	margin-bottom: var(--space-xs);
+	background-color: var(--color-background-main);
+	border: 1px solid var(--color-border-main);
+	border-radius: var(--radius-default);
+}
+
+textarea {
+	height: var(--size-5xl);
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+}
+
+button {
+	align-self: flex-end;
+	padding: var(--space-xs) var(--space-sm);
+	color: var(--color-text-foreground);
+	background-color: var(--color-primary);
+	border-radius: var(--radius-default);
+}
+
+button:hover {
+	background-color: var(--color-primary-dark);
+}
+
+.error {
+	display: none;
+	margin-top: var(--space-xs);
+	color: var(--color-error);
+}
+
+/* --- Tagify Customization --- */
+.tagify {
+	--tags-border-color: var(--color-border-main);
+	--tags-focus-border-color: var(--color-border-main);
+
+  --tag-bg: var(--color-primary);
+  --tag-text-color: var(--color-text-foreground);
+  --tag-hover: var(--color-primary-dark);
+	--tag-border-radius: var(--radius-default);
+
+	margin-bottom: var(--space-xs);
+	border-radius: var(--radius-default);
+
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+
+	.tagify__tag {
+		cursor: pointer;
+	}
+
+	/* 削除ボタンを非表示 */
+	.tagify__tag__removeBtn {
+		display: none !important;
+	}
+}
+
+.tagify__dropdown {
+  --tagify-dd-color-primary: var(--color-primary);
+
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+
+	.tagify__dropdown__item {
+		/* 左側の余白を無くす */
+		text-indent: 0 !important;
+
+		/* チェックマーク(✓)を非表示 */
+		&::before {
+			display: none !important;
+		}
+
+		&.tagify__dropdown__item--active {
+			color: var(--color-text-foreground) !important;
+			background: var(--color-primary) !important;
+		}
+	}
+}

@@ -14,7 +14,7 @@ app.use(express.static('public'));
 
 // 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
 process.on('unhandledRejection', (reason, promise) => {
-	// console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 const handle = (handler, errorContext) => async (req, res) => {
@@ -44,7 +44,7 @@ app.post('/api/bookmarks/:id?', handle(async (req, res) => {
 		return res.status(400).json({ error: 'Missing id or url' });
 
 	console.log(
-		`Save/Update: ${title}\nURL: ${url}\nID: ${id || '(New Page)'}`);
+		`${id ? 'Update' : 'Save'}: ${title}\nURL: ${url}${id ? '\nID: ' + id : ''}`);
 
 	const result = await nookmark.upsertPage({ id, url, title, memo, rating, tags, html });
 	res.json({

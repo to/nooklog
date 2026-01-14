@@ -30,7 +30,7 @@
 			capturePage({ openEdit: true });
 	});
 
-	function capturePage({ openEdit = false, rating = 3 } = {}) {
+	function capturePage({ openEdit = false, rating }) {
 		const modeLabel = openEdit ? '+ Edit' : `(Rating: ${rating})`;
 		console.log(`[Nookmark] Capturing page... ${modeLabel}`);
 
@@ -79,6 +79,6 @@
 
 	function openUpdateWindow(id) {
 		const updateUrl = `http://localhost:3000/update.html?id=${id}`;
-		window.open(updateUrl, '_blank', 'width=600,height=500,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=100,top=100');
+		window.open(updateUrl, '_blank', 'width=600,height=700,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=100,top=100');
 	}
 })();

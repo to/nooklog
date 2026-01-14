@@ -38,17 +38,23 @@ const nookmark = {
 				url: url,
 				title: title || '',
 				memo: '',
-				rating: 3,
+				rating: 0,
 				ai_keywords: [],
 				keywords: [],
 				tags: [],
 				content: '',
 				created_at: now,
 			};
+		} else if (!memo && !rating && !tags) {
+			// 既存ページの編集画面を再度開こうとしているか？
+			return {
+				isNew: isNew,
+				page: page,
+			}
 		}
 		page.updated_at = now;
 
-		// HTML解析と反映 (HTMLが渡された場合)
+		// HTML解析と反映
 		if (html) {
 			const parsed = processHtml(url, title, html);
 			page.title = parsed.title; // HTML解析結果のタイトルを優先
@@ -58,7 +64,7 @@ const nookmark = {
 			// page.ai_keywords get populated later
 		}
 
-		// DBに保存または更新
+		// データベースに保存または更新
 		_.merge(page, { title, memo, rating, tags });
 		await db.upsert(page);
 
@@ -68,7 +74,7 @@ const nookmark = {
 				url: page.url,
 				description: page.title,
 				extended: page.memo,
-				tags: `${(rating != null) ? rating : ''} ${page.tags ? Array.from(page.tags).join(' ') : ''}`,
+				tags: `${(rating != null) ? rating : ''} ${page.tags ? page.tags.join(' ') : ''}`,
 				replace: 'yes',
 			}).catch(() => { });
 		} else {

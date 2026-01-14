@@ -1,0 +1,27 @@
+@import 'color.css';
+@import 'token.css';
+@import 'reset.css';
+
+:root {
+	--color-primary: var(--color-gray-6);
+	--color-primary-light: var(--color-gray-3);
+	--color-primary-dark: var(--color-gray-8);
+
+	--color-secondary: var(--color-blue-6);
+	--color-secondary-light: var(--color-blue-3);
+	--color-secondary-dark: var(--color-blue-8);
+
+	--color-text-main: var(--color-gray-9);
+	--color-text-muted: var(--color-gray-3);
+	--color-text-foreground: var(--color-white);
+
+	--color-background-main: var(--color-gray-0);
+
+	--color-border-main: var(--color-gray-5);
+	--color-border-active: var(--color-primary);
+
+	--color-success: var(--color-green-6);
+	--color-error: var(--color-red-6);
+	--color-warn: var(--color-yellow-6);
+	--color-info: var(--color-cyan-6);
+}

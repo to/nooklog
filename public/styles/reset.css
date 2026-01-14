@@ -1,0 +1,33 @@
+@import 'token.css';
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	line-height: var(--line-height-normal);
+	text-size-adjust: 100%;
+}
+
+input,
+textarea,
+button {
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	background: transparent;
+	border: none;
+}
+
+button {
+	cursor: pointer;
+}
+
+textarea {
+	display: block;
+	width: 100%;
+	resize: vertical;
+}

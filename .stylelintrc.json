@@ -1,0 +1,28 @@
+{
+	"extends": [
+		"stylelint-config-standard",
+		"stylelint-config-recess-order"
+	],
+	"plugins": [
+		"stylelint-value-no-unknown-custom-properties"
+	],
+	"rules": {
+		"selector-class-pattern": null,
+		"custom-property-pattern": null,
+		"custom-property-empty-line-before": null,
+		"color-hex-length": null,
+		"no-descending-specificity": null,
+		"property-no-vendor-prefix": true,
+		"import-notation": "string",
+		"csstools/value-no-unknown-custom-properties": [
+			true,
+			{
+				"importFrom": [
+					"public/styles/color.css",
+					"public/styles/token.css",
+					"public/styles/theme.css"
+				]
+			}
+		]
+	}
+}
