@@ -19,6 +19,10 @@ const nookmark = {
 		return await db.findById(id);
 	},
 
+	async deletePageById(id) {
+		await db.deleteById(id);
+	},
+
 	async upsertPage({ id, url, title, memo, rating, tags, html }) {
 		let page = null;
 		page = id ?

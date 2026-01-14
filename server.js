@@ -58,6 +58,12 @@ app.get('/api/bookmarks', handle(async (req, res) => {
 	res.json(results);
 }, 'Error in /api/bookmarks'));
 
+app.delete('/api/bookmarks/:id', handle(async (req, res) => {
+	const { id } = req.params;
+	await nookmark.deletePageById(id);
+	res.json({ success: true });
+}, 'Error: DELETE /api/bookmarks/:id'));
+
 app.listen(PORT, async () => {
 	await nookmark.initialize();
 	console.log(`Server running on http://localhost:${PORT}`);
