@@ -1,6 +1,7 @@
 class TagComponent {
 	constructor(input, options = {}) {
 		this.input = input;
+		this.maxWhitelist = 7;
 
 		const defaultOptions = {
 			maxTags: 20,
@@ -10,18 +11,20 @@ class TagComponent {
 				closeOnSelect: true,
 				searchKeys: ['value'],
 				fuzzySearch: false,
+				highlightFirst: true,
 			},
 		};
 
 		const tagify = new Tagify(this.input, { ...defaultOptions, ...options });
 		this.tagify = tagify;
 
+		// IMEをオフにする
+		tagify.DOM.input.setAttribute('inputmode', 'url');
+
 		// タブキーで確定する
 		tagify.on('keydown', e => {
-			if (e.detail.event.key === 'Tab') {
-				const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-				tagify.DOM.input.dispatchEvent(event);
-			}
+			if (e.detail.event.key === 'Tab')
+				this.enter();
 		});
 
 		// タグをクリックして削除する
@@ -36,10 +39,22 @@ class TagComponent {
 			const regex = new RegExp(
 				`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
 
-			return tagify.whitelist
+			const whitelist = tagify.whitelist
 				.filter(t => regex.test(t))
-				.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length));
+				.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
+				.slice(0, this.maxWhitelist);
+
+			// 候補が1つだけになったら自動的に確定して閉じる
+			if (whitelist.length == 1)
+				setTimeout(() => this.enter(), 16);
+
+			return whitelist;
 		};
+	}
+
+	enter() {
+		this.tagify.DOM.input.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 	}
 
 	setTags(tags) {
@@ -48,6 +63,10 @@ class TagComponent {
 
 	getTags() {
 		return this.tagify.value.map(t => t.value);
+	}
+
+	focus() {
+		this.tagify.DOM.input.focus();
 	}
 }
 

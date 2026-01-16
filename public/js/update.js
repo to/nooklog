@@ -83,13 +83,13 @@ class UpdateFormComponent {
 	}
 
 	_populateForm(bookmark) {
-		console.log(bookmark);
-
 		this.els.url.value = bookmark.url;
 		this.els.title.value = bookmark.title;
 		this.els.memo.value = bookmark.memo || '';
 		this.tagComponent.setTags(
 			[].concat(bookmark.rating || [], bookmark.tags || []));
+
+		this.tagComponent.focus();
 	}
 
 	showError(message) {

@@ -13,72 +13,77 @@
 // ==/UserScript==
 
 (function () {
-	'use strict';
-
 	const API_ENDPOINT = 'http://localhost:3000/api/bookmarks';
 
+	const WINDOW_WIDTH = 500;
+	const WINDOW_HEIGHT = 480;
+	const WINDOW_MARGIN = 25;
+	const NOTIFICATION_TIMEOUT = 2 * 1000;
+
+	let updateWindow = null;
+
 	GM_registerMenuCommand('Edit', () => capturePage({ openEdit: true }));
-	GM_registerMenuCommand('Add ★', () => capturePage({ rating: 1 }));
-	GM_registerMenuCommand('Add ★★', () => capturePage({ rating: 2 }));
-	GM_registerMenuCommand('Add ★★★', () => capturePage({ rating: 3 }));
-	GM_registerMenuCommand('Add ★★★★', () => capturePage({ rating: 4 }));
-	GM_registerMenuCommand('Add ★★★★★', () => capturePage({ rating: 5 }));
+	for (let i = 1; i <= 5; i++)
+		GM_registerMenuCommand(`Add ${'★'.repeat(i)}`, () => capturePage({ rating: i }));
 
 	// Keyboard Shortcut: Ctrl + Shift + P
 	document.addEventListener('keydown', e => {
-		if (e.ctrlKey && e.shiftKey && (e.key === 'p' || e.key === 'P'))
+		if (e.ctrlKey && e.shiftKey && e.code == 'KeyP')
 			capturePage({ openEdit: true });
 	});
 
 	function capturePage({ openEdit = false, rating }) {
-		const modeLabel = openEdit ? '+ Edit' : `(Rating: ${rating})`;
-		console.log(`[Nookmark] Capturing page... ${modeLabel}`);
-
-		const payload = {
-			url: window.location.href,
-			title: document.title,
-			html: document.documentElement.outerHTML,
-			rating: rating,
-		};
+		// ポップアップブロックを回避するために、即座にウィンドウを確保する
+		if (openEdit)
+			openUpdateWindow();
 
 		GM_xmlhttpRequest({
 			method: 'POST',
 			url: API_ENDPOINT,
 			headers: { 'Content-Type': 'application/json' },
-			data: JSON.stringify(payload),
-			onload: response => handleResponse(response, payload, openEdit),
-			onerror: err => handleError(err),
+			data: JSON.stringify({
+				url: window.location.href,
+				title: document.title,
+				html: document.documentElement.outerHTML,
+				rating: rating,
+			}),
+			onload: res => handleResponse(res, openEdit),
+			onerror: handleError,
 		});
 	}
 
-	function handleResponse(response, payload, openEdit) {
-		if (response.status === 200) {
-			const data = JSON.parse(response.responseText);
-			console.log('[Nookmark] Success:', data);
+	function handleResponse(res, openEdit) {
+		if (res.status != 200)
+			return alert(`Nookmark Save Failed: ${res.responseText}`);
 
-			if (openEdit) {
-				openUpdateWindow(data.id);
-			} else {
-				GM_notification({
-					title: 'Nookmark',
-					text: 'Saved to Nookmark successfully!',
-					url: window.location.href,
-					timeout: 2000,
-				});
-			}
+		const data = JSON.parse(res.responseText);
+		if (openEdit && updateWindow) {
+			updateWindow.location.href = `http://localhost:3000/update.html?id=${data.id}`;
 		} else {
-			console.error('[Nookmark] Error:', response.responseText);
-			alert(`Nookmark Save Failed: ${response.responseText}`);
+			GM_notification({
+				title: 'Nookmark',
+				text: document.title,
+				timeout: NOTIFICATION_TIMEOUT,
+			});
 		}
 	}
 
 	function handleError(err) {
+		if (updateWindow)
+			updateWindow.close();
+
 		console.error('[Nookmark] Request Failed:', err);
 		alert('Nookmark unreachable. Is server running?');
 	}
 
-	function openUpdateWindow(id) {
-		const updateUrl = `http://localhost:3000/update.html?id=${id}`;
-		window.open(updateUrl, '_blank', 'width=600,height=700,toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1,left=100,top=100');
+	function openUpdateWindow() {
+		// openのサイズや高さのズレを修正する(詳細不明)
+		const left = screen.availWidth - WINDOW_WIDTH - (WINDOW_MARGIN + 9);
+		const top = screen.availHeight - (WINDOW_HEIGHT - 10) - WINDOW_MARGIN;
+
+		updateWindow = window.open('about:blank', '_blank',
+			`width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`);
+		updateWindow.document.write(
+			'<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">...</div>');
 	}
 })();

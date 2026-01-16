@@ -1,9 +1,14 @@
 @import 'theme.css';
 
+html,
 body {
-	max-width: 600px;
+	height: 100%;
+}
+
+body {
 	padding: var(--space-sm);
-	margin: 0 auto;
+	margin: 0;
+	font-size: var(--font-size-xs);
 	color: var(--color-text-main);
 	background-color: var(--color-background-main);
 }
@@ -13,18 +18,26 @@ textarea {
 	width: 100%;
 	padding: var(--space-xs);
 	margin-bottom: var(--space-xs);
+	outline: none;
 	background-color: var(--color-background-main);
 	border: 1px solid var(--color-border-main);
 	border-radius: var(--radius-default);
 }
 
+input:focus,
+textarea:focus {
+	border-color: var(--color-border-main);
+}
+
 textarea {
-	height: var(--size-5xl);
+	flex: 1;
+	min-height: var(--size-3xl);
 }
 
 form {
 	display: flex;
 	flex-direction: column;
+	height: 100%;
 }
 
 button {
@@ -58,7 +71,7 @@ button:hover {
 	margin-bottom: var(--space-xs);
 	border-radius: var(--radius-default);
 
-	* {
+	&, *, *::before, *::after  {
 		transition: none !important;
 		animation: none !important;
 	}
@@ -76,7 +89,10 @@ button:hover {
 .tagify__dropdown {
   --tagify-dd-color-primary: var(--color-primary);
 
-	* {
+	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
+	pointer-events: none;
+
+	&, *, *::before, *::after  {
 		transition: none !important;
 		animation: none !important;
 	}
