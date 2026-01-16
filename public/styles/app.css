@@ -78,6 +78,11 @@ button:hover {
 
 	.tagify__tag {
 		cursor: pointer;
+
+		&:focus div::before,
+		&:hover:not([readonly]) div::before {
+			--tag-bg-inset: 0 !important;
+		}
 	}
 
 	/* 削除ボタンを非表示 */

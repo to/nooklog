@@ -58,11 +58,11 @@
 
 		const data = JSON.parse(res.responseText);
 		if (openEdit && updateWindow) {
-			updateWindow.location.href = `http://localhost:3000/update.html?id=${data.id}`;
+			updateWindow.location.replace(`http://localhost:3000/update.html?id=${data.id}`);
 		} else {
 			GM_notification({
 				title: 'Nookmark',
-				text: document.title,
+				text: 'Saved: ' + document.title,
 				timeout: NOTIFICATION_TIMEOUT,
 			});
 		}
@@ -81,9 +81,8 @@
 		const left = screen.availWidth - WINDOW_WIDTH - (WINDOW_MARGIN + 9);
 		const top = screen.availHeight - (WINDOW_HEIGHT - 10) - WINDOW_MARGIN;
 
-		updateWindow = window.open('about:blank', '_blank',
+		// フォーカスがアドレバーに行かないように、編集と同じページを開く
+		updateWindow = window.open('http://localhost:3000/update.html', '_blank',
 			`width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`);
-		updateWindow.document.write(
-			'<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">...</div>');
 	}
 })();

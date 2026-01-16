@@ -131,8 +131,12 @@ class UpdateFormComponent {
 }
 
 (async () => {
+	// 事前準備として空ページが開かれたか？
+	const id = new URLSearchParams(location.search).get('id');
+	if (!id)
+		return;
+
 	const nookmark = new Nookmark();
 	const formComponent = new UpdateFormComponent(nookmark);
-	formComponent.init(
-		new URLSearchParams(location.search).get('id'));
+	formComponent.init(id);
 })();
