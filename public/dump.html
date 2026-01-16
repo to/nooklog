@@ -120,7 +120,7 @@
 
                 data.forEach(r => {
                     const date = new Date(r.created_at).toLocaleString();
-                    const safeContent = escapeHtml(r.content || '');
+                    const safeContent = escapeHtml(r.markdown || '');
                     const safeTitle = escapeHtml(r.title);
                     const safeUrl = escapeHtml(r.url);
                     const safeId = escapeHtml(r.id);

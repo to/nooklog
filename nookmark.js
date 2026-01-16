@@ -43,14 +43,12 @@ const nookmark = {
 				title: title || '',
 				memo: '',
 				rating: 0,
-				ai_keywords: [],
 				keywords: [],
+				keywords_full: [],
 				tags: [],
-				content: '',
 				created_at: now,
 			};
 		} else if (!memo && !rating && !tags) {
-			// 既存ページの編集画面を再度開こうとしているか？
 			return {
 				isNew: isNew,
 				page: page,
@@ -58,19 +56,23 @@ const nookmark = {
 		}
 		page.updated_at = now;
 
-		// HTML解析と反映
+		let content = null;
 		if (html) {
 			const parsed = processHtml(url, title, html);
-			page.title = parsed.title; // HTML解析結果のタイトルを優先
-			page.content = parsed.content;
+			page.title = parsed.title;
 			if (isNew)
 				page.keywords = parsed.keywords || [];
-			// page.ai_keywords get populated later
+
+			content = {
+				id: page.id,
+				html: parsed.cleanHtml,
+				markdown: parsed.markdown,
+			};
 		}
 
 		// データベースに保存または更新
 		_.merge(page, { title, memo, rating, tags });
-		await db.upsert(page);
+		await db.upsert(page, content);
 
 		// Pinboard連携
 		if (process.env.PINBOARD_TOKEN) {
