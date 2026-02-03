@@ -44,8 +44,8 @@ class TagComponent {
 				.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
 				.slice(0, this.maxWhitelist);
 
-			// 候補が1つだけになったら自動的に確定して閉じる
-			if (whitelist.length == 1)
+			// 要素が十分に絞られたら自動的に確定して閉じる
+			if (whitelist.length == 1 || whitelist.filter(t => t.startsWith(value)).length == 1)
 				setTimeout(() => this.enter(), 16);
 
 			return whitelist;

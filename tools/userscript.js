@@ -34,8 +34,14 @@
 
 	function capturePage({ openEdit = false, rating }) {
 		// ポップアップブロックを回避するために、即座にウィンドウを確保する
-		if (openEdit)
+		if (openEdit) {
 			openUpdateWindow();
+
+			// ページ内にフォーカスがないとポップアップがブロックされる
+			// (ただタブを表示しただけの場合など)
+			if (!updateWindow)
+				return;
+		}
 
 		GM_xmlhttpRequest({
 			method: 'POST',

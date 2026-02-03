@@ -2,131 +2,131 @@
 <html>
 
 <head>
-    <meta charset="UTF-8">
-    <title>Nookmark Dump</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            background: #f0f2f5;
-        }
+	<meta charset="UTF-8">
+	<title>Nookmark Dump</title>
+	<style>
+		body {
+			font-family: sans-serif;
+			padding: 20px;
+			background: #f0f2f5;
+		}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			background: white;
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		}
 
-        th,
-        td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-            vertical-align: top;
-        }
+		th,
+		td {
+			padding: 12px;
+			border: 1px solid #ddd;
+			text-align: left;
+			vertical-align: top;
+		}
 
-        th {
-            background: #f8f9fa;
-            font-weight: bold;
-            position: sticky;
-            top: 0;
-        }
+		th {
+			background: #f8f9fa;
+			font-weight: bold;
+			position: sticky;
+			top: 0;
+		}
 
-        tr:nth-child(even) {
-            background: #f9f9f9;
-        }
+		tr:nth-child(even) {
+			background: #f9f9f9;
+		}
 
-        .content-cell {
-            width: 100%;
-            height: 200px;
-            box-sizing: border-box;
-            resize: vertical;
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 12px;
-            border: 1px solid #eee;
-            padding: 8px;
-            background: #fafafa;
-            outline: none;
-        }
+		.content-cell {
+			width: 100%;
+			height: 200px;
+			box-sizing: border-box;
+			resize: vertical;
+			white-space: pre-wrap;
+			font-family: monospace;
+			font-size: 12px;
+			border: 1px solid #eee;
+			padding: 8px;
+			background: #fafafa;
+			outline: none;
+		}
 
-        .meta {
-            font-size: 12px;
-            color: #666;
-        }
+		.meta {
+			font-size: 12px;
+			color: #666;
+		}
 
-        a {
-            color: #0066cc;
-            text-decoration: none;
-        }
+		a {
+			color: #0066cc;
+			text-decoration: none;
+		}
 
-        a:hover {
-            text-decoration: underline;
-        }
+		a:hover {
+			text-decoration: underline;
+		}
 
-        #loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 18px;
-            color: #666;
-        }
-    </style>
+		#loading {
+			text-align: center;
+			padding: 40px;
+			font-size: 18px;
+			color: #666;
+		}
+	</style>
 </head>
 
 <body>
-    <h1>Nookmark Database Dump (Latest 20)</h1>
-    <div id="loading">Loading...</div>
-    <table id="dataTable" style="display: none; table-layout: fixed;">
-        <thead>
-            <tr>
-                <th style="width: 300px;">Title / URL</th>
-                <th style="width: 200px;">Metadata</th>
-                <th>Content (Markdown)</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-        </tbody>
-    </table>
+	<h1>Nookmark Database Dump (Latest 20)</h1>
+	<div id="loading">Loading...</div>
+	<table id="dataTable" style="display: none; table-layout: fixed;">
+		<thead>
+			<tr>
+				<th style="width: 300px;">Title / URL</th>
+				<th style="width: 200px;">Metadata</th>
+				<th>Content (Markdown)</th>
+			</tr>
+		</thead>
+		<tbody id="tableBody">
+		</tbody>
+	</table>
 
-    <script>
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+	<script>
+		function escapeHtml(text) {
+			const div = document.createElement('div');
+			div.textContent = text;
+			return div.innerHTML;
+		}
 
-        async function deleteBookmark(id, button) {
-            if (!confirm('Are you sure you want to delete this bookmark?')) return;
+		async function deleteBookmark(id, button) {
+			if (!confirm('Are you sure you want to delete this bookmark?')) return;
 
-            try {
-                const res = await fetch(`/api/bookmarks/${id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Delete failed');
+			try {
+				const res = await fetch(`/api/bookmarks/${id}`, { method: 'DELETE' });
+				if (!res.ok) throw new Error('Delete failed');
 
-                // 行を削除
-                const row = button.closest('tr');
-                row.remove();
-            } catch (err) {
-                alert(err.message);
-            }
-        }
+				// 行を削除
+				const row = button.closest('tr');
+				row.remove();
+			} catch (err) {
+				alert(err.message);
+			}
+		}
 
-        fetch('/api/bookmarks')
-            .then(response => response.json())
-            .then(data => {
-                const tableBody = document.getElementById('tableBody');
-                const loading = document.getElementById('loading');
-                const table = document.getElementById('dataTable');
+		fetch('/api/bookmarks')
+			.then(response => response.json())
+			.then(data => {
+				const tableBody = document.getElementById('tableBody');
+				const loading = document.getElementById('loading');
+				const table = document.getElementById('dataTable');
 
-                data.forEach(r => {
-                    const date = new Date(r.created_at).toLocaleString();
-                    const safeContent = escapeHtml(r.markdown || '');
-                    const safeTitle = escapeHtml(r.title);
-                    const safeUrl = escapeHtml(r.url);
-                    const safeId = escapeHtml(r.id);
+				data.forEach(r => {
+					const date = new Date(r.created_at).toLocaleString();
+					const safeContent = escapeHtml(r.markdown || '');
+					const safeTitle = escapeHtml(r.title);
+					const safeUrl = escapeHtml(r.url);
+					const safeId = escapeHtml(r.id);
 
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+					const row = document.createElement('tr');
+					row.innerHTML = `
                         <td style="word-break: break-all;">
                             <b>${safeTitle}</b><br>
                             <a href="${r.url}" target="_blank" style="font-size:12px;">${safeUrl}</a><br>
@@ -147,16 +147,16 @@
                             <textarea class="content-cell">${safeContent}</textarea>
                         </td>
                     `;
-                    tableBody.appendChild(row);
-                });
+					tableBody.appendChild(row);
+				});
 
-                loading.style.display = 'none';
-                table.style.display = 'table';
-            })
-            .catch(error => {
-                document.getElementById('loading').textContent = 'Error loading data: ' + error.message;
-            });
-    </script>
+				loading.style.display = 'none';
+				table.style.display = 'table';
+			})
+			.catch(error => {
+				document.getElementById('loading').textContent = 'Error loading data: ' + error.message;
+			});
+	</script>
 </body>
 
 </html>

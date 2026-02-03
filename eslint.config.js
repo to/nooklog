@@ -27,7 +27,7 @@ export default [
 			'curly': ['error', 'multi-or-nest', 'consistent'], // 1行なら省略OK、でもif-elseで片方にあるなら揃える！
 			'nonblock-statement-body-position': ['error', 'below'], // カッコなしの時は必ず改行する！
 			'dot-location': ['error', 'property'], // ドットはプロパティと同じ行（ドット始まり）！
-			'no-constant-condition': 'none',
+			'no-constant-condition': 'off',
 		},
 	},
 	// Userscript 用に GM_ 関数の定義を許可する設定

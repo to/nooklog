@@ -52,7 +52,7 @@ const nookmark = {
 			return {
 				isNew: isNew,
 				page: page,
-			}
+			};
 		}
 		page.updated_at = now;
 
