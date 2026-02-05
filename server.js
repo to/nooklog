@@ -8,7 +8,18 @@ const PORT = process.env.PORT || 3000;
 
 console.log('Pinboard Token:', process.env.PINBOARD_TOKEN ? 'Loaded' : 'Missing');
 
-app.use(cors());
+// Private Network Access (PNA) 対応
+// HTTPSのサイト(HuggingFaceなど)からlocalhostへのアクセスを許可するために必要
+// 注意: cors()ミドルウェアより【前】に書かないと、プリフライト(OPTIONS)リクエストでヘッダーが付与されずブロックされる
+app.use((req, res, next) => {
+	res.setHeader('Access-Control-Allow-Private-Network', 'true');
+	next();
+});
+
+app.use(cors({
+	origin: true, // リクエスト元のオリジンを許可（ユーザースクリプトから動くように）
+	credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
@@ -56,7 +67,20 @@ app.get('/api/bookmarks', handle(async (req, res) => {
 	const limit = parseInt(req.query.limit) || 20;
 	const results = await nookmark.getRecentPages(limit);
 	res.json(results);
-}, 'Error in /api/bookmarks'));
+}, 'Error: GET /api/bookmarks'));
+
+app.get('/api/search', handle(async (req, res) => {
+	const { tags, query, fields, minRating, sortBy, limit } = req.query;
+	const results = await nookmark.searchPages({
+		tags: tags ? tags.split(',') : [],
+		query: query || '',
+		fields: fields ? fields.split(',') : [],
+		minRating: minRating ? parseInt(minRating) : undefined,
+		sortBy: sortBy || 'updated_at',
+		limit: limit ? parseInt(limit) : 200,
+	});
+	res.json(results);
+}, 'Error: GET /api/search'));
 
 app.delete('/api/bookmarks/:id', handle(async (req, res) => {
 	const { id } = req.params;

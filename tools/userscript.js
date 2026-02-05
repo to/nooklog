@@ -20,8 +20,6 @@
 	const WINDOW_MARGIN = 25;
 	const NOTIFICATION_TIMEOUT = 2 * 1000;
 
-	let updateWindow = null;
-
 	GM_registerMenuCommand('Edit', () => capturePage({ openEdit: true }));
 	for (let i = 1; i <= 5; i++)
 		GM_registerMenuCommand(`Add ${'★'.repeat(i)}`, () => capturePage({ rating: i }));
@@ -33,16 +31,6 @@
 	});
 
 	function capturePage({ openEdit = false, rating }) {
-		// ポップアップブロックを回避するために、即座にウィンドウを確保する
-		if (openEdit) {
-			openUpdateWindow();
-
-			// ページ内にフォーカスがないとポップアップがブロックされる
-			// (ただタブを表示しただけの場合など)
-			if (!updateWindow)
-				return;
-		}
-
 		GM_xmlhttpRequest({
 			method: 'POST',
 			url: API_ENDPOINT,
@@ -63,8 +51,8 @@
 			return alert(`Nookmark Save Failed: ${res.responseText}`);
 
 		const data = JSON.parse(res.responseText);
-		if (openEdit && updateWindow) {
-			updateWindow.location.replace(`http://localhost:3000/update.html?id=${data.id}`);
+		if (openEdit) {
+			openUpdateWindow(data.id);
 		} else {
 			GM_notification({
 				title: 'Nookmark',
@@ -75,20 +63,16 @@
 	}
 
 	function handleError(err) {
-		if (updateWindow)
-			updateWindow.close();
-
 		console.error('[Nookmark] Request Failed:', err);
 		alert('Nookmark unreachable. Is server running?');
 	}
 
-	function openUpdateWindow() {
+	function openUpdateWindow(id) {
 		// openのサイズや高さのズレを修正する(詳細不明)
 		const left = screen.availWidth - WINDOW_WIDTH - (WINDOW_MARGIN + 9);
 		const top = screen.availHeight - (WINDOW_HEIGHT - 10) - WINDOW_MARGIN;
 
-		// フォーカスがアドレバーに行かないように、編集と同じページを開く
-		updateWindow = window.open('http://localhost:3000/update.html', '_blank',
+		window.open(`http://localhost:3000/update.html?id=${id}`, '_blank',
 			`width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`);
 	}
 })();

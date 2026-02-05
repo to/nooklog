@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Nookmark</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+	<link rel="stylesheet" href="styles/app.css">
+	<link rel="stylesheet" href="styles/search.css">
+</head>
+
+<body>
+	<form id="searchForm" class="search-form">
+		<input name="tags" placeholder="Tags">
+		<input type="text" id="query" placeholder="Query">
+		<div class="search-options">
+			<label><input type="checkbox" name="field" value="title" checked> Title</label>
+			<label><input type="checkbox" name="field" value="url" checked> URL</label>
+			<label><input type="checkbox" name="field" value="memo" checked> Memo</label>
+		</div>
+		<div class="search-options">
+			<label>Sort:
+				<select id="sortBy">
+					<option value="updated_at" selected>Updated</option>
+					<option value="created_at">Created</option>
+					<option value="rating">Rating</option>
+				</select>
+			</label>
+		</div>
+		<button type="submit">Search</button>
+	</form>
+
+	<div id="loading" class="loading">...</div>
+	<table id="resultsTable" class="results-table">
+		<tbody id="resultsBody"></tbody>
+	</table>
+
+	<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+	<script src="js/TagComponent.js"></script>
+	<script src="js/search.js"></script>
+</body>
+
+</html>

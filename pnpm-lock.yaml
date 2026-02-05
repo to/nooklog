@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@lancedb/lancedb':
-        specifier: ^0.11.0
-        version: 0.11.0(apache-arrow@17.0.0)
+        specifier: ^0.23.0
+        version: 0.23.0(apache-arrow@17.0.0)
       '@mozilla/readability':
         specifier: ^0.5.0
         version: 0.5.0
@@ -207,43 +207,55 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@lancedb/lancedb-darwin-arm64@0.11.0':
-    resolution: {integrity: sha512-czULKIjoTNZ5rHZOm+Db2dgHY3dpiH3X/k+m7duvzRPHMP0Jx2IXhNuawFhOZiT0TSsMZdpnAy7mETb7mhNY+Q==}
+  '@lancedb/lancedb-darwin-arm64@0.23.0':
+    resolution: {integrity: sha512-8w0sMCNMwBv2kv5+fczGeSVlNOL+BOKChSsO4usM0hMw3PmxasONPctQBsESDuPS8lQ6/AKAQc2HT/ddd5Mg5w==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [darwin]
 
-  '@lancedb/lancedb-darwin-x64@0.11.0':
-    resolution: {integrity: sha512-sq8BTdy6d8FQcLo46zPmdlW26gO57BkRjmH3lQLYaklg6fz5ED70ynhbyxD6Tfiog5YSB3ky3odHz3X4/hsPKw==}
-    engines: {node: '>= 18'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@lancedb/lancedb-linux-arm64-gnu@0.11.0':
-    resolution: {integrity: sha512-XRosbDtCBSDlYyP9/fI+1iCFHcuadicATrlnqWsi2XBkNkQN/LiHsUNl1ztlesx4z7FFWrHTOES4dmgsGQYXVg==}
+  '@lancedb/lancedb-linux-arm64-gnu@0.23.0':
+    resolution: {integrity: sha512-+xse2IspO7hbuHT4H62q8Ct00fTojnuBxXp1X1I3/27dDvW8E+/itFiJuTZ0YMaJc7nNr9qh9YFXZ9hZdEmReg==}
     engines: {node: '>= 18'}
     cpu: [arm64]
     os: [linux]
 
-  '@lancedb/lancedb-linux-x64-gnu@0.11.0':
-    resolution: {integrity: sha512-WGFwU+4sdvQwSvDIvbgAFqAgW0XEEUUn24GJ9HcvWzC3eU9ZT1ZPs7QYLLOlqC/7WjZXzzVeg+PdbP6pdSSH0w==}
+  '@lancedb/lancedb-linux-arm64-musl@0.23.0':
+    resolution: {integrity: sha512-c2UCtGoYjA3oDdw5y3RLK7J2th3rSjYBng+1I03vU9g092y8KATAJO/lV2AtyxSC+esSuyY1dMEaj8ADcXjZAA==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@lancedb/lancedb-linux-x64-gnu@0.23.0':
+    resolution: {integrity: sha512-OPL7tK3JCTx43ZxvbVs+CljfCer0KrojANQbcJ2V4VAp6XBhKx1sBAlIVGuCrd93pA8UOUP3iHsM7aglPo6rCg==}
     engines: {node: '>= 18'}
     cpu: [x64]
     os: [linux]
 
-  '@lancedb/lancedb-win32-x64-msvc@0.11.0':
-    resolution: {integrity: sha512-vcc3h0mzGkgRoir5nK93QjnhU47NGumI/KKnFshBObmFlxRzSSxCu2E792hAhxNUwk0+3vyTR0vQTGhHidRlHQ==}
+  '@lancedb/lancedb-linux-x64-musl@0.23.0':
+    resolution: {integrity: sha512-1ZEoQDwOrKvwPyAG+95/r1NYqX8Ca5bRek8Vr62CzWCEmHd/pFeEGWZ5STrkh+Bt3GLdi2JOivFtRbmuBAJypQ==}
+    engines: {node: '>= 18'}
+    cpu: [x64]
+    os: [linux]
+
+  '@lancedb/lancedb-win32-arm64-msvc@0.23.0':
+    resolution: {integrity: sha512-OuD1mkrgXvijRlXdbx3LvfuorO04FD5qHegnTOWGXh1sIwwrvvhcJAvXUGBNLY4n/lsWvA+xTjtMwRjUitvPKg==}
+    engines: {node: '>= 18'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@lancedb/lancedb-win32-x64-msvc@0.23.0':
+    resolution: {integrity: sha512-5ve1hvVtp8zWxSE9A+MOQaicXl2Rn0ZG/NUaMTjTD3/CQHPKFmtrqDnM5khoPICTj2O2b10F6mn4cUzl5PASgA==}
     engines: {node: '>= 18'}
     cpu: [x64]
     os: [win32]
 
-  '@lancedb/lancedb@0.11.0':
-    resolution: {integrity: sha512-oZSoKgaAoZIo5Oz4yhO7Z0kFzXRbXRgBK7zoNnA4/4m74T5KRRWovKSgHUwGNw18sBP2lnT2hT5WV3r20PKfzQ==}
+  '@lancedb/lancedb@0.23.0':
+    resolution: {integrity: sha512-aYrIoEG24AC+wILCL57Ius/Y4yU+xFHDPKLvmjzzN4byAjzeIGF0TC86S5RBt4Ji+dxS7yIWV5Q/gE5/fybIFQ==}
     engines: {node: '>= 18'}
     cpu: [x64, arm64]
     os: [darwin, linux, win32]
     peerDependencies:
-      apache-arrow: '>=13.0.0 <=17.0.0'
+      apache-arrow: '>=15.0.0 <=18.1.0'
 
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
@@ -1573,31 +1585,39 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@lancedb/lancedb-darwin-arm64@0.11.0':
+  '@lancedb/lancedb-darwin-arm64@0.23.0':
     optional: true
 
-  '@lancedb/lancedb-darwin-x64@0.11.0':
+  '@lancedb/lancedb-linux-arm64-gnu@0.23.0':
     optional: true
 
-  '@lancedb/lancedb-linux-arm64-gnu@0.11.0':
+  '@lancedb/lancedb-linux-arm64-musl@0.23.0':
     optional: true
 
-  '@lancedb/lancedb-linux-x64-gnu@0.11.0':
+  '@lancedb/lancedb-linux-x64-gnu@0.23.0':
     optional: true
 
-  '@lancedb/lancedb-win32-x64-msvc@0.11.0':
+  '@lancedb/lancedb-linux-x64-musl@0.23.0':
     optional: true
 
-  '@lancedb/lancedb@0.11.0(apache-arrow@17.0.0)':
+  '@lancedb/lancedb-win32-arm64-msvc@0.23.0':
+    optional: true
+
+  '@lancedb/lancedb-win32-x64-msvc@0.23.0':
+    optional: true
+
+  '@lancedb/lancedb@0.23.0(apache-arrow@17.0.0)':
     dependencies:
       apache-arrow: 17.0.0
       reflect-metadata: 0.2.2
     optionalDependencies:
-      '@lancedb/lancedb-darwin-arm64': 0.11.0
-      '@lancedb/lancedb-darwin-x64': 0.11.0
-      '@lancedb/lancedb-linux-arm64-gnu': 0.11.0
-      '@lancedb/lancedb-linux-x64-gnu': 0.11.0
-      '@lancedb/lancedb-win32-x64-msvc': 0.11.0
+      '@lancedb/lancedb-darwin-arm64': 0.23.0
+      '@lancedb/lancedb-linux-arm64-gnu': 0.23.0
+      '@lancedb/lancedb-linux-arm64-musl': 0.23.0
+      '@lancedb/lancedb-linux-x64-gnu': 0.23.0
+      '@lancedb/lancedb-linux-x64-musl': 0.23.0
+      '@lancedb/lancedb-win32-arm64-msvc': 0.23.0
+      '@lancedb/lancedb-win32-x64-msvc': 0.23.0
 
   '@mixmark-io/domino@2.2.0': {}
 
