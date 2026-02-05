@@ -59,18 +59,22 @@ class SearchPage {
 			minRating = (t > minRating) ? +t : minRating;
 		});
 
-		const params = new URLSearchParams({
-			tags: tags.join(','),
-			query: this.els.query.value,
-			fields: fields.join(','),
-			sortBy: this.els.sortBy.value,
-			...(minRating != null && { minRating }),
-		});
-
+		const query = this.els.query.value;
 		try {
-			const res = await fetch(`/api/search?${params}`);
-			const results = await res.json();
-			this._render(results);
+			let res;
+			if (tags.length > 0 || query || minRating != null) {
+				res = await fetch(`/api/search?${new URLSearchParams({
+					tags: tags.join(','),
+					query: query,
+					fields: fields.join(','),
+					sortBy: this.els.sortBy.value,
+					...(minRating != null && { minRating }),
+				})}`);
+			} else {
+				res = await fetch('/api/bookmarks');
+			}
+
+			this._render(await res.json());
 		} catch (err) {
 			this.els.tbody.innerHTML = `<tr><td colspan="3">Error: ${err.message}</td></tr>`;
 		}
@@ -127,7 +131,7 @@ class SearchPage {
 
 		this.updateWindow = window.open(
 			`/update.html?id=${id}`, '_blank',
-			`width=${width},height=${height},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`
+			`width=${width},height=${height},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`,
 		);
 	}
 

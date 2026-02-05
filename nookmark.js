@@ -11,8 +11,12 @@ const nookmark = {
 		await db.initialize();
 	},
 
-	async getRecentPages(limit = 20) {
+	async getRecentPages(limit) {
 		return await db.getRecent(limit);
+	},
+
+	async getDumpPages(limit) {
+		return await db.getDump(limit);
 	},
 
 	async findPageById(id) {
