@@ -11,27 +11,27 @@ const nookmark = {
 		await db.initialize();
 	},
 
-	async getRecentPages(limit) {
+	async getRecent(limit) {
 		return await db.getRecent(limit);
 	},
 
-	async getDumpPages(limit) {
+	async getDump(limit) {
 		return await db.getDump(limit);
 	},
 
-	async findPageById(id) {
+	async findById(id) {
 		return await db.findById(id);
 	},
 
-	async deletePageById(id) {
+	async deleteById(id) {
 		await db.deleteById(id);
 	},
 
-	async searchPages(options) {
+	async search(options) {
 		return await db.search(options);
 	},
 
-	async upsertPage({ id, url, title, memo, rating, tags, html }) {
+	async upsert({ id, url, title, memo, rating, tags, html }) {
 		let page = null;
 		page = id ?
 			await db.findById(id) :

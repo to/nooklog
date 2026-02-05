@@ -68,7 +68,7 @@ const useParams = (params, schema = PARAMS_SCHEMA) => {
 };
 
 app.get('/api/bookmarks/:id', handle(async (req, res) => {
-	const page = await nookmark.findPageById(req.params.id);
+	const page = await nookmark.findById(req.params.id);
 	if (!page)
 		return res.status(404).json({ error: 'Bookmark not found' });
 
@@ -87,29 +87,29 @@ app.post('/api/bookmarks/:id?', handle(async (req, res) => {
 	console.log(
 		`${b.id ? 'Update' : 'Save'}: ${b.title}\nURL: ${b.url}${b.id ? '\nID: ' + b.id : ''}`);
 
-	const result = await nookmark.upsertPage(b);
+	const result = await nookmark.upsert(b);
 	res.json({
 		id: result.page.id,
 	});
 }, 'Error: POST /api/bookmarks/:id?'));
 
 app.get('/api/bookmarks', handle(async (req, res) => {
-	res.json(await nookmark.getRecentPages(
+	res.json(await nookmark.getRecent(
 		useParams(req.query).limit));
 }, 'Error: GET /api/bookmarks'));
 
 app.get('/api/dump', handle(async (req, res) => {
-	res.json(await nookmark.getDumpPages(
+	res.json(await nookmark.getDump(
 		useParams(req.query).limit));
 }, 'Error: GET /api/dump'));
 
 app.get('/api/search', handle(async (req, res) => {
-	res.json(await nookmark.searchPages(
+	res.json(await nookmark.search(
 		useParams(req.query)));
 }, 'Error: GET /api/search'));
 
 app.delete('/api/bookmarks/:id', handle(async (req, res) => {
-	await nookmark.deletePageById(req.params.id);
+	await nookmark.deleteById(req.params.id);
 	res.json({ success: true });
 }, 'Error: DELETE /api/bookmarks/:id'));
 
