@@ -1,13 +1,14 @@
 class SearchPage {
-	constructor() {
+	constructor(nookmark) {
+		this.nookmark = nookmark;
 		this.els = {
-			form: document.getElementById('searchForm'),
-			query: document.getElementById('query'),
-			sortBy: document.getElementById('sortBy'),
-			loading: document.getElementById('loading'),
-			table: document.getElementById('resultsTable'),
-			tbody: document.getElementById('resultsBody'),
-			tags: document.querySelector('input[name=tags]'),
+			form: $('#searchForm'),
+			query: $('#query'),
+			sortBy: $('#sortBy'),
+			loading: $('#loading'),
+			table: $('#resultsTable'),
+			tbody: $('#resultsBody'),
+			tags: $('input[name=tags]'),
 		};
 
 		this.updateWindow = null;
@@ -16,25 +17,15 @@ class SearchPage {
 	}
 
 	async _init() {
-		const tags = await this._fetchTags();
-		this.tagComponent = new TagComponent(this.els.tags, {
-			whitelist: tags.sort((a, b) => a.length - b.length || a.localeCompare(b)),
-		});
-
 		const params = new URLSearchParams(location.search);
 		if (params.get('query'))
 			this.els.query.value = params.get('query');
 
 		this._search();
-	}
 
-	async _fetchTags() {
-		try {
-			const res = await fetch('json/tags.json');
-			return (await res.json()).tags || [];
-		} catch {
-			return [];
-		}
+		this.tagComponent = new TagComponent(this.els.tags, {
+			whitelist: await this.nookmark.getTags(),
+		});
 	}
 
 	_bindEvents() {
@@ -42,39 +33,37 @@ class SearchPage {
 			e.preventDefault();
 			this._search();
 		});
+
+		this.els.tbody.addEventListener('click', e => {
+			const btn = e.target.closest('button');
+			if (!btn)
+				return;
+
+			const id = btn.dataset.id;
+			if (btn.classList.contains('btn-edit'))
+				this._openEdit(id);
+			else if (btn.classList.contains('btn-delete'))
+				this._delete(id, btn);
+		});
 	}
 
 	async _search() {
 		this.els.loading.style.display = 'block';
 		this.els.table.style.display = 'none';
 
-		const fields = [...this.els.form.querySelectorAll('input[name=field]:checked')]
-			.map(el => el.value);
-
-		let minRating = null;
-		const tags = this.tagComponent.getTags().filter(t => {
-			if (!/^\d$/.test(t))
-				return true;
-
-			minRating = (t > minRating) ? +t : minRating;
-		});
-
+		const tags = this.tagComponent?.getTags() || [];
 		const query = this.els.query.value;
 		try {
-			let res;
-			if (tags.length > 0 || query || minRating != null) {
-				res = await fetch(`/api/search?${new URLSearchParams({
-					tags: tags.join(','),
-					query: query,
-					fields: fields.join(','),
+			const results = (tags.length > 0 || query)
+				? await this.nookmark.search({
+					tags,
+					query,
+					fields: [...$$('input[name=field]:checked')].map(el => el.value),
 					sortBy: this.els.sortBy.value,
-					...(minRating != null && { minRating }),
-				})}`);
-			} else {
-				res = await fetch('/api/bookmarks');
-			}
+				})
+				: await this.nookmark.getBookmarks();
 
-			this._render(await res.json());
+			this._render(results);
 		} catch (err) {
 			this.els.tbody.innerHTML = `<tr><td colspan="3">Error: ${err.message}</td></tr>`;
 		}
@@ -84,44 +73,26 @@ class SearchPage {
 	}
 
 	_render(results) {
-		this.els.tbody.innerHTML = '';
-
-		for (const r of results) {
-			const row = document.createElement('tr');
-			row.innerHTML = `
+		this.els.tbody.innerHTML = results.map(r => html`
+			<tr>
 				<td class="col-meta">
 					<span class="rating">${r.rating || '-'}</span>
 					<div class="tags">${(r.tags || []).join(', ')}</div>
 					<div class="dates">
-						<span>Updated: ${this._formatDate(r.updated_at)}</span>
-						<span>Created: ${this._formatDate(r.created_at)}</span>
+						<span>Updated: ${r.updated_at.toLocaleDateString()}</span>
+						<span>Created: ${r.created_at.toLocaleDateString()}</span>
 					</div>
 				</td>
 				<td class="col-content">
-					<a href="${this._escapeHtml(r.url)}" target="_blank" class="title">${this._escapeHtml(r.title)}</a>
-					<div class="memo">${this._escapeHtml(r.memo || '')}</div>
+					<a href="${r.url}" target="_blank" class="title">${r.title}</a>
+					<div class="memo">${r.memo || ''}</div>
 				</td>
 				<td class="col-actions">
 					<button class="btn-edit" data-id="${r.id}">Edit</button>
 					<button class="btn-delete" data-id="${r.id}">Delete</button>
 				</td>
-			`;
-
-			row.querySelector('.btn-edit').addEventListener('click', () => this._openEdit(r.id));
-			row.querySelector('.btn-delete').addEventListener('click', e => this._delete(r.id, e.target));
-
-			this.els.tbody.appendChild(row);
-		}
-	}
-
-	_formatDate(ts) {
-		return ts ? new Date(ts).toLocaleDateString() : '-';
-	}
-
-	_escapeHtml(text) {
-		const div = document.createElement('div');
-		div.textContent = text;
-		return div.innerHTML;
+			</tr>
+		`).join('');
 	}
 
 	_openEdit(id) {
@@ -140,10 +111,7 @@ class SearchPage {
 			return;
 
 		try {
-			const res = await fetch(`/api/bookmarks/${id}`, { method: 'DELETE' });
-			if (!res.ok)
-				throw new Error('Delete failed');
-
+			await this.nookmark.deleteBookmark(id);
 			button.closest('tr').remove();
 		} catch (err) {
 			alert(err.message);
@@ -151,4 +119,4 @@ class SearchPage {
 	}
 }
 
-new SearchPage();
+new SearchPage(new Nookmark());

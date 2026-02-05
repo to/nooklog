@@ -1,79 +1,32 @@
-class Nookmark {
-	constructor(apiBase = '/api/bookmarks') {
-		this.apiBase = apiBase;
-	}
-
-	async getBookmark(id) {
-		const res = await fetch(`${this.apiBase}/${id}`);
-		if (!res.ok)
-			throw new Error('Failed to load bookmark');
-		return await res.json();
-	}
-
-	async getTags() {
-		try {
-			const res = await fetch('json/tags.json');
-			const data = await res.json();
-			return data.tags || [];
-		} catch (err) {
-			console.error('Failed to load tags.json:', err);
-			return [];
-		}
-	}
-
-	async updateBookmark(bookmark) {
-		// 数値だけのタグの中で最大のものをレートとする
-		let rating = null;
-		const tags = bookmark.tags.filter(t => {
-			if (!/^\d$/.test(t))
-				return true;
-
-			rating = (t > rating) ? +t : rating;
-		});
-
-		const res = await fetch(`${this.apiBase}/${bookmark.id}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				title: bookmark.title,
-				memo: bookmark.memo,
-				tags: tags,
-				rating: rating,
-			}),
-		});
-
-		if (!res.ok)
-			throw new Error('Update failed');
-	}
-}
-
 class UpdateFormComponent {
 	constructor(nookmark) {
 		this.nookmark = nookmark;
+		this.id = new URLSearchParams(location.search).get('id');
+		if (!this.id)
+			return;
+
 		this.els = {
-			form: document.getElementById('updateForm'),
-			error: document.getElementById('error'),
-			url: document.getElementById('url'),
-			title: document.getElementById('title'),
-			memo: document.getElementById('memo'),
-			tags: document.querySelector('input[name=tags]'),
+			form: $('#updateForm'),
+			error: $('#error'),
+			url: $('#url'),
+			title: $('#title'),
+			memo: $('#memo'),
+			tags: $('input[name=tags]'),
 		};
 
 		this._bindEvents();
+		this._init();
 	}
 
-	async init(id) {
-		this.id = id;
-
+	async _init() {
 		try {
-			// タグとブックマークを並列で取得する
 			const [tags, bookmark] = await Promise.all([
 				this.nookmark.getTags(),
-				this.nookmark.getBookmark(id),
+				this.nookmark.getBookmark(this.id),
 			]);
 
 			this.tagComponent = new TagComponent(this.els.tags, {
-				whitelist: tags.sort((a, b) => a.length - b.length || a.localeCompare(b)),
+				whitelist: tags,
 			});
 
 			this._populateForm(bookmark);
@@ -107,7 +60,6 @@ class UpdateFormComponent {
 			await this._handleSubmit();
 		});
 
-		// Ctrl+Enter ショートカット
 		document.addEventListener('keydown', async e => {
 			if (e.ctrlKey && e.key === 'Enter')
 				await this._handleSubmit();
@@ -130,13 +82,4 @@ class UpdateFormComponent {
 	}
 }
 
-(async () => {
-	// 事前準備として空ページが開かれたか？
-	const id = new URLSearchParams(location.search).get('id');
-	if (!id)
-		return;
-
-	const nookmark = new Nookmark();
-	const formComponent = new UpdateFormComponent(nookmark);
-	formComponent.init(id);
-})();
+new UpdateFormComponent(new Nookmark());
