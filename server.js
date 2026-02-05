@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const PARAMS_SCHEMA = {
+	id: '',
 	url: '',
 	title: '',
 	memo: '',
@@ -57,12 +58,15 @@ const useParams = (params, schema = PARAMS_SCHEMA) => {
 		if (val == null)
 			continue;
 
-		if (Array.isArray(type))
-			res[key] = val ? val.split(',') : [];
-		else if (typeof type === 'number')
+		if (Array.isArray(type)) {
+			res[key] =
+				Array.isArray(val) ? val :
+					val ? val.split(',') : [];
+		} else if (typeof type === 'number') {
 			res[key] = parseInt(val) || undefined;
-		else
+		} else {
 			res[key] = val;
+		}
 	}
 	return res;
 };
