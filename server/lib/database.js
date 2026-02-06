@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const DB_DIR = path.join(__dirname, '..', '..', 'data', 'lancedb');
 
-class NookmarkDatabase {
+class Database {
 	constructor() {
 		this.db = null;
 		this.bookmarks = null;
@@ -123,8 +123,7 @@ class NookmarkDatabase {
 		if (conditions.length > 0)
 			builder = builder.where(conditions.join(' AND '));
 
-		// 正規表現に関する記号文字列を取り除く
-		query = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '');
+		query = query.trim();
 		if (query && fields.length > 0)
 			builder = builder.fullTextSearch(new MultiMatchQuery(query, fields));
 
@@ -135,8 +134,9 @@ class NookmarkDatabase {
 			// クエリワードやフレーズが含まれているもののみを抽出する
 			// (FTSで高速に広く取得し RegExpで絞り込む)
 			const patterns = (query.match(/".+?"|[^\s"]+/g) || [])
-				.map(w => w.replace(/^"|"$/g, ''))
-				.map(w => new RegExp(w, 'i'));
+				.map(w => w.replace(/^"|"$/g, '')) // クォートを外す
+				.map(w => new RegExp(
+					w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 			results = results.filter(r =>
 				patterns.every(p =>
 					fields.some(f => p.test(r[f]))));
@@ -167,5 +167,4 @@ function sqlValue(val) {
 	return val;
 }
 
-const db = new NookmarkDatabase();
-export default db;
+export default new Database();
