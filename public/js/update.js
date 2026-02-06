@@ -2,7 +2,6 @@ class UpdateFormComponent {
 	constructor(nookmark) {
 		this.nookmark = nookmark;
 
-		this.id = new URLSearchParams(location.search).get('id');
 		this.els = {
 			form: $('#updateForm'),
 			error: $('#error'),
@@ -18,12 +17,19 @@ class UpdateFormComponent {
 	}
 
 	async _init() {
+		const ps = getSearchParams();
+		this.id = ps.id;
+
+		if (ps.url)
+			this.els.url.value = ps.url;
+		if (ps.title)
+			this.els.title.value = ps.title;
+
 		try {
-			const url = new URLSearchParams(location.search).get('url');
 			const [tags, bookmark] = await Promise.all([
 				this.nookmark.getTags(),
 				this.id ? this.nookmark.getBookmark(this.id) :
-					url ? this.nookmark.findByUrl(url) : null,
+					ps.url ? this.nookmark.findByUrl(ps.url) : null,
 			]);
 
 			this.tagComponent = new TagComponent(this.els.tags, {

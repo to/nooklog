@@ -72,26 +72,23 @@ const useParams = (params, schema = PARAMS_SCHEMA) => {
 };
 
 app.get('/api/bookmarks/:id', handle(async (req, res) => {
-	const bm = await nookmark.findById(req.params.id);
-	if (!bm)
-		return res.status(404).json({ error: 'Bookmark not found' });
-
-	res.json(bm);
+	res.json(
+		await nookmark.findById(req.params.id));
 }, 'Error: GET /api/bookmarks/:id'));
 
 app.post('/api/bookmarks/:id?', handle(async (req, res) => {
-	const bm = Object.assign(
+	const bookmark = Object.assign(
 		useParams(req.params),
 		useParams(req.body));
 
 	// 新規作成の場合はURLが必須
-	if (!bm.id && !bm.url)
+	if (!bookmark.id && !bookmark.url)
 		return res.status(400).json({ error: 'Missing id or url' });
 
 	console.log(
-		`${bm.id ? 'Update' : 'Save'}: ${bm.title}\nURL: ${bm.url}${bm.id ? '\nID: ' + bm.id : ''}`);
+		`${bookmark.id ? 'Update' : 'Save'}: ${bookmark.title}\nURL: ${bookmark.url}${bookmark.id ? '\nID: ' + bookmark.id : ''}`);
 
-	const result = await nookmark.upsert(bm);
+	const result = await nookmark.upsert(bookmark);
 	res.json({
 		id: result.bookmark.id,
 	});
@@ -99,9 +96,9 @@ app.post('/api/bookmarks/:id?', handle(async (req, res) => {
 
 app.get('/api/bookmarks', handle(async (req, res) => {
 	const params = useParams(req.query);
-	return params.url ?
-		res.json(await nookmark.findByUrl(params.url)) :
-		res.json(await nookmark.getRecent(params.limit));
+	res.json(params.url ?
+		await nookmark.findByUrl(params.url) :
+		await nookmark.getRecent(params.limit));
 }, 'Error: GET /api/bookmarks'));
 
 app.get('/api/dump', handle(async (req, res) => {

@@ -12,7 +12,6 @@
 // @grant        GM_notification
 // @grant        GM_setValue
 // @grant        GM_getValue
-// @grant        GM_deleteValue
 // ==/UserScript==
 
 (() => {
@@ -20,16 +19,12 @@
 	const API_ENDPOINT = `${SERVER_ROOT}/api/bookmarks`;
 
 	// 予め保存したHTMLデータを復元する
-	if (location.href.startsWith(`${SERVER_ROOT}/update.html`) && location.search.includes('draft=true')) {
-		const draft = GM_getValue('draft_data');
-		if (draft) {
-			window.addEventListener('load', () => {
-				document.querySelector('#url').value = draft.url;
-				document.querySelector('#title').value = draft.title;
-				document.querySelector('#html').value = draft.html;
-				GM_deleteValue('draft_data');
-			});
-		}
+	if (location.href.startsWith(`${SERVER_ROOT}/update.html`)) {
+		const bookmark = GM_getValue('bookmark');
+		const url = new URLSearchParams(location.search).get('url');
+		if (bookmark && bookmark.url === url)
+			document.querySelector('#html').value = bookmark.html;
+
 		return;
 	}
 
@@ -57,8 +52,8 @@
 		};
 
 		if (openEdit) {
-			GM_setValue('draft_data', payload);
-			openUpdateWindow();
+			GM_setValue('bookmark', payload);
+			openUpdateWindow(payload);
 		} else {
 			// Background Save
 			GM_xmlhttpRequest({
@@ -88,13 +83,12 @@
 		alert('Nookmark unreachable. Is server running?');
 	}
 
-	function openUpdateWindow() {
+	function openUpdateWindow(payload) {
 		// openのサイズや高さのズレを修正する(詳細不明)
 		const left = screen.availWidth - WINDOW_WIDTH - (WINDOW_MARGIN + 9);
 		const top = screen.availHeight - (WINDOW_HEIGHT - 10) - WINDOW_MARGIN;
 
-		const url = encodeURIComponent(window.location.href);
-		window.open(`${SERVER_ROOT}/update.html?draft=true&url=${url}`, '_blank',
+		window.open(`${SERVER_ROOT}/update.html?url=${encodeURIComponent(payload.url)}&title=${encodeURIComponent(payload.title)}`, '_blank',
 			`width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`);
 	}
 })();

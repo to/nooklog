@@ -1,5 +1,6 @@
 const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
+const getSearchParams = () => Object.fromEntries(new URLSearchParams(location.search));
 
 const _escape = document.createElement('div');
 const html = (strings, ...values) => strings.reduce((acc, str, i) => {
