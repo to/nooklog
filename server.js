@@ -98,8 +98,10 @@ app.post('/api/bookmarks/:id?', handle(async (req, res) => {
 }, 'Error: POST /api/bookmarks/:id?'));
 
 app.get('/api/bookmarks', handle(async (req, res) => {
-	res.json(await nookmark.getRecent(
-		useParams(req.query).limit));
+	const params = useParams(req.query);
+	return params.url ?
+		res.json(await nookmark.findByUrl(params.url)) :
+		res.json(await nookmark.getRecent(params.limit));
 }, 'Error: GET /api/bookmarks'));
 
 app.get('/api/dump', handle(async (req, res) => {

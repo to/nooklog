@@ -23,6 +23,10 @@ const nookmark = {
 		return await db.findById(id);
 	},
 
+	async findByUrl(url) {
+		return await db.findByUrl(url);
+	},
+
 	async deleteById(id) {
 		await db.deleteById(id);
 	},

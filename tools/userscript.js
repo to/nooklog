@@ -93,7 +93,8 @@
 		const left = screen.availWidth - WINDOW_WIDTH - (WINDOW_MARGIN + 9);
 		const top = screen.availHeight - (WINDOW_HEIGHT - 10) - WINDOW_MARGIN;
 
-		window.open(`${SERVER_ROOT}/update.html?draft=true`, '_blank',
+		const url = encodeURIComponent(window.location.href);
+		window.open(`${SERVER_ROOT}/update.html?draft=true&url=${url}`, '_blank',
 			`width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`);
 	}
 })();

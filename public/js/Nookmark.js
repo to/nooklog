@@ -17,6 +17,12 @@ class Nookmark {
 		return this._populate(await res.json());
 	}
 
+	async findByUrl(url) {
+		const res = await fetch(`${this.apiBase}?${new URLSearchParams({ url })}`);
+		const json = await res.json();
+		return json && this._populate(json);
+	}
+
 	async updateBookmark(bookmark) {
 		const { tags, rating } = this._separateRating(bookmark.tags);
 		const url = bookmark.id ? `${this.apiBase}/${bookmark.id}` : this.apiBase;
