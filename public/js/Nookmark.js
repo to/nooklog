@@ -1,15 +1,13 @@
 class Nookmark {
-	constructor(apiBase = '/api/bookmarks') {
-		this.apiBase = apiBase;
-	}
+	static apiBase = '/api/bookmarks';
 
-	async getTags() {
+	static async getTags() {
 		const res = await fetch('json/tags.json');
 		return (await res.json()).tags
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	}
 
-	async getBookmark(id) {
+	static async getBookmark(id) {
 		const res = await fetch(`${this.apiBase}/${id}`);
 		if (!res.ok)
 			throw new Error('Failed to load bookmark');
@@ -17,13 +15,13 @@ class Nookmark {
 		return this._populate(await res.json());
 	}
 
-	async findByUrl(url) {
+	static async findByUrl(url) {
 		const res = await fetch(`${this.apiBase}?${new URLSearchParams({ url })}`);
 		const json = await res.json();
 		return json && this._populate(json);
 	}
 
-	async updateBookmark(bookmark) {
+	static async updateBookmark(bookmark) {
 		const { tags, rating } = this._separateRating(bookmark.tags);
 		const url = bookmark.id ? `${this.apiBase}/${bookmark.id}` : this.apiBase;
 		const res = await fetch(url, {
@@ -43,18 +41,18 @@ class Nookmark {
 			throw new Error('Update failed');
 	}
 
-	async deleteBookmark(id) {
+	static async deleteBookmark(id) {
 		const res = await fetch(`${this.apiBase}/${id}`, { method: 'DELETE' });
 		if (!res.ok)
 			throw new Error('Delete failed');
 	}
 
-	async getBookmarks() {
+	static async getBookmarks() {
 		const res = await fetch(this.apiBase);
 		return (await res.json()).map(this._populate);
 	}
 
-	async search({ tags, query, fields, sortBy }) {
+	static async search({ tags, query, fields, sortBy }) {
 		let minRating;
 		({ tags, rating: minRating } = this._separateRating(tags));
 
@@ -68,13 +66,13 @@ class Nookmark {
 		return (await res.json()).map(this._populate);
 	}
 
-	_populate(r) {
+	static _populate(r) {
 		r.created_at = new Date(r.created_at);
 		r.updated_at = new Date(r.updated_at);
 		return r;
 	}
 
-	_separateRating(tags) {
+	static _separateRating(tags) {
 		let rating = null;
 		const filtered = tags.filter(t => {
 			if (!/^\d$/.test(t))

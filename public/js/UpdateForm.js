@@ -1,7 +1,5 @@
-class UpdateFormComponent {
-	constructor(nookmark) {
-		this.nookmark = nookmark;
-
+class UpdateForm {
+	constructor() {
 		this.els = {
 			form: $('#updateForm'),
 			error: $('#error'),
@@ -11,6 +9,8 @@ class UpdateFormComponent {
 			tags: $('input[name=tags]'),
 			html: $('#html'),
 		};
+		this.tagInput = new TagInput(this.els.tags);
+		this.tagInput.focus();
 
 		this._bindEvents();
 		this._init();
@@ -26,15 +26,11 @@ class UpdateFormComponent {
 			this.els.title.value = ps.title;
 
 		try {
-			const [tags, bookmark] = await Promise.all([
-				this.nookmark.getTags(),
-				this.id ? this.nookmark.getBookmark(this.id) :
-					ps.url ? this.nookmark.findByUrl(ps.url) : null,
-			]);
-
-			this.tagComponent = new TagComponent(this.els.tags, {
-				whitelist: tags,
-			});
+			const bookmark =
+				this.id ?
+					await Nookmark.getBookmark(this.id) :
+					ps.url ?
+						await Nookmark.findByUrl(ps.url) : null;
 
 			if (bookmark)
 				this._populate(bookmark);
@@ -47,10 +43,8 @@ class UpdateFormComponent {
 		this.els.url.value = bookmark.url;
 		this.els.title.value = bookmark.title;
 		this.els.memo.value = bookmark.memo || '';
-		this.tagComponent.setTags(
+		this.tagInput.setTags(
 			[].concat(bookmark.rating || [], bookmark.tags || []));
-
-		this.tagComponent.focus();
 	}
 
 	showError(message) {
@@ -77,12 +71,12 @@ class UpdateFormComponent {
 	async _handleSubmit() {
 		this.hideError();
 		try {
-			await this.nookmark.updateBookmark({
+			await Nookmark.updateBookmark({
 				id: this.id,
 				url: this.els.url.value,
 				title: this.els.title.value,
 				memo: this.els.memo.value,
-				tags: this.tagComponent.getTags(),
+				tags: this.tagInput.getTags(),
 				html: this.els.html.value,
 			});
 			window.close();
@@ -92,4 +86,4 @@ class UpdateFormComponent {
 	}
 }
 
-new UpdateFormComponent(new Nookmark());
+new UpdateForm();

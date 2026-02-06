@@ -1,6 +1,5 @@
 class SearchPage {
-	constructor(nookmark) {
-		this.nookmark = nookmark;
+	constructor() {
 		this.els = {
 			form: $('#searchForm'),
 			query: $('#query'),
@@ -10,22 +9,18 @@ class SearchPage {
 			tbody: $('#resultsBody'),
 			tags: $('input[name=tags]'),
 		};
+		this.tagInput = new TagInput(this.els.tags);
+		this.els.query.focus();
 
-		this.updateWindow = null;
 		this._bindEvents();
 		this._init();
 	}
 
 	async _init() {
-		const params = new URLSearchParams(location.search);
-		if (params.get('query'))
-			this.els.query.value = params.get('query');
+		const ps = getSearchParams();
+		this.els.query.value = ps.query || '';
 
 		this._search();
-
-		this.tagComponent = new TagComponent(this.els.tags, {
-			whitelist: await this.nookmark.getTags(),
-		});
 	}
 
 	_bindEvents() {
@@ -51,17 +46,17 @@ class SearchPage {
 		this.els.loading.style.display = 'block';
 		this.els.table.style.display = 'none';
 
-		const tags = this.tagComponent?.getTags() || [];
+		const tags = this.tagInput?.getTags() || [];
 		const query = this.els.query.value;
 		try {
 			const results = (tags.length > 0 || query)
-				? await this.nookmark.search({
+				? await Nookmark.search({
 					tags,
 					query,
 					fields: [...$$('input[name=field]:checked')].map(el => el.value),
 					sortBy: this.els.sortBy.value,
 				})
-				: await this.nookmark.getBookmarks();
+				: await Nookmark.getBookmarks();
 
 			this._render(results);
 		} catch (err) {
@@ -99,8 +94,7 @@ class SearchPage {
 		const width = 500, height = 480, margin = 25;
 		const left = screen.availWidth - width - (margin + 9);
 		const top = screen.availHeight - (height - 10) - margin;
-
-		this.updateWindow = window.open(
+		window.open(
 			`/update.html?id=${id}`, '_blank',
 			`width=${width},height=${height},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`,
 		);
@@ -111,7 +105,7 @@ class SearchPage {
 			return;
 
 		try {
-			await this.nookmark.deleteBookmark(id);
+			await Nookmark.deleteBookmark(id);
 			button.closest('tr').remove();
 		} catch (err) {
 			alert(err.message);
@@ -119,4 +113,4 @@ class SearchPage {
 	}
 }
 
-new SearchPage(new Nookmark());
+new SearchPage();
