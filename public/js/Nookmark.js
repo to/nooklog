@@ -14,7 +14,7 @@ class Nookmark {
 		if (!res.ok)
 			throw new Error('Failed to load bookmark');
 
-		return this._hydrate(await res.json());
+		return this._populate(await res.json());
 	}
 
 	async updateBookmark(bookmark) {
@@ -23,6 +23,7 @@ class Nookmark {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
+				url: bookmark.url,
 				title: bookmark.title,
 				memo: bookmark.memo,
 				tags: tags,
@@ -42,7 +43,7 @@ class Nookmark {
 
 	async getBookmarks() {
 		const res = await fetch(this.apiBase);
-		return (await res.json()).map(this._hydrate);
+		return (await res.json()).map(this._populate);
 	}
 
 	async search({ tags, query, fields, sortBy }) {
@@ -56,10 +57,10 @@ class Nookmark {
 			sortBy,
 			...(minRating != null && { minRating }),
 		})}`);
-		return (await res.json()).map(this._hydrate);
+		return (await res.json()).map(this._populate);
 	}
 
-	_hydrate(r) {
+	_populate(r) {
 		r.created_at = new Date(r.created_at);
 		r.updated_at = new Date(r.updated_at);
 		return r;

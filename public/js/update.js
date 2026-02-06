@@ -1,6 +1,7 @@
 class UpdateFormComponent {
 	constructor(nookmark) {
 		this.nookmark = nookmark;
+
 		this.id = new URLSearchParams(location.search).get('id');
 		if (!this.id)
 			return;
@@ -29,13 +30,13 @@ class UpdateFormComponent {
 				whitelist: tags,
 			});
 
-			this._populateForm(bookmark);
+			this._populate(bookmark);
 		} catch (err) {
 			this.showError(err.message);
 		}
 	}
 
-	_populateForm(bookmark) {
+	_populate(bookmark) {
 		this.els.url.value = bookmark.url;
 		this.els.title.value = bookmark.title;
 		this.els.memo.value = bookmark.memo || '';
@@ -71,6 +72,7 @@ class UpdateFormComponent {
 		try {
 			await this.nookmark.updateBookmark({
 				id: this.id,
+				url: this.els.url.value,
 				title: this.els.title.value,
 				memo: this.els.memo.value,
 				tags: this.tagComponent.getTags(),

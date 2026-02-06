@@ -72,28 +72,28 @@ const useParams = (params, schema = PARAMS_SCHEMA) => {
 };
 
 app.get('/api/bookmarks/:id', handle(async (req, res) => {
-	const page = await nookmark.findById(req.params.id);
-	if (!page)
+	const bm = await nookmark.findById(req.params.id);
+	if (!bm)
 		return res.status(404).json({ error: 'Bookmark not found' });
 
-	res.json(page);
+	res.json(bm);
 }, 'Error: GET /api/bookmarks/:id'));
 
 app.post('/api/bookmarks/:id?', handle(async (req, res) => {
-	const b = Object.assign(
+	const bm = Object.assign(
 		useParams(req.params),
 		useParams(req.body));
 
 	// 新規作成の場合はURLが必須
-	if (!b.id && !b.url)
+	if (!bm.id && !bm.url)
 		return res.status(400).json({ error: 'Missing id or url' });
 
 	console.log(
-		`${b.id ? 'Update' : 'Save'}: ${b.title}\nURL: ${b.url}${b.id ? '\nID: ' + b.id : ''}`);
+		`${bm.id ? 'Update' : 'Save'}: ${bm.title}\nURL: ${bm.url}${bm.id ? '\nID: ' + bm.id : ''}`);
 
-	const result = await nookmark.upsert(b);
+	const result = await nookmark.upsert(bm);
 	res.json({
-		id: result.page.id,
+		id: result.bookmark.id,
 	});
 }, 'Error: POST /api/bookmarks/:id?'));
 

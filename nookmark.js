@@ -32,12 +32,12 @@ const nookmark = {
 	},
 
 	async upsert({ id, url, title, memo, rating, tags, html }) {
-		let page = null;
-		page = id ?
+		let bm = null;
+		bm = id ?
 			await db.findById(id) :
 			await db.findByUrl(url);
 
-		const isNew = !page;
+		const isNew = !bm;
 		const now = Date.now();
 
 		// 新規作成時の初期化
@@ -45,7 +45,7 @@ const nookmark = {
 			if (!url)
 				throw new Error('URL is required for new pages');
 
-			page = {
+			bm = {
 				id: crypto.randomUUID(),
 				url: url,
 				title: title || '',
@@ -59,45 +59,45 @@ const nookmark = {
 		} else if (!memo && !rating && !tags) {
 			return {
 				isNew: isNew,
-				page: page,
+				bookmark: bm,
 			};
 		}
-		page.updated_at = now;
+		bm.updated_at = now;
 
 		let content = null;
 		if (html) {
 			const parsed = processHtml(url, title, html);
-			page.title = parsed.title;
+			bm.title = parsed.title;
 			if (isNew)
-				page.keywords = parsed.keywords || [];
+				bm.keywords = parsed.keywords || [];
 
 			content = {
-				id: page.id,
+				id: bm.id,
 				html: parsed.cleanHtml,
 				markdown: parsed.markdown,
 			};
 		}
 
 		// データベースに保存または更新
-		_.merge(page, { title, memo, rating, tags });
-		await db.upsert(page, content);
+		_.merge(bm, { url, title, memo, rating, tags });
+		await db.upsert(bm, content);
 
 		// Pinboard連携
 		if (process.env.PINBOARD_TOKEN) {
 			pinboard.add({
-				url: page.url,
-				description: page.title,
-				extended: page.memo,
-				tags: `${(rating != null) ? rating : ''} ${page.tags ? page.tags.join(' ') : ''}`,
+				url: bm.url,
+				description: bm.title,
+				extended: bm.memo,
+				tags: `${(rating != null) ? rating : ''} ${bm.tags ? bm.tags.join(' ') : ''}`,
 				replace: 'yes',
 			}).catch(() => { });
 		} else {
-			console.log(`Pinboard: skipped.\n${page.title} \n${page.url} `);
+			console.log(`Pinboard: skipped.\n${bm.title} \n${bm.url} `);
 		}
 
 		return {
 			isNew: isNew,
-			page: page,
+			bookmark: bm,
 		};
 	},
 };
