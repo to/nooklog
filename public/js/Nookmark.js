@@ -19,7 +19,8 @@ class Nookmark {
 
 	async updateBookmark(bookmark) {
 		const { tags, rating } = this._separateRating(bookmark.tags);
-		const res = await fetch(`${this.apiBase}/${bookmark.id}`, {
+		const url = bookmark.id ? `${this.apiBase}/${bookmark.id}` : this.apiBase;
+		const res = await fetch(url, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -28,6 +29,7 @@ class Nookmark {
 				memo: bookmark.memo,
 				tags: tags,
 				rating: rating,
+				html: bookmark.html,
 			}),
 		});
 

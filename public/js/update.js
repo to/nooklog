@@ -3,8 +3,6 @@ class UpdateFormComponent {
 		this.nookmark = nookmark;
 
 		this.id = new URLSearchParams(location.search).get('id');
-		if (!this.id)
-			return;
 
 		this.els = {
 			form: $('#updateForm'),
@@ -13,6 +11,7 @@ class UpdateFormComponent {
 			title: $('#title'),
 			memo: $('#memo'),
 			tags: $('input[name=tags]'),
+			html: $('#html'),
 		};
 
 		this._bindEvents();
@@ -23,14 +22,15 @@ class UpdateFormComponent {
 		try {
 			const [tags, bookmark] = await Promise.all([
 				this.nookmark.getTags(),
-				this.nookmark.getBookmark(this.id),
+				this.id && this.nookmark.getBookmark(this.id),
 			]);
 
 			this.tagComponent = new TagComponent(this.els.tags, {
 				whitelist: tags,
 			});
 
-			this._populate(bookmark);
+			if (bookmark)
+				this._populate(bookmark);
 		} catch (err) {
 			this.showError(err.message);
 		}
@@ -76,6 +76,7 @@ class UpdateFormComponent {
 				title: this.els.title.value,
 				memo: this.els.memo.value,
 				tags: this.tagComponent.getTags(),
+				html: this.els.html.value,
 			});
 			window.close();
 		} catch (err) {

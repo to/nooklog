@@ -10,10 +10,28 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
 // @grant        GM_notification
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
 // ==/UserScript==
 
-(function () {
-	const API_ENDPOINT = 'http://localhost:3000/api/bookmarks';
+(() => {
+	const SERVER_ROOT = 'http://localhost:3000';
+	const API_ENDPOINT = `${SERVER_ROOT}/api/bookmarks`;
+
+	// 予め保存したHTMLデータを復元する
+	if (location.href.startsWith(`${SERVER_ROOT}/update.html`) && location.search.includes('draft=true')) {
+		const draft = GM_getValue('draft_data');
+		if (draft) {
+			window.addEventListener('load', () => {
+				document.querySelector('#url').value = draft.url;
+				document.querySelector('#title').value = draft.title;
+				document.querySelector('#html').value = draft.html;
+				GM_deleteValue('draft_data');
+			});
+		}
+		return;
+	}
 
 	const WINDOW_WIDTH = 500;
 	const WINDOW_HEIGHT = 480;
@@ -31,35 +49,38 @@
 	});
 
 	function capturePage({ openEdit = false, rating }) {
-		GM_xmlhttpRequest({
-			method: 'POST',
-			url: API_ENDPOINT,
-			headers: { 'Content-Type': 'application/json' },
-			data: JSON.stringify({
-				url: window.location.href,
-				title: document.title,
-				html: document.documentElement.outerHTML,
-				rating: rating,
-			}),
-			onload: res => handleResponse(res, openEdit),
-			onerror: handleError,
-		});
+		const payload = {
+			url: window.location.href,
+			title: document.title,
+			html: document.documentElement.outerHTML,
+			rating: rating,
+		};
+
+		if (openEdit) {
+			GM_setValue('draft_data', payload);
+			openUpdateWindow();
+		} else {
+			// Background Save
+			GM_xmlhttpRequest({
+				method: 'POST',
+				url: API_ENDPOINT,
+				headers: { 'Content-Type': 'application/json' },
+				data: JSON.stringify(payload),
+				onload: res => handleResponse(res),
+				onerror: handleError,
+			});
+		}
 	}
 
-	function handleResponse(res, openEdit) {
+	function handleResponse(res) {
 		if (res.status != 200)
 			return alert(`Nookmark Save Failed: ${res.responseText}`);
 
-		const data = JSON.parse(res.responseText);
-		if (openEdit) {
-			openUpdateWindow(data.id);
-		} else {
-			GM_notification({
-				title: 'Nookmark',
-				text: 'Saved: ' + document.title,
-				timeout: NOTIFICATION_TIMEOUT,
-			});
-		}
+		GM_notification({
+			title: 'Nookmark',
+			text: 'Saved: ' + document.title,
+			timeout: NOTIFICATION_TIMEOUT,
+		});
 	}
 
 	function handleError(err) {
@@ -67,12 +88,12 @@
 		alert('Nookmark unreachable. Is server running?');
 	}
 
-	function openUpdateWindow(id) {
+	function openUpdateWindow() {
 		// openのサイズや高さのズレを修正する(詳細不明)
 		const left = screen.availWidth - WINDOW_WIDTH - (WINDOW_MARGIN + 9);
 		const top = screen.availHeight - (WINDOW_HEIGHT - 10) - WINDOW_MARGIN;
 
-		window.open(`http://localhost:3000/update.html?id=${id}`, '_blank',
+		window.open(`${SERVER_ROOT}/update.html?draft=true`, '_blank',
 			`width=${WINDOW_WIDTH},height=${WINDOW_HEIGHT},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`);
 	}
 })();
