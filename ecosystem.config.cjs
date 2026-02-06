@@ -1,7 +1,7 @@
 module.exports = {
 	apps: [{
 		name: 'nookmark',
-		script: 'server.js',
+		script: 'server/server.js',
 		watch: true,
 		ignore_watch: [
 			'node_modules',

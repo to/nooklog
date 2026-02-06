@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import nookmark from './nookmark.js';
+import nookmark from './lib/nookmark.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,19 +42,26 @@ process.on('unhandledRejection', (reason, promise) => {
 	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-const handle = (handler, errorContext) => async (req, res) => {
-	try {
-		await handler(req, res);
-	} catch (error) {
-		console.error(`${errorContext}:`, error);
-		res.status(500).json({ error: error.message });
-	}
-};
+function handle(handler, errorContext) {
+	return async (req, res) => {
+		// データベースの空の返り値などを許容する
+		res._json = res.json;
+		res.json = body => res._json.call(res, body === undefined ? null : body);
 
-const useParams = (params, schema = PARAMS_SCHEMA) => {
+		const ps = useParams({ ...req.query, ...req.body, ...req.params });
+		try {
+			await handler(req, res, ps);
+		} catch (error) {
+			console.error(`${errorContext}:`, error);
+			res.status(500).json({ error: error.message });
+		}
+	};
+}
+
+function useParams(ps, schema = PARAMS_SCHEMA) {
 	const res = {};
 	for (const [key, type] of Object.entries(schema)) {
-		const val = params[key];
+		const val = ps[key];
 		if (val == null)
 			continue;
 
@@ -69,50 +76,43 @@ const useParams = (params, schema = PARAMS_SCHEMA) => {
 		}
 	}
 	return res;
-};
+}
 
-app.get('/api/bookmarks/:id', handle(async (req, res) => {
+app.get('/api/bookmarks/:id', handle(async (req, res, ps) => {
 	res.json(
-		await nookmark.findById(req.params.id));
+		await nookmark.findById(ps.id));
 }, 'Error: GET /api/bookmarks/:id'));
 
-app.post('/api/bookmarks/:id?', handle(async (req, res) => {
-	const bookmark = Object.assign(
-		useParams(req.params),
-		useParams(req.body));
-
+app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 	// 新規作成の場合はURLが必須
-	if (!bookmark.id && !bookmark.url)
+	if (!ps.id && !ps.url)
 		return res.status(400).json({ error: 'Missing id or url' });
 
 	console.log(
-		`${bookmark.id ? 'Update' : 'Save'}: ${bookmark.title}\nURL: ${bookmark.url}${bookmark.id ? '\nID: ' + bookmark.id : ''}`);
+		`${ps.id ? 'Update' : 'Save'}: ${ps.title}\nURL: ${ps.url}${ps.id ? '\nID: ' + ps.id : ''}`);
 
-	const result = await nookmark.upsert(bookmark);
+	const result = await nookmark.upsert(ps);
 	res.json({
 		id: result.bookmark.id,
 	});
 }, 'Error: POST /api/bookmarks/:id?'));
 
-app.get('/api/bookmarks', handle(async (req, res) => {
-	const params = useParams(req.query);
-	res.json(params.url ?
-		await nookmark.findByUrl(params.url) :
-		await nookmark.getRecent(params.limit));
+app.get('/api/bookmarks', handle(async (req, res, ps) => {
+	res.json(ps.url ?
+		await nookmark.findByUrl(ps.url) :
+		await nookmark.getRecent(ps.limit));
 }, 'Error: GET /api/bookmarks'));
 
-app.get('/api/dump', handle(async (req, res) => {
-	res.json(await nookmark.getDump(
-		useParams(req.query).limit));
+app.get('/api/dump', handle(async (req, res, ps) => {
+	res.json(await nookmark.getDump(ps.limit));
 }, 'Error: GET /api/dump'));
 
-app.get('/api/search', handle(async (req, res) => {
-	res.json(await nookmark.search(
-		useParams(req.query)));
+app.get('/api/search', handle(async (req, res, ps) => {
+	res.json(await nookmark.search(ps));
 }, 'Error: GET /api/search'));
 
-app.delete('/api/bookmarks/:id', handle(async (req, res) => {
-	await nookmark.deleteById(req.params.id);
+app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
+	await nookmark.deleteById(ps.id);
 	res.json({ success: true });
 }, 'Error: DELETE /api/bookmarks/:id'));
 

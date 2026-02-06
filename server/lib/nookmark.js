@@ -1,8 +1,8 @@
 import crypto from 'crypto';
-import { processHtml } from './lib/librarian.js';
-import Pinboard from './lib/pinboard.js';
-import db from './lib/database.js';
-import _ from './lib/util.js';
+import { processHtml } from './librarian.js';
+import Pinboard from './pinboard.js';
+import db from './database.js';
+import _ from './util.js';
 
 const pinboard = new Pinboard();
 

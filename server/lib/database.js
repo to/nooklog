@@ -7,7 +7,7 @@ import { bench } from './util.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DB_DIR = path.join(__dirname, '..', 'data', 'lancedb');
+const DB_DIR = path.join(__dirname, '..', '..', 'data', 'lancedb');
 
 class NookmarkDatabase {
 	constructor() {
@@ -45,13 +45,13 @@ class NookmarkDatabase {
 	async findByUrl(url) {
 		const results = await this.bookmarks.query()
 			.where(sql`url = ${url}`).limit(1).toArray();
-		return this._populate(results)[0] ?? null;
+		return this._populate(results)[0];
 	}
 
 	async findById(id) {
 		const results = await this.bookmarks.query()
 			.where(sql`id = ${id}`).limit(1).toArray();
-		return this._populate(results)[0] ?? null;
+		return this._populate(results)[0];
 	}
 
 	async upsert(bookmark, content) {
