@@ -22,18 +22,13 @@ class Nookmark {
 	}
 
 	static async updateBookmark(bookmark) {
-		const { tags, rating } = this._separateRating(bookmark.tags);
 		const url = bookmark.id ? `${this.apiBase}/${bookmark.id}` : this.apiBase;
 		const res = await fetch(url, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				url: bookmark.url,
-				title: bookmark.title,
-				memo: bookmark.memo,
-				tags: tags,
-				rating: rating,
-				html: bookmark.html,
+				...bookmark,
+				...this._separateRating(bookmark.tags),
 			}),
 		});
 
@@ -53,15 +48,9 @@ class Nookmark {
 	}
 
 	static async search({ tags, query, fields, sortBy }) {
-		let minRating;
-		({ tags, rating: minRating } = this._separateRating(tags));
-
 		const res = await fetch(`/api/search?${new URLSearchParams({
-			tags: tags.join(','),
-			query,
-			fields: fields.join(','),
-			sortBy,
-			...(minRating != null && { minRating }),
+			query, fields, sortBy,
+			...this._separateRating(tags),
 		})}`);
 		return (await res.json()).map(this._populate);
 	}

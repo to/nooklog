@@ -16,7 +16,6 @@ const PARAMS_SCHEMA = {
 	tags: [],
 	query: '',
 	fields: [],
-	minRating: 0,
 	sortBy: '',
 	limit: 0,
 };

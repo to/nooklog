@@ -115,7 +115,7 @@ class Database {
 	}
 
 	async search({
-		tags = [], query = '', fields = [], minRating, sortBy = 'updated_at', limit = 200 }) {
+		tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 200 }) {
 
 		let builder = this.bookmarks.query();
 
@@ -123,8 +123,8 @@ class Database {
 		if (tags.length > 0)
 			conditions.push(sql`array_has_all(tags, ${tags})`);
 
-		if (minRating != null)
-			conditions.push(sql`rating >= ${minRating}`);
+		if (rating != null)
+			conditions.push(sql`rating >= ${rating}`);
 
 		if (conditions.length > 0)
 			builder = builder.where(conditions.join(' AND '));
