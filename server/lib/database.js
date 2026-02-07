@@ -72,23 +72,6 @@ class Database {
 		this.optimize();
 	}
 
-	async optimize() {
-		// 断片化が進行していなければ最適化をスキップする
-		const stats = await this.bookmarks.stats();
-		const fragments = stats.fragmentStats.numSmallFragments;
-		if (fragments < OPTIMIZE_THRESHOLD)
-			return;
-
-		for (const table of [this.bookmarks, this.contents]) {
-			await bench(async () => {
-				await table.optimize({
-					cleanupOlderThan: new Date(
-						Date.now() - KEEP_VERSIONS_DAYS * 24 * 60 * 60 * 1000),
-				});
-			}, `database.optimize: ${table.name}(fragments: ${fragments})`);
-		}
-	}
-
 	async deleteById(id) {
 		await this.bookmarks.delete(sql`id = ${id}`);
 		await this.contents.delete(sql`id = ${id}`);
@@ -169,6 +152,27 @@ class Database {
 			results
 				.sort((a, b) => b[sortBy] - a[sortBy])
 				.slice(0, limit));
+	}
+
+	async optimize() {
+		// 断片化が進行していなければ最適化をスキップする
+		let stats;
+		await bench(async () => {
+			stats = await this.bookmarks.stats();
+		}, 'database.optimize(stats)');
+
+		const fragments = stats.fragmentStats.numSmallFragments;
+		if (fragments < OPTIMIZE_THRESHOLD)
+			return;
+
+		for (const table of [this.bookmarks, this.contents]) {
+			await bench(async () => {
+				await table.optimize({
+					cleanupOlderThan: new Date(
+						Date.now() - KEEP_VERSIONS_DAYS * 24 * 60 * 60 * 1000),
+				});
+			}, `database.optimize: ${table.name}(fragments: ${fragments})`);
+		}
 	}
 }
 
