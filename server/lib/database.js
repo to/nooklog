@@ -9,6 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const DB_DIR = path.join(__dirname, '..', '..', 'data', 'lancedb');
 
+const OPTIMIZE_THRESHOLD = 100;
+const KEEP_VERSIONS_DAYS = 7;
+
 class Database {
 	constructor() {
 		this.db = null;
@@ -63,7 +66,27 @@ class Database {
 				await this.contents.delete(sql`id = ${content.id}`);
 				await this.contents.add([content]);
 			}
-		}, 'db.upsert');
+		}, 'database.upsert');
+
+		// 最適化(非同期実行)
+		this.optimize();
+	}
+
+	async optimize() {
+		// 断片化が進行していなければ最適化をスキップする
+		const stats = await this.bookmarks.stats();
+		const fragments = stats.fragmentStats.numSmallFragments;
+		if (fragments < OPTIMIZE_THRESHOLD)
+			return;
+
+		for (const table of [this.bookmarks, this.contents]) {
+			await bench(async () => {
+				await table.optimize({
+					cleanupOlderThan: new Date(
+						Date.now() - KEEP_VERSIONS_DAYS * 24 * 60 * 60 * 1000),
+				});
+			}, `database.optimize: ${table.name}(fragments: ${fragments})`);
+		}
 	}
 
 	async deleteById(id) {

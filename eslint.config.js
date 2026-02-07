@@ -28,6 +28,7 @@ export default [
 			'nonblock-statement-body-position': ['error', 'below'], // カッコなしの時は必ず改行する！
 			'dot-location': ['error', 'property'], // ドットはプロパティと同じ行（ドット始まり）！
 			'no-constant-condition': 'off',
+			'no-unreachable': 'off',
 		},
 	},
 	// Userscript 用に GM_ 関数の定義を許可する設定
