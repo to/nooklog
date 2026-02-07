@@ -20,8 +20,6 @@ const PARAMS_SCHEMA = {
 	limit: 0,
 };
 
-console.log('Pinboard Token:', process.env.PINBOARD_TOKEN ? 'Loaded' : 'Missing');
-
 // Private Network Access (PNA) 対応
 // HTTPSのサイト(HuggingFaceなど)からlocalhostへのアクセスを許可するために必要
 // cors()ミドルウェアより前に書かないと、プリフライト(OPTIONS)リクエストでヘッダーが付与されずブロックされる

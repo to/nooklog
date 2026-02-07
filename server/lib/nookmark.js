@@ -1,10 +1,7 @@
 import crypto from 'crypto';
 import { processHtml } from './librarian.js';
-import Pinboard from './pinboard.js';
 import db from './database.js';
 import _ from './util.js';
-
-const pinboard = new Pinboard();
 
 const nookmark = {
 	async initialize() {
@@ -85,19 +82,6 @@ const nookmark = {
 		// データベースに保存または更新
 		_.merge(bm, { url, title, memo, rating, tags });
 		await db.upsert(bm, content);
-
-		// Pinboard連携
-		if (process.env.PINBOARD_TOKEN) {
-			pinboard.add({
-				url: bm.url,
-				description: bm.title,
-				extended: bm.memo,
-				tags: `${(rating != null) ? rating : ''} ${bm.tags ? bm.tags.join(' ') : ''}`,
-				replace: 'yes',
-			}).catch(() => { });
-		} else {
-			console.log(`Pinboard: skipped.\n${bm.title} \n${bm.url} `);
-		}
 
 		return {
 			isNew: isNew,
