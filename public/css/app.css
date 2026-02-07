@@ -6,27 +6,34 @@ body {
 }
 
 body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
 	padding: var(--space-sm);
 	margin: 0;
 	font-size: var(--font-size-xs);
-	color: var(--color-text-main);
-	background-color: var(--color-background-main);
+	color: var(--color-text-primary);
+	background-color: var(--color-background-primary);
+}
+
+a {
+	color: unset;
+	text-decoration: none;
 }
 
 input,
 textarea {
 	width: 100%;
 	padding: var(--space-xs);
-	margin-bottom: var(--space-xs);
 	outline: none;
-	background-color: var(--color-background-main);
-	border: 1px solid var(--color-border-main);
+	background-color: var(--color-background-primary);
+	border: 1px solid var(--color-border-primary);
 	border-radius: var(--radius-default);
 }
 
 input:focus,
 textarea:focus {
-	border-color: var(--color-border-main);
+	border-color: var(--color-border-primary);
 }
 
 textarea {
@@ -37,6 +44,7 @@ textarea {
 form {
 	display: flex;
 	flex-direction: column;
+	gap: var(--space-xs);
 	height: 100%;
 }
 
@@ -52,23 +60,37 @@ button:hover {
 	background-color: var(--color-primary-dark);
 }
 
+.btn-flat {
+	color: var(--color-text-primary);
+	background-color: var(--color-background-primary);
+}
+
+.btn-flat:hover {
+	background-color: var(--color-background-primary);
+	opacity: 0.7;
+}
+
+.btn-flat:active {
+	opacity: 1;
+}
+
 .error {
 	display: none;
 	margin-top: var(--space-xs);
 	color: var(--color-error);
 }
 
-/* --- Tagify Customization --- */
+/* ---- [Tagify] ---------------------------------- */
 .tagify {
-	--tags-border-color: var(--color-border-main);
-	--tags-focus-border-color: var(--color-border-main);
+	--tags-border-color: var(--color-border-primary);
+	--tags-focus-border-color: var(--color-border-primary);
 
-  --tag-bg: var(--color-primary);
-  --tag-text-color: var(--color-text-foreground);
-  --tag-hover: var(--color-primary-dark);
+	--tag-bg: var(--color-primary);
+	--tag-text-color: var(--color-text-foreground);
+	--tag-hover: var(--color-primary-dark);
 	--tag-border-radius: var(--radius-default);
 
-	margin-bottom: var(--space-xs);
+	/* margin-bottom: handled by gap */
 	border-radius: var(--radius-default);
 
 	&, *, *::before, *::after  {
@@ -92,7 +114,7 @@ button:hover {
 }
 
 .tagify__dropdown {
-  --tagify-dd-color-primary: var(--color-primary);
+	--tagify-dd-color-primary: var(--color-primary);
 
 	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
 	pointer-events: none;

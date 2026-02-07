@@ -30,15 +30,15 @@ class SearchPage {
 		});
 
 		this.els.tbody.addEventListener('click', e => {
-			const btn = e.target.closest('button');
-			if (!btn)
+			const button = e.target.closest('button');
+			if (!button)
 				return;
 
-			const id = btn.dataset.id;
-			if (btn.classList.contains('btn-edit'))
+			const id = button.dataset.id;
+			if (button.classList.contains('btn-edit'))
 				this._openEdit(id);
-			else if (btn.classList.contains('btn-delete'))
-				this._delete(id, btn);
+			else if (button.classList.contains('btn-delete'))
+				this._delete(id, button);
 		});
 	}
 
@@ -68,26 +68,30 @@ class SearchPage {
 	}
 
 	_render(results) {
-		this.els.tbody.innerHTML = results.map(r => html`
+		this.els.tbody.innerHTML = results.map(r => {
+			return html`
 			<tr>
-				<td class="col-meta">
-					<span class="rating">${r.rating || '-'}</span>
-					<div class="tags">${(r.tags || []).join(', ')}</div>
-					<div class="dates">
-						<span>Updated: ${r.updated_at.toLocaleDateString()}</span>
-						<span>Created: ${r.created_at.toLocaleDateString()}</span>
-					</div>
+				<td class="col-rating">
+					<span class="rating rating-${r.rating}">${'★'.repeat(r.rating)}</span>
 				</td>
 				<td class="col-content">
-					<a href="${r.url}" target="_blank" class="title">${r.title}</a>
-					<div class="memo">${r.memo || ''}</div>
+					<div class="content-wrapper">
+						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${r.title}</a>
+						<div class="memo">${r.memo || ''}</div>
+						<div class="tags">${(r.tags || []).join(' ')}</div>
+					</div>
 				</td>
 				<td class="col-actions">
-					<button class="btn-edit" data-id="${r.id}">Edit</button>
-					<button class="btn-delete" data-id="${r.id}">Delete</button>
+					<div class="actions-wrapper">
+						<div class="btn-group">
+							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">edit</span></button>
+							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">delete</span></button>
+						</div>
+						<span class="dates" title="${r.created_at.toLocaleDateString()}">${r.updated_at.toLocaleDateString()}</span>
+					</div>
 				</td>
-			</tr>
-		`).join('');
+			</tr>`;
+		}).join('');
 	}
 
 	_openEdit(id) {

@@ -11,13 +11,17 @@
 	--color-secondary-light: var(--color-blue-3);
 	--color-secondary-dark: var(--color-blue-8);
 
-	--color-text-main: var(--color-gray-9);
+	--color-text-primary: var(--color-gray-7);
+	--color-text-secondary: var(--color-gray-5);
 	--color-text-muted: var(--color-gray-3);
 	--color-text-foreground: var(--color-white);
 
-	--color-background-main: var(--color-gray-0);
+	--color-background-primary: var(--color-gray-0);
+	--color-background-secondary: var(--color-gray-2);
 
-	--color-border-main: var(--color-gray-5);
+	--color-border-primary: var(--color-gray-7);
+	--color-border-secondary: var(--color-gray-5);
+	--color-border-muted: var(--color-gray-3);
 	--color-border-active: var(--color-primary);
 
 	--color-success: var(--color-green-6);

@@ -4,9 +4,12 @@
 		"stylelint-config-recess-order"
 	],
 	"plugins": [
-		"stylelint-value-no-unknown-custom-properties"
+		"stylelint-value-no-unknown-custom-properties",
+		"@stylistic/stylelint-plugin"
 	],
 	"rules": {
+		"@stylistic/indentation": "tab",
+		"@stylistic/declaration-colon-space-after": "always-single-line",
 		"selector-class-pattern": null,
 		"custom-property-pattern": null,
 		"custom-property-empty-line-before": null,
@@ -14,13 +17,14 @@
 		"no-descending-specificity": null,
 		"property-no-vendor-prefix": true,
 		"import-notation": "string",
+		"block-no-empty": null,
 		"csstools/value-no-unknown-custom-properties": [
 			true,
 			{
 				"importFrom": [
-					"public/styles/color.css",
-					"public/styles/token.css",
-					"public/styles/theme.css"
+					"public/css/color.css",
+					"public/css/token.css",
+					"public/css/theme.css"
 				]
 			}
 		]
