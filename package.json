@@ -7,6 +7,7 @@
 	"scripts": {
 		"start": "node server/server.js",
 		"dev": "pm2 stop nookmark & node --watch server/server.js",
+		"dev:sync": "concurrently \"pnpm dev\" \"npx browser-sync start --proxy localhost:3000 --files public/**/*\"",
 		"pm2:start": "pm2 start ecosystem.config.cjs",
 		"pm2:stop": "pm2 stop nookmark",
 		"pm2:logs": "pm2 logs nookmark",
@@ -26,6 +27,7 @@
 	"devDependencies": {
 		"@eslint/js": "^9.39.2",
 		"@stylistic/stylelint-plugin": "^5.0.1",
+		"concurrently": "^9.2.1",
 		"eslint": "^9.39.2",
 		"globals": "^17.0.0",
 		"stylelint": "^16.26.1",
