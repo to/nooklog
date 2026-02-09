@@ -124,10 +124,21 @@ body {
 	}
 
 	& .tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2xs);
+		justify-content: flex-end;
 		margin-top: auto;
 		font-size: var(--font-size-xs);
 		color: var(--color-2);
-		text-align: right;
+	}
+
+	& span {
+		cursor: pointer;
+
+		&:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
 	}
 
 	& .dates {

@@ -35,6 +35,13 @@ class SearchPage {
 		});
 
 		this.els.tbody.addEventListener('click', e => {
+			const tag = e.target.closest('.tags span');
+			if (tag) {
+				this.tagInput.tagify.addTags([tag.textContent]);
+				this._search();
+				return;
+			}
+
 			const button = e.target.closest('button');
 			if (!button)
 				return;
@@ -83,7 +90,7 @@ class SearchPage {
 					<div class="content-wrapper">
 						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${r.title}</a>
 						<div class="memo">${r.memo || ''}</div>
-						<div class="tags">${(r.tags || []).join(' ')}</div>
+						<div class="tags">${(r.tags || []).map(t => `<span>${t}</span>`).join('')}</div>
 					</div>
 				</td>
 				<td class="col-actions">
