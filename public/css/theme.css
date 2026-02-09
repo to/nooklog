@@ -3,29 +3,13 @@
 @import 'reset.css';
 
 :root {
-	--color-primary: var(--color-gray-6);
-	--color-primary-light: var(--color-gray-3);
-	--color-primary-dark: var(--color-gray-8);
+	--color-3: oklch(from var(--color-gray-8) calc(l * 1.1) c h);
+	--color-2: var(--color-gray-5);
+	--color-1: var(--color-gray-2);
+	--color-0: var(--color-gray-0);
 
-	--color-secondary: var(--color-blue-6);
-	--color-secondary-light: var(--color-blue-3);
-	--color-secondary-dark: var(--color-blue-8);
-
-	--color-text-primary: var(--color-gray-7);
-	--color-text-secondary: var(--color-gray-5);
-	--color-text-muted: var(--color-gray-3);
-	--color-text-foreground: var(--color-white);
-
-	--color-background-primary: var(--color-gray-0);
-	--color-background-secondary: var(--color-gray-2);
-
-	--color-border-primary: var(--color-gray-7);
-	--color-border-secondary: var(--color-gray-5);
-	--color-border-muted: var(--color-gray-3);
-	--color-border-active: var(--color-primary);
-
-	--color-success: var(--color-green-6);
 	--color-error: var(--color-red-6);
-	--color-warn: var(--color-yellow-6);
-	--color-info: var(--color-cyan-6);
+
+	--hover-off: 1.15;
+	--hover-on: 0.85;
 }

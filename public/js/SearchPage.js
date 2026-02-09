@@ -3,7 +3,7 @@ class SearchPage {
 		this.els = {
 			form: $('#searchForm'),
 			query: $('#query'),
-			sortBy: $('#sortBy'),
+
 			loading: $('#loading'),
 			table: $('#resultsTable'),
 			tbody: $('#resultsBody'),
@@ -27,6 +27,11 @@ class SearchPage {
 		this.els.form.addEventListener('submit', e => {
 			e.preventDefault();
 			this._search();
+		});
+
+		this.els.form.addEventListener('change', e => {
+			if (e.target.name === 'sortBy' || e.target.name === 'field')
+				this._search();
 		});
 
 		this.els.tbody.addEventListener('click', e => {
@@ -54,7 +59,7 @@ class SearchPage {
 					tags,
 					query,
 					fields: [...$$('input[name=field]:checked')].map(el => el.value),
-					sortBy: this.els.sortBy.value,
+					sortBy: $('input[name="sortBy"]:checked')?.value,
 				})
 				: await Nookmark.getBookmarks();
 

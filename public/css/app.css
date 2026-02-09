@@ -1,5 +1,6 @@
 @import 'theme.css';
 
+/* ---- Base ---- */
 html,
 body {
 	height: 100%;
@@ -12,8 +13,8 @@ body {
 	padding: var(--space-sm);
 	margin: 0;
 	font-size: var(--font-size-xs);
-	color: var(--color-text-primary);
-	background-color: var(--color-background-primary);
+	color: var(--color-3);
+	background-color: var(--color-0);
 }
 
 a {
@@ -21,57 +22,137 @@ a {
 	text-decoration: none;
 }
 
+/* ---- Form ---- */
+form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-xs);
+}
+
 input,
 textarea {
 	width: 100%;
 	padding: var(--space-xs);
 	outline: none;
-	background-color: var(--color-background-primary);
-	border: 1px solid var(--color-border-primary);
+	border: 1px solid var(--color-2);
 	border-radius: var(--radius-default);
-}
 
-input:focus,
-textarea:focus {
-	border-color: var(--color-border-primary);
+	&::placeholder {
+		color: var(--color-2);
+	}
+
+	&:focus::placeholder {
+		color: var(--color-1);
+	}
 }
 
 textarea {
 	flex: 1;
-	min-height: var(--size-3xl);
-}
-
-form {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-xs);
-	height: 100%;
-}
-
-button {
-	align-self: flex-end;
-	padding: var(--space-xs) var(--space-sm);
-	color: var(--color-text-foreground);
-	background-color: var(--color-primary);
-	border-radius: var(--radius-default);
 }
 
 button:hover {
-	background-color: var(--color-primary-dark);
+	background: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
+}
+
+button,
+button:active {
+	align-self: flex-end;
+	padding: var(--space-xs) var(--space-sm);
+	color: var(--color-0);
+	background-color: var(--color-3);
+	border-radius: var(--radius-default);
 }
 
 .btn-flat {
-	color: var(--color-text-primary);
-	background-color: var(--color-background-primary);
+	color: var(--color-3);
+	background-color: transparent;
 }
 
 .btn-flat:hover {
-	background-color: var(--color-background-primary);
-	opacity: 0.7;
+	background-color: transparent;
 }
 
-.btn-flat:active {
-	opacity: 1;
+.btn-flat span:hover {
+	/* 親要素から継承した色 */
+	color: oklch(from currentcolor calc(l *  var(--hover-off)) c h);
+}
+
+.btn-flat span:active {
+	color: currentcolor;
+}
+
+/* ---- Select/Radio ---- */
+.select-flat,
+.radio-flat {
+	display: flex;
+	color: var(--color-2);
+
+	label {
+		font-size: var(--font-size-xs);
+		line-height: 1;
+		cursor: pointer;
+		user-select: none;
+
+		& input {
+			display: none;
+		}
+	}
+}
+
+.select-flat{
+	gap: var(--space-2xs);
+
+	label {
+		padding: var(--space-2xs);
+		border: 1px solid var(--color-2);
+		border-radius: var(--radius-default);
+
+		&:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+			border-color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
+
+		&:active{
+			color: var(--color-3);
+			border-color: var(--color-3);
+		}
+
+		&:has(input:checked) {
+			color: var(--color-0);
+			background-color: var(--color-3);
+			border-color: var(--color-3);
+		}
+
+		&:has(input:checked):hover {
+			background-color: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
+		}
+
+		&:has(input:checked):active {
+			background-color: var(--color-2);
+			border-color: var(--color-2);
+		}
+	}
+}
+
+.radio-flat {
+	gap: var(--space-xs);
+
+	label {
+		padding: var(--space-2xs) 0;
+
+		&:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
+
+		&:active {
+			color: var(--color-3);
+		}
+
+		&:has(input:checked) {
+			color: var(--color-3);
+			border-bottom: 2px solid currentcolor;
+		}
+	}
 }
 
 .error {
@@ -80,17 +161,21 @@ button:hover {
 	color: var(--color-error);
 }
 
-/* ---- [Tagify] ---------------------------------- */
+/* ---- Tagify ---- */
 .tagify {
-	--tags-border-color: var(--color-border-primary);
-	--tags-focus-border-color: var(--color-border-primary);
+	--tags-border-color: var(--color-2);
+	--tags-focus-border-color: var(--color-2);
 
-	--tag-bg: var(--color-primary);
-	--tag-text-color: var(--color-text-foreground);
-	--tag-hover: var(--color-primary-dark);
+	--tag-bg: var(--color-3);
+	--tag-text-color: var(--color-0);
+	--tag-hover: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
 	--tag-border-radius: var(--radius-default);
 
-	/* margin-bottom: handled by gap */
+	--tag-invalid-bg: oklch(from var(--color-error) calc(l * 1.3) c h);
+
+	--placeholder-color: var(--color-2);
+	--placeholder-color-focus: var(--color-1);
+
 	border-radius: var(--radius-default);
 
 	&, *, *::before, *::after  {
@@ -105,7 +190,16 @@ button:hover {
 		&:hover:not([readonly]) div::before {
 			--tag-bg-inset: 0 !important;
 		}
+
+		&:active:not([readonly]) div::before {
+			--tag-bg: var(--color-2);
+		}
+
+		&.tagify--notAllowed:not(.tagify__tag--editable) div>span {
+			opacity: 1;
+		}
 	}
+
 
 	/* 削除ボタンを非表示 */
 	.tagify__tag__removeBtn {
@@ -114,7 +208,7 @@ button:hover {
 }
 
 .tagify__dropdown {
-	--tagify-dd-color-primary: var(--color-primary);
+	--tagify-dd-color-primary: var(--color-2);
 
 	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
 	pointer-events: none;
@@ -134,8 +228,8 @@ button:hover {
 		}
 
 		&.tagify__dropdown__item--active {
-			color: var(--color-text-foreground) !important;
-			background: var(--color-primary) !important;
+			color: var(--color-0) !important;
+			background: var(--color-3) !important;
 		}
 	}
 }

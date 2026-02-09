@@ -10,6 +10,7 @@
 	"rules": {
 		"@stylistic/indentation": "tab",
 		"@stylistic/declaration-colon-space-after": "always-single-line",
+		"@stylistic/declaration-block-trailing-semicolon": "always",
 		"selector-class-pattern": null,
 		"custom-property-pattern": null,
 		"custom-property-empty-line-before": null,
