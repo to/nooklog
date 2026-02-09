@@ -59,12 +59,16 @@ class Database {
 
 	async upsert(bookmark, content) {
 		await bench(async () => {
-			await this.bookmarks.delete(sql`id = ${bookmark.id}`);
-			await this.bookmarks.add([bookmark]);
+			await this.bookmarks.mergeInsert('id')
+				.whenMatchedUpdateAll()
+				.whenNotMatchedInsertAll()
+				.execute([bookmark]);
 
 			if (content) {
-				await this.contents.delete(sql`id = ${content.id}`);
-				await this.contents.add([content]);
+				await this.contents.mergeInsert('id')
+					.whenMatchedUpdateAll()
+					.whenNotMatchedInsertAll()
+					.execute([content]);
 			}
 		}, 'database.upsert');
 
