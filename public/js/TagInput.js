@@ -68,6 +68,11 @@ class TagInput {
 	focus() {
 		this.tagify.DOM.input.focus();
 	}
+
+	on(name, fn) {
+		this.tagify.on(name, fn);
+		return this;
+	}
 }
 
 window.TagInput = TagInput;

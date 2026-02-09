@@ -10,6 +10,7 @@ class SearchPage {
 			tags: $('input[name=tags]'),
 		};
 		this.tagInput = new TagInput(this.els.tags);
+
 		this.els.query.focus();
 
 		this._bindEvents();
@@ -24,6 +25,9 @@ class SearchPage {
 	}
 
 	_bindEvents() {
+		this.tagInput.on('add', () => this._search());
+		this.tagInput.on('remove', () => this._search());
+
 		this.els.form.addEventListener('submit', e => {
 			e.preventDefault();
 			this._search();
@@ -38,7 +42,6 @@ class SearchPage {
 			const tag = e.target.closest('.tags span');
 			if (tag) {
 				this.tagInput.tagify.addTags([tag.textContent]);
-				this._search();
 				return;
 			}
 

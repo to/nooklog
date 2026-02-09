@@ -63,7 +63,7 @@ class UpdateForm {
 		});
 
 		document.addEventListener('keydown', async e => {
-			if (e.ctrlKey && e.key === 'Enter')
+			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter')
 				await this._handleSubmit();
 		});
 	}
