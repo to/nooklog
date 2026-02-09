@@ -3,7 +3,7 @@
 @import 'reset.css';
 
 :root {
-	--color-3: oklch(from var(--color-gray-8) calc(l * 1.1) c h);
+	--color-3: var(--color-gray-7);
 	--color-2: var(--color-gray-5);
 	--color-1: var(--color-gray-2);
 	--color-0: var(--color-gray-0);

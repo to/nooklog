@@ -1,5 +1,5 @@
 body {
-	gap: var(--space-xs); /* フォームとテーブルを接近させる(便宜的) */
+	gap: var(--space-sm); /* フォームとテーブルを接近させる(便宜的) */
 	padding: var(--space-2xl);
 }
 
