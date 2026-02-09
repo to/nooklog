@@ -106,7 +106,9 @@ body {
 
 	& .col-actions {
 		height: 1px; /* 高さを生成する */
+		font-variant-numeric: tabular-nums;
 		text-align: right;
+		white-space: nowrap;
 	}
 
 	& .title {
@@ -117,6 +119,7 @@ body {
 
 	& .memo {
 		font-size: var(--font-size-xs);
+		overflow-wrap: anywhere;
 		white-space: pre-wrap;
 	}
 

@@ -92,7 +92,7 @@ class SearchPage {
 							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">edit</span></button>
 							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">delete</span></button>
 						</div>
-						<span class="dates" title="${r.created_at.toLocaleDateString()}">${r.updated_at.toLocaleDateString()}</span>
+						<span class="dates" title="${r.created_at.toISOString().split('T')[0]}">${r.updated_at.toISOString().split('T')[0]}</span>
 					</div>
 				</td>
 			</tr>`;
