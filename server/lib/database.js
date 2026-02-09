@@ -121,32 +121,24 @@ class Database {
 	async search({
 		tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 200 }) {
 
+		const { conditions, ftsQuery, patterns } = this.buildSearchQuery({
+			tags, query, fields, rating,
+		});
+
 		let builder = this.bookmarks.query();
 
-		const conditions = [];
-		if (tags.length > 0)
-			conditions.push(sql`array_has_all(tags, ${tags})`);
+		if (conditions)
+			builder = builder.where(conditions);
 
-		if (rating != null)
-			conditions.push(sql`rating >= ${rating}`);
-
-		if (conditions.length > 0)
-			builder = builder.where(conditions.join(' AND '));
-
-		query = query.trim();
-		if (query && fields.length > 0)
-			builder = builder.fullTextSearch(new MultiMatchQuery(query, fields));
+		if (ftsQuery)
+			builder = builder.fullTextSearch(ftsQuery);
 
 		// 誤ヒットも想定し多めに結果を取得する
 		// (未指定の場合 結果件数は大幅に切り詰められる)
 		let results = await builder.limit(limit * 5).toArray();
-		if (query) {
+		if (patterns) {
 			// クエリワードやフレーズが含まれているもののみを抽出する
 			// (FTSで高速に広く取得し RegExpで絞り込む)
-			const patterns = (query.match(/".+?"|[^\s"]+/g) || [])
-				.map(w => w.replace(/^"|"$/g, '')) // クォートを外す
-				.map(w => new RegExp(
-					w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 			results = results.filter(r =>
 				patterns.every(p =>
 					fields.some(f => p.test(r[f]))));
@@ -156,6 +148,46 @@ class Database {
 			results
 				.sort((a, b) => b[sortBy] - a[sortBy])
 				.slice(0, limit));
+	}
+
+	buildSearchQuery({ tags = [], query = '', fields = [], rating }) {
+		const conditions = [];
+		if (tags.length > 0)
+			conditions.push(sql`array_has_all(tags, ${tags})`);
+
+		if (rating != null)
+			conditions.push(sql`rating >= ${rating}`);
+
+		query = query.trim();
+
+		let ftsQuery = null;
+		let patterns = null;
+		if (query && fields.length > 0) {
+			const tokens = (query.match(/".+?"|[^\s"]+/g) || [])
+				.map(w => w.replace(/^"|"$/g, ''));
+
+			const shortTokens = tokens.filter(t => [...t].length < 2);
+			const longTokens = tokens.filter(t => [...t].length >= 2);
+
+			if (shortTokens.length > 0) {
+				const likeOr = shortTokens.map(t =>
+					fields.map(f => `${f} LIKE ${sql`${'%' + t + '%'}`}`).join(' OR '),
+				).map(c => `(${c})`).join(' AND ');
+				conditions.push(`(${likeOr})`);
+			}
+
+			if (longTokens.length > 0)
+				ftsQuery = new MultiMatchQuery(longTokens.join(' '), fields);
+
+			patterns = tokens.map(w => new RegExp(
+				w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+		}
+
+		return {
+			conditions: conditions.length > 0 ? conditions.join(' AND ') : null,
+			ftsQuery,
+			patterns,
+		};
 	}
 
 	async optimize() {
