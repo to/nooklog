@@ -3,9 +3,18 @@ import { processHtml } from './librarian.js';
 import db from './database.js';
 import _ from './util.js';
 
+let tagCache = new Set();
+
 const nookmark = {
 	async initialize() {
 		await db.initialize();
+		(await db.getTags()).forEach(t => tagCache.add(t));
+		console.log(`tagCache: ${tagCache.size} tags.`);
+	},
+
+	getTags() {
+		return Array.from(tagCache)
+			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	},
 
 	async getRecent(limit) {
@@ -25,7 +34,11 @@ const nookmark = {
 	},
 
 	async deleteById(id) {
+		const bm = await db.findById(id);
 		await db.deleteById(id);
+
+		if (bm)
+			this._syncTagCache(bm.tags, []);
 	},
 
 	async search(options) {
@@ -33,11 +46,11 @@ const nookmark = {
 	},
 
 	async upsert({ id, url, title, memo, rating, tags, html }) {
-		let bm = null;
-		bm = id ?
+		let bm = id ?
 			await db.findById(id) :
 			await db.findByUrl(url);
 
+		const oldTags = bm?.tags || [];
 		const isNew = !bm;
 		const now = Date.now();
 
@@ -83,10 +96,22 @@ const nookmark = {
 		_.merge(bm, { url, title, memo, rating, tags });
 		await db.upsert(bm, content);
 
+		this._syncTagCache(oldTags, bm.tags);
+
 		return {
 			isNew: isNew,
 			bookmark: bm,
 		};
+	},
+
+	async _syncTagCache(oldTags, newTags) {
+		for (const tag of newTags)
+			tagCache.add(tag);
+
+		for (const tag of oldTags.filter(t => !newTags.includes(t))) {
+			if (!await db.existsTag(tag))
+				tagCache.delete(tag);
+		}
 	},
 };
 

@@ -2,9 +2,8 @@ const Nookmark = {
 	apiBase: '/api/bookmarks',
 
 	async getTags() {
-		const res = await fetch('json/tags.json');
-		return (await res.json()).tags
-			.sort((a, b) => a.length - b.length || a.localeCompare(b));
+		const res = await fetch('/api/tags');
+		return ['5', '4', '3', '2', '1', '0'].concat(await res.json());
 	},
 
 	async getBookmark(id) {

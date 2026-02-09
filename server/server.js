@@ -108,6 +108,10 @@ app.get('/api/search', handle(async (req, res, ps) => {
 	res.json(await nookmark.search(ps));
 }, 'Error: GET /api/search'));
 
+app.get('/api/tags', handle(async (req, res, ps) => {
+	res.json(await nookmark.getTags());
+}, 'Error: GET /api/tags'));
+
 app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
 	await nookmark.deleteById(ps.id);
 	res.json({ success: true });

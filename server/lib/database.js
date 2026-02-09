@@ -108,14 +108,22 @@ class Database {
 		return bookmarks;
 	}
 
-	async getAllTags() {
-		const results = await this.bookmarks.query().toArray();
+	async getTags() {
+		const results = await this.bookmarks.query().select(['tags']).toArray();
 		const tags = new Set();
 		for (const row of results) {
 			for (const tag of row.tags.toArray())
 				tags.add(tag);
 		}
 		return Array.from(tags).sort();
+	}
+
+	async existsTag(tag) {
+		const results = await this.bookmarks.query()
+			.select(['tags'])
+			.where(sql`array_has_any(tags, ${[tag]})`)
+			.limit(1).toArray();
+		return results.length >= 1;
 	}
 
 	async search({
