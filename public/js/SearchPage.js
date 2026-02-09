@@ -89,6 +89,9 @@ class SearchPage {
 				<td class="col-rating">
 					<span class="rating rating-${r.rating}">${'★'.repeat(r.rating)}</span>
 				</td>
+				<td class="col-favicon">
+					<img src="https://www.google.com/s2/favicons?sz=16&domain=${this._getHostname(r.url)}">
+				</td>
 				<td class="col-content">
 					<div class="content-wrapper">
 						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${r.title}</a>
@@ -128,6 +131,13 @@ class SearchPage {
 			button.closest('tr').remove();
 		} catch (err) {
 			alert(err.message);
+		}
+	}
+	_getHostname(url) {
+		try {
+			return new URL(url).hostname;
+		} catch {
+			return '';
 		}
 	}
 }
