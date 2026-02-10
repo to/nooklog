@@ -2,7 +2,9 @@ module.exports = {
 	apps: [{
 		name: 'nookmark',
 		script: 'server/server.js',
-		watch: true,
+		watch: false,
+		// エラー時に自動再起動する設定
+		autorestart: true,
 		ignore_watch: [
 			'node_modules',
 			'data',
@@ -18,8 +20,6 @@ module.exports = {
 		env: {
 			NODE_ENV: 'development',
 		},
-		// エラー時に自動再起動する設定
-		autorestart: true,
 		// メモリ使用量が一定を超えたら再起動（念のため）
 		max_memory_restart: '1G',
 	}],
