@@ -34,8 +34,21 @@ class SearchPage {
 		});
 
 		this.els.form.addEventListener('change', e => {
-			if (e.target.name === 'sortBy' || e.target.name === 'field')
+			if (e.target.name === 'field') {
+				// 全てのチェックは外れないように
+				const checked = $$('input[name="field"]:checked');
+				if (checked.length === 0) {
+					e.target.checked = true;
+					return;
+				}
+			}
+
+			if (e.target.name === 'sortBy' || e.target.name === 'field') {
+				if (!this.tagInput.getTags().length && !this.els.query.value)
+					return;
+
 				this._search();
+			}
 		});
 
 		this.els.tbody.addEventListener('click', e => {
@@ -84,6 +97,8 @@ class SearchPage {
 
 	_render(results) {
 		this.els.tbody.innerHTML = results.map(r => {
+			const createdAt = r.created_at.toISOString().split('T')[0];
+			const updatedAt = r.updated_at.toISOString().split('T')[0];
 			return `
 			<tr>
 				<td class="col-rating">
@@ -105,7 +120,7 @@ class SearchPage {
 							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">edit</span></button>
 							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">delete</span></button>
 						</div>
-						<span class="dates" title="${r.created_at.toISOString().split('T')[0]}">${r.updated_at.toISOString().split('T')[0]}</span>
+						<span class="dates">${updatedAt}${createdAt !== updatedAt ? `<br>${createdAt}` : ''}</span>
 					</div>
 				</td>
 			</tr>`;

@@ -157,6 +157,7 @@ body {
 
 	& .dates {
 		font-size: var(--font-size-xs);
+		line-height: var(--line-height-tight);
 		color: var(--color-2);
 	}
 
