@@ -41,14 +41,14 @@ class SearchPage {
 					e.target.checked = true;
 					return;
 				}
-			}
 
-			if (e.target.name === 'sortBy' || e.target.name === 'field') {
+				// 条件が空で検索対象を変更した場合、検索をスキップする
 				if (!this.tagInput.getTags().length && !this.els.query.value)
 					return;
-
-				this._search();
 			}
+
+			if (e.target.name === 'sortBy' || e.target.name === 'field')
+				this._search();
 		});
 
 		this.els.tbody.addEventListener('click', e => {
@@ -74,17 +74,19 @@ class SearchPage {
 		this.els.loading.style.display = 'block';
 		this.els.table.style.display = 'none';
 
-		const tags = this.tagInput?.getTags() || [];
+		const tags = this.tagInput?.getTags();
 		const query = this.els.query.value;
 		try {
-			const results = (tags.length > 0 || query)
+			const results = (tags.length || query)
 				? await Nookmark.search({
 					tags,
 					query,
 					fields: [...$$('input[name=field]:checked')].map(el => el.value),
 					sortBy: $('input[name="sortBy"]:checked')?.value,
 				})
-				: await Nookmark.getBookmarks();
+				: await Nookmark.getBookmarks({
+					sortBy: $('input[name="sortBy"]:checked')?.value,
+				});
 
 			this._render(results);
 		} catch (err) {

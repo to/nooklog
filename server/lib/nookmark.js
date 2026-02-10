@@ -17,8 +17,8 @@ const nookmark = {
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	},
 
-	async getRecent(limit) {
-		return await db.getRecent(limit);
+	async getRecent(options) {
+		return await db.getRecent(options);
 	},
 
 	async getDump(limit) {

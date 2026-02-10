@@ -97,7 +97,7 @@ app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 app.get('/api/bookmarks', handle(async (req, res, ps) => {
 	res.json(ps.url ?
 		await nookmark.findByUrl(ps.url) :
-		await nookmark.getRecent(ps.limit));
+		await nookmark.getRecent(ps));
 }, 'Error: GET /api/bookmarks'));
 
 app.get('/api/dump', handle(async (req, res, ps) => {

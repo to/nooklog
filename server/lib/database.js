@@ -11,6 +11,7 @@ const DB_DIR = path.join(__dirname, '..', '..', 'data', 'lancedb');
 
 const OPTIMIZE_THRESHOLD = 100;
 const KEEP_VERSIONS_DAYS = 7;
+const RECENT_THRESHOLD_DAYS = 7;
 
 class Database {
 	constructor() {
@@ -81,17 +82,17 @@ class Database {
 		await this.contents.delete(sql`id = ${id}`);
 	}
 
-	async getRecent(limit = 100) {
-		const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+	async getRecent({ limit = 100, sortBy = 'updated_at' } = {}) {
+		const recentThreshold = Date.now() - RECENT_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
 		return this._populate(
 			(await this.bookmarks.query()
 				.select([
 					'id', 'url', 'title', 'memo',
 					'tags', 'rating',
 					'updated_at', 'created_at'])
-				.where(sql`updated_at > ${oneWeekAgo}`)
+				.where(`${sortBy === 'rating' ? 'created_at' : sortBy} > ${recentThreshold}`)
 				.toArray())
-				.sort((a, b) => b.updated_at - a.updated_at)
+				.sort((a, b) => b[sortBy] - a[sortBy])
 				.slice(0, limit));
 	}
 
@@ -220,6 +221,7 @@ class Database {
 	}
 }
 
+// フィールド名が文字列変数の場合、クォートされるので注意すること
 function sql(strings, ...values) {
 	return values.reduce(
 		(acc, val, i) => acc + sqlValue(val) + strings[i + 1], strings[0]);

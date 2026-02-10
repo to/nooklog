@@ -19,6 +19,19 @@ const Nookmark = {
 		return json && this._populate(json);
 	},
 
+	async getBookmarks({ sortBy } = {}) {
+		const res = await fetch(`${this.apiBase}?${new URLSearchParams({ sortBy })}`);
+		return (await res.json()).map(this._populate);
+	},
+
+	async search({ tags, query, fields, sortBy }) {
+		const res = await fetch(`/api/search?${new URLSearchParams({
+			query, fields, sortBy,
+			...this._separateRating(tags),
+		})}`);
+		return (await res.json()).map(this._populate);
+	},
+
 	async updateBookmark(bookmark) {
 		const url = bookmark.id ?
 			`${this.apiBase}/${bookmark.id}` :
@@ -41,19 +54,6 @@ const Nookmark = {
 		const res = await fetch(`${this.apiBase}/${id}`, { method: 'DELETE' });
 		if (!res.ok)
 			throw new Error('Delete failed');
-	},
-
-	async getBookmarks() {
-		const res = await fetch(this.apiBase);
-		return (await res.json()).map(this._populate);
-	},
-
-	async search({ tags, query, fields, sortBy }) {
-		const res = await fetch(`/api/search?${new URLSearchParams({
-			query, fields, sortBy,
-			...this._separateRating(tags),
-		})}`);
-		return (await res.json()).map(this._populate);
 	},
 
 	_populate(r) {
