@@ -2,6 +2,11 @@
 <html lang="en">
 
 <head>
+	<script>
+		if (localStorage.theme == 'dark' ||
+			(!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches))
+			document.documentElement.classList.add('dark');
+	</script>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Nookmark</title>
@@ -13,6 +18,11 @@
 </head>
 
 <body>
+	<header>
+		<button id="themeToggle" class="btn-flat">
+			<span class="material-symbols-outlined">dark_mode</span>
+		</button>
+	</header>
 	<form id="searchForm" class="search-form">
 		<div class="search-grid">
 			<input name="tags" placeholder="Tags">
@@ -40,6 +50,7 @@
 	<script src="js/util.js"></script>
 	<script src="js/TagInput.js"></script>
 	<script src="js/Nookmark.js"></script>
+	<script src="js/ThemeToggle.js"></script>
 	<script src="js/SearchPage.js"></script>
 </body>
 
