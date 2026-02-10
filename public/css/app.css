@@ -50,10 +50,12 @@ textarea {
 	flex: 1;
 }
 
+/* button:activeに上書きされる */
 button:hover {
-	background: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
+	background-color: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
 }
 
+/* グループ化によりbutton:activeの詳細度になる */
 button,
 button:active {
 	align-self: flex-end;
@@ -61,24 +63,22 @@ button:active {
 	color: var(--color-0);
 	background-color: var(--color-3);
 	border-radius: var(--radius-default);
-}
 
-.btn-flat {
-	color: var(--color-3);
-	background-color: transparent;
-}
+	&.btn-flat,
+	&.btn-flat:active {
+		padding: 0;
+		color: var(--color-3);
+		background-color: transparent;
+	}
 
-.btn-flat:hover {
-	background-color: transparent;
-}
+	/* 親要素で指定した現在色を使う */
+	&.btn-flat span:hover {
+		color: oklch(from currentcolor calc(l * var(--hover-off)) c h);
+	}
 
-.btn-flat span:hover {
-	/* 親要素から継承した色 */
-	color: oklch(from currentcolor calc(l *  var(--hover-off)) c h);
-}
-
-.btn-flat span:active {
-	color: currentcolor;
+	&.btn-flat span:active {
+		color: currentcolor;
+	}
 }
 
 /* ---- Select/Radio ---- */
