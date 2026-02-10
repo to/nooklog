@@ -84,7 +84,7 @@ class SearchPage {
 
 	_render(results) {
 		this.els.tbody.innerHTML = results.map(r => {
-			return html`
+			return `
 			<tr>
 				<td class="col-rating">
 					<span class="rating rating-${r.rating}">${'★'.repeat(r.rating)}</span>
@@ -94,8 +94,8 @@ class SearchPage {
 				</td>
 				<td class="col-content">
 					<div class="content-wrapper">
-						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${r.title}</a>
-						<div class="memo">${r.memo || ''}</div>
+						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${sanitize(r.title)}</a>
+						<div class="memo">${sanitize(r.memo || '')}</div>
 						<div class="tags">${(r.tags || []).map(t => `<span>${t}</span>`).join('')}</div>
 					</div>
 				</td>
