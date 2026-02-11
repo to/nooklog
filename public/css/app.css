@@ -59,7 +59,7 @@ button:hover {
 button,
 button:active {
 	align-self: flex-end;
-	padding: var(--space-xs) var(--space-sm);
+	padding: var(--space-2xs) var(--space-xs);
 	color: var(--color-0);
 	background-color: var(--color-3);
 	border-radius: var(--radius-default);
@@ -172,7 +172,7 @@ button:active {
 	--tag-hover: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
 	--tag-border-radius: var(--radius-default);
 
-	--tag-invalid-bg: oklch(from var(--color-error) calc(l * 1.3) c h);
+	--tag-invalid-bg: var(--color-error);
 
 	--placeholder-color: var(--color-2);
 	--placeholder-color-focus: var(--color-1);
@@ -200,7 +200,6 @@ button:active {
 			opacity: 1;
 		}
 	}
-
 
 	/* 削除ボタンを非表示 */
 	.tagify__tag__removeBtn {
