@@ -3,26 +3,13 @@ body {
 	padding: 0  var(--space-2xl) var(--space-2xl) var(--space-2xl);
 }
 
-.btn-icon {
-	padding: 0;
-	color: var(--color-2);
-	cursor: pointer;
-	background: none;
-	border: none;
-
-	&:hover {
-		color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
-	}
-}
-
 #themeToggle span{
 	font-size: var(--font-size-lg);
-	color: var(--color-2);
 }
 
 header {
 	display: flex;
-	flex-shrink: 0;
+	flex-shrink: 0; /* 高さを保持する */
 	align-items: flex-end;
 	justify-content: flex-end;
 	height: var(--space-2xl);
@@ -162,10 +149,12 @@ header {
 		margin-bottom: var(--space-2xs);
 		font-size: var(--font-size-default);
 		font-weight: bold;
+		color: var(--color-4);
 	}
 
 	& .memo {
 		font-size: var(--font-size-xs);
+		color: var(--color-3);
 		overflow-wrap: anywhere;
 		white-space: pre-wrap;
 	}
@@ -178,13 +167,17 @@ header {
 		margin-top: auto;
 		font-size: var(--font-size-xs);
 		color: var(--color-2);
-	}
 
-	& span {
-		cursor: pointer;
+		& span {
+			cursor: pointer;
+		}
 
-		&:hover {
-			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		& span:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-up)) c h);
+		}
+
+		& span:active {
+			color: var(--color-2);
 		}
 	}
 
@@ -208,30 +201,30 @@ header {
 		justify-content: space-between;
 		height: 100%;
 	}
-}
 
-.btn-group {
-	display: flex;
-	gap: var(--space-xs);
-}
-
-/* 宣言時と同じ構造と詳細度にして上書きする */
-button,
-button:active {
-	&.btn-edit,
-	&.btn-delete {
-		display: grid;
-		place-content: center;
-		width: var(--font-size-default);
-		height: calc(var(--font-size-default) * var(--line-height-normal));
-
-		& span {
-			font-size: var(--font-size-default);
-		}
+	.btn-group {
+		display: flex;
+		gap: var(--space-xs);
 	}
 
-	&.btn-delete,
-	&.btn-delete:active {
-		color: var(--color-error);
+	/* 宣言時と同じ構造と詳細度にして上書きする */
+	button,
+	button:active {
+		&.btn-edit,
+		&.btn-delete {
+			display: grid;
+			place-content: center;
+			width: var(--font-size-default);
+			height: calc(var(--font-size-default) * var(--line-height-normal));
+
+			& span {
+				font-size: var(--font-size-default);
+			}
+		}
+
+		&.btn-delete,
+		&.btn-delete:active {
+			color: var(--color-error);
+		}
 	}
 }

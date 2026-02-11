@@ -3,24 +3,30 @@
 @import 'reset.css';
 
 :root {
-	--color-3: var(--color-gray-7);
-	--color-2: var(--color-gray-5);
-	--color-1: var(--color-gray-2);
-	--color-0: var(--color-gray-0);
+	--color-4: var(--color-gray-7); /* 一次情報/ハイライト */
+	--color-3: var(--color-gray-6); /* 二次情報/塗りつぶしボタン背景 */
+	--color-2: var(--color-gray-5); /* 三次情報 */
+	--color-1: var(--color-gray-2); /* 罫線/プレースホルダー */
+	--color-0: var(--color-gray-0); /* バックグラウンド */
 
 	--color-error: var(--color-red-6);
 
 	--color-bg-image: transparent;
 
-	--hover-off: 1.2;
+	/* 操作結果の状態遷移先を予測させる */
+	--hover-off: 1.15;
 	--hover-on: 0.85;
+
+	/* 状態遷移先がないもの(ボタンなど)は上げて戻す */
+	--hover-up: 1.15;
 }
 
 html.dark {
 	/* color.cssは青み掛かっている */
-	--color-3: hsl(0deg 0 83);
+	--color-4: hsl(0deg 0 83);
+	--color-3: hsl(0deg 0 70);
 	--color-2: hsl(0deg 0 42);
-	--color-1: hsl(0deg 0 24);
+	--color-1: hsl(0deg 0 22);
 	--color-0: hsl(0deg 0 18);
 
 	--color-error: var(--color-yellow-6);
