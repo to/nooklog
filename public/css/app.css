@@ -12,6 +12,7 @@ body {
 	gap: var(--space-sm);
 	padding: var(--space-sm);
 	margin: 0;
+	font-family: var(--font-sans);
 	font-size: var(--font-size-xs);
 	color: var(--color-3);
 	background-color: var(--color-0);
@@ -60,6 +61,7 @@ button,
 button:active {
 	align-self: flex-end;
 	padding: var(--space-2xs) var(--space-xs);
+	font-weight: var(--font-weight-2);
 	color: var(--color-0);
 	background-color: var(--color-3);
 	border-radius: var(--radius-default);
@@ -85,6 +87,7 @@ button:active {
 .select-flat,
 .radio-flat {
 	display: flex;
+	font-weight: var(--font-weight-2);
 	color: var(--color-2);
 
 	label {

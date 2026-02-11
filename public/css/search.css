@@ -98,35 +98,36 @@ header {
 
 	& .col-rating {
 		padding-left: 0;
+		font-size: var(--font-size-default);
 		text-align: right;
 
-		& .rating {
-			font-size: var(--font-size-default);
-			font-weight: bold;
-			letter-spacing: -0.2em;
+		& span{
+			display: inline-block;
+			transform-origin: right center;
 		}
 
 		& .rating-5 {
-			font-size: calc(var(--font-size-default) * 1.05);
+			transform: scale(0.95);
 		}
 
 		& .rating-4 {
 			opacity: 0.75;
+			transform: scale(0.90);
 		}
 
 		& .rating-3 {
-			font-size: calc(var(--font-size-default) * 0.95);
 			opacity: 0.4;
+			transform: scale(0.85);
 		}
 
 		& .rating-2 {
-			font-size: calc(var(--font-size-default) * 0.8);
 			opacity: 0.2;
+			transform: scale(0.8);
 		}
 
 		& .rating-1 {
-			font-size: calc(var(--font-size-default) * 0.7);
 			opacity: 0.1;
+			transform: scale(0.7);
 		}
 
 		& .rating-0 {
@@ -148,7 +149,7 @@ header {
 	& .title {
 		margin-bottom: var(--space-2xs);
 		font-size: var(--font-size-default);
-		font-weight: bold;
+		font-weight: var(--font-weight-2);
 		color: var(--color-4);
 	}
 
@@ -166,6 +167,7 @@ header {
 		justify-content: flex-end;
 		margin-top: auto;
 		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-2);
 		color: var(--color-2);
 
 		& span {

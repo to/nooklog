@@ -49,9 +49,6 @@
 	/* Shadow */
 	--shadow-default: 0px 1px 3px 0px rgb(0 0 0 / 10%), 0px 1px 2px -1px rgb(0 0 0 / 10%);
 
-	/* Font */
-	--font-sans: system-ui, -apple-system, segoe ui, roboto, ubuntu, cantarell, noto sans, sans-serif;
-
 	/* Font Size */
 	--font-size-xs: 0.75rem;
 	--font-size-sm: 0.875rem;
