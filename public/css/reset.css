@@ -6,8 +6,13 @@
 
 body {
 	margin: 0;
-	line-height: var(--line-height-normal);
+	line-height: var(--line-height-m);
 	text-size-adjust: 100%;
+}
+
+a {
+	color: unset;
+	text-decoration: none;
 }
 
 input,
@@ -28,4 +33,12 @@ textarea {
 	display: block;
 	width: 100%;
 	resize: vertical;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+td {
+	height: 1px; /* 高さを生成する */
 }

@@ -110,15 +110,17 @@ class SearchPage {
 					<img src="https://www.google.com/s2/favicons?sz=16&domain=${this._getHostname(r.url)}">
 				</td>
 				<td class="col-content">
-					<div class="flex flex-col h-full">
+					<div class="flex flex-col h-full gap-2s">
 						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${sanitize(r.title)}</a>
 						<div class="memo">${sanitize(r.memo || '')}</div>
-						<div class="tags flex flex-wrap gap-2xs justify-end mt-auto">${(r.tags || []).map(t => `<span>${t}</span>`).join('')}</div>
+						<div class="tags flex flex-wrap gap-2s justify-end mt-auto">
+							${(r.tags || []).map(t => `<span class="btn-text">${t}</span>`).join('')}
+						</div>
 					</div>
 				</td>
 				<td class="col-actions">
-					<div class="flex flex-col gap-xs items-end justify-between h-full">
-						<div class="flex gap-xs">
+					<div class="flex flex-col gap-s items-end justify-between h-full">
+						<div class="flex gap-s">
 							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">edit</span></button>
 							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">delete</span></button>
 						</div>

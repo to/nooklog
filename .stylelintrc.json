@@ -26,7 +26,6 @@
 			true,
 			{
 				"importFrom": [
-					"public/css/color.css",
 					"public/css/token.css",
 					"public/css/theme.css"
 				]

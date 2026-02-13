@@ -1,11 +1,6 @@
 :root {
 	--font-sans: "Helvetica Neue", helvetica, "Hiragino Sans", arial, meiryo, system-ui, sans-serif;
 
-	--font-weight-3: 800;
-	--font-weight-2: 700;
-	--font-weight-1: 400;
-	--font-weight-0: 100;
-
 	--color-4: var(--color-gray-8); /* 一次情報/ハイライト */
 	--color-3: var(--color-gray-7); /* 二次情報/塗りつぶしボタン背景 */
 	--color-2: var(--color-gray-5); /* 三次情報 */
@@ -41,7 +36,7 @@ html.dark {
 	--color-error: var(--color-yellow-6);
 
 	/* 透過画像背景 */
-	--color-bg-image: var(--color-gray-3);
+	--color-bg-image: var(--color-4);
 
 	--hover-off: 0.9;
 	--hover-on: 1.15;

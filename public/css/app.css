@@ -1,49 +1,30 @@
 /* ---- Base ---- */
-html,
-body {
-	height: 100%;
-}
-
 body {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-sm);
-	padding: var(--space-sm);
-	margin: 0;
+	gap: var(--space-m);
+	height: 100%;
+	padding: var(--space-m);
 	font-family: var(--font-sans);
-	font-size: var(--font-size-xs);
+	font-size: var(--font-size-s);
 	color: var(--color-3);
 	background-color: var(--color-0);
-}
-
-a {
-	color: unset;
-	text-decoration: none;
-}
-
-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-td {
-	height: 1px; /* 高さを生成する */
 }
 
 /* ---- Form ---- */
 form {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-xs);
+	gap: var(--space-s);
 }
 
 input,
 textarea {
 	width: 100%;
-	padding: var(--space-xs);
+	padding: var(--space-s);
 	outline: none;
 	border: 1px solid var(--color-2);
-	border-radius: var(--radius-default);
+	border-radius: var(--radius-m);
 
 	&::placeholder {
 		color: var(--color-2);
@@ -67,11 +48,11 @@ button:hover {
 button,
 button:active {
 	align-self: flex-end;
-	padding: var(--space-2xs) var(--space-xs);
-	font-weight: var(--font-weight-2);
+	padding: var(--space-2s) var(--space-s);
+	font-weight: bold;
 	color: var(--color-0);
 	background-color: var(--color-3);
-	border-radius: var(--radius-default);
+	border-radius: var(--radius-m);
 
 	&.btn-flat,
 	&.btn-flat:active {
@@ -90,15 +71,27 @@ button:active {
 	}
 }
 
+.btn-text {
+	cursor: pointer;
+
+	&:hover {
+		color: oklch(from currentcolor calc(l * var(--hover-up)) c h);
+	}
+
+	&:active {
+		color: currentcolor;
+	}
+}
+
 /* ---- Select/Radio ---- */
 .select-flat,
 .radio-flat {
 	display: flex;
-	font-weight: var(--font-weight-2);
+	font-weight: bold;
 	color: var(--color-2);
 
 	label {
-		font-size: var(--font-size-xs);
+		font-size: var(--font-size-s);
 		line-height: 1;
 		cursor: pointer;
 		user-select: none;
@@ -110,12 +103,12 @@ button:active {
 }
 
 .select-flat{
-	gap: var(--space-2xs);
+	gap: var(--space-2s);
 
 	label {
-		padding: var(--space-2xs);
+		padding: var(--space-2s);
 		border: 1px solid var(--color-2);
-		border-radius: var(--radius-default);
+		border-radius: var(--radius-m);
 
 		&:hover {
 			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
@@ -145,10 +138,10 @@ button:active {
 }
 
 .radio-flat {
-	gap: var(--space-xs);
+	gap: var(--space-s);
 
 	label {
-		padding: var(--space-2xs) 0;
+		padding: var(--space-2s) 0;
 
 		&:hover {
 			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
@@ -167,8 +160,14 @@ button:active {
 
 .error {
 	display: none;
-	margin-top: var(--space-xs);
+	margin-top: var(--space-s);
 	color: var(--color-error);
+}
+
+/* ---- Material Symbols ---- */
+.material-symbols-outlined {
+	font-size: var(--font-size-m);
+	line-height: inherit;
 }
 
 /* ---- Tagify ---- */
@@ -180,14 +179,14 @@ button:active {
 	--tag-bg: var(--color-3);
 	--tag-text-color: var(--color-0);
 	--tag-hover: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
-	--tag-border-radius: var(--radius-default);
+	--tag-border-radius: var(--radius-m);
 
 	--tag-invalid-bg: var(--color-error);
 
 	--placeholder-color: var(--color-2);
 	--placeholder-color-focus: var(--color-1);
 
-	border-radius: var(--radius-default);
+	border-radius: var(--radius-m);
 
 	&, *, *::before, *::after  {
 		transition: none !important;
@@ -195,7 +194,7 @@ button:active {
 	}
 
 	.tagify__input{
-		line-height: var(--line-height-normal);
+		line-height: var(--line-height-m);
 	}
 
 	.tagify__tag {
@@ -203,7 +202,7 @@ button:active {
 
 		&>div {
 			font-weight: bold;
-			line-height: var(--line-height-normal);
+			line-height: var(--line-height-m);
 		}
 
 		&:focus div::before,

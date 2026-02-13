@@ -14,6 +14,47 @@
 .absolute { position: absolute; }
 .inset-0 { inset: 0; }
 
+/* ---- Gap ---- */
+.gap-0   { gap: 0; }
+.gap-2s { gap: var(--space-2s); }
+.gap-s  { gap: var(--space-s); }
+
+/* ---- Padding/Margin ---- */
+.p-0 { padding: 0; }
+.m-0 { margin: 0; }
+.mt-auto { margin-top: auto; }
+
+/* ---- Flexbox ---- */
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+
+.flex-1 { flex: 1 1 0%; }
+.flex-auto { flex: 1 1 auto; }
+.flex-none { flex: none; }
+
+.shrink-0 { flex-shrink: 0; }
+.grow { flex-grow: 1; }
+
+/* ---- Alignment ---- */
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+.items-stretch { align-items: stretch; }
+
+.justify-start { justify-content: flex-start; }
+.justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+
+.self-start { align-self: flex-start; }
+.self-center { align-self: center; }
+.self-end { align-self: flex-end; }
+.self-stretch { align-self: stretch; }
+
 /* ---- Grid ---- */
 .grid { display: grid; }
 
@@ -70,46 +111,3 @@
 .col-end-11 { grid-column-end: 11; }
 .col-end-12 { grid-column-end: 12; }
 .col-end-13 { grid-column-end: 13; }
-
-/* ---- Flexbox ---- */
-.flex { display: flex; }
-.inline-flex { display: inline-flex; }
-
-.flex-col { flex-direction: column; }
-.flex-row { flex-direction: row; }
-.flex-wrap { flex-wrap: wrap; }
-
-.flex-1 { flex: 1 1 0%; }
-.flex-auto { flex: 1 1 auto; }
-.flex-none { flex: none; }
-
-.shrink-0 { flex-shrink: 0; }
-.grow { flex-grow: 1; }
-
-/* ---- Alignment ---- */
-.items-start { align-items: flex-start; }
-.items-center { align-items: center; }
-.items-end { align-items: flex-end; }
-.items-stretch { align-items: stretch; }
-
-.justify-start { justify-content: flex-start; }
-.justify-center { justify-content: center; }
-.justify-end { justify-content: flex-end; }
-.justify-between { justify-content: space-between; }
-
-.self-start { align-self: flex-start; }
-.self-center { align-self: center; }
-.self-end { align-self: flex-end; }
-.self-stretch { align-self: stretch; }
-
-/* ---- Gap ---- */
-.gap-0   { gap: 0; }
-.gap-2xs { gap: var(--space-2xs); }
-.gap-xs  { gap: var(--space-xs); }
-.gap-sm  { gap: var(--space-sm); }
-.gap-md  { gap: var(--space-md); }
-
-/* ---- Padding/Margin ---- */
-.p-0 { padding: 0; }
-.m-0 { margin: 0; }
-.mt-auto { margin-top: auto; }
