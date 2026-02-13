@@ -1,9 +1,13 @@
 /* ---- Base ---- */
+html,
+body {
+	height: 100%;
+}
+
 body {
 	display: flex;
 	flex-direction: column;
 	gap: var(--space-m);
-	height: 100%;
 	padding: var(--space-m);
 	font-family: var(--font-sans);
 	font-size: var(--font-size-s);
@@ -263,4 +267,13 @@ button:active {
 			background: var(--color-3) !important;
 		}
 	}
+}
+
+/* ---- Animation ---- */
+@keyframes animate-spin {
+	to { transform: rotate(1turn); }
+}
+
+.animate-spin {
+	animation: animate-spin 1s linear infinite;
 }
