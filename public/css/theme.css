@@ -1,4 +1,3 @@
-@import 'https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@100;400;700;800&display=swap';
 @import 'color.css';
 @import 'token.css';
 @import 'reset.css';
@@ -30,16 +29,18 @@
 }
 
 :root:lang(ja){
-	--font-sans: "LINE Seed JP", system-ui, sans-serif;
+	--font-sans: "BIZ UDPGothic", "Hiragino Sans", meiryo, system-ui, sans-serif;
+
+	letter-spacing: 0.02em;
 }
 
 html.dark {
 	/* color.cssは青み掛かっている */
-	--color-4: hsl(0deg 0 93);
-	--color-3: hsl(0deg 0 76);
-	--color-2: hsl(0deg 0 46);
-	--color-1: hsl(0deg 0 22);
-	--color-0: hsl(0deg 0 18);
+	--color-4: hsl(0, 0%, 93%);
+	--color-3: hsl(0, 0%, 80%);
+	--color-2: hsl(0 ,0%, 46%);
+	--color-1: hsl(0, 0%, 22%);
+	--color-0: hsl(0, 0%, 18%);
 
 	--color-error: var(--color-yellow-6);
 

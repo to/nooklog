@@ -20,6 +20,8 @@
 		"property-no-vendor-prefix": true,
 		"import-notation": "string",
 		"block-no-empty": null,
+		"color-function-notation": "legacy",
+		"hue-degree-notation": "number",
 		"csstools/value-no-unknown-custom-properties": [
 			true,
 			{

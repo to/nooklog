@@ -187,8 +187,17 @@ button:active {
 		animation: none !important;
 	}
 
+	.tagify__input{
+		line-height: var(--line-height-normal);
+	}
+
 	.tagify__tag {
 		cursor: pointer;
+
+		&>div {
+			font-weight: bold;
+			line-height: var(--line-height-normal);
+		}
 
 		&:focus div::before,
 		&:hover:not([readonly]) div::before {
@@ -212,6 +221,8 @@ button:active {
 
 .tagify__dropdown {
 	--tagify-dd-color-primary: var(--color-2);
+	--tagify-dd-text-color: var(--color-3);
+	--tagify-dd-bg-color: var(--color-0);
 
 	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
 	pointer-events: none;
