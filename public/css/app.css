@@ -1,5 +1,3 @@
-@import 'theme.css';
-
 /* ---- Base ---- */
 html,
 body {
@@ -21,6 +19,15 @@ body {
 a {
 	color: unset;
 	text-decoration: none;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+td {
+	height: 1px; /* 高さを生成する */
 }
 
 /* ---- Form ---- */

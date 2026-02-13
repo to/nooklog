@@ -1,7 +1,3 @@
-@import 'color.css';
-@import 'token.css';
-@import 'reset.css';
-
 :root {
 	--font-sans: "Helvetica Neue", helvetica, "Hiragino Sans", arial, meiryo, system-ui, sans-serif;
 

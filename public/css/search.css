@@ -8,65 +8,23 @@ body {
 }
 
 header {
-	display: flex;
-	flex-shrink: 0; /* 高さを保持する */
-	align-items: flex-end;
-	justify-content: flex-end;
+	/* ページ全体マージンに揃える */
 	height: var(--space-2xl);
 
 	/* 右側のパディングを打ち消して画面端に寄せる */
 	margin-right: calc(var(--font-size-lg) * -1);
 }
 
-.search-form {
-	display: flex;
-	flex-direction: column;
-
-	/* 並べ替えが表の一部なため特殊な扱い */
-	gap: 0;
-
-	.search-grid {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: var(--space-xs);
-		align-items: center;
-
-		input[name="tags"] {
-			grid-column: 1 / 2;
-		}
-
-		#query {
-			grid-row: 2 / 3;
-			grid-column: 1 / 2;
-		}
-
-		.select-flat {
-			grid-row: 2 / 3;
-			grid-column: 2 / 3;
-		}
-	}
-
-	.radio-flat {
-		/* フォームとテーブルの距離を調整する */
-		margin: var(--space-2xl) 0  var(--space-xs) 0;
-		margin-left: auto;
-	}
-
-	button[type="submit"] {
-		display: none;
-	}
+.radio-flat {
+	/* フォームとテーブルの距離を調整する */
+	margin: var(--space-2xl) 0  var(--space-xs) 0;
 }
 
 .loading {
-	display: none;
 	text-align: center;
 }
 
 .results-table {
-	display: none;
-	width: 100%;
-	border-collapse: collapse;
-
 	& tr {
 		border-bottom: 1px solid var(--color-1);
 
@@ -135,12 +93,7 @@ header {
 		}
 	}
 
-	& .col-content {
-		height: 1px; /* 高さを生成する */
-	}
-
 	& .col-actions {
-		height: 1px; /* 高さを生成する */
 		font-variant-numeric: tabular-nums;
 		text-align: right;
 		white-space: nowrap;
@@ -161,11 +114,6 @@ header {
 	}
 
 	& .tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-2xs);
-		justify-content: flex-end;
-		margin-top: auto;
 		font-size: var(--font-size-xs);
 		font-weight: var(--font-weight-2);
 		color: var(--color-2);
@@ -187,26 +135,6 @@ header {
 		font-size: var(--font-size-xs);
 		line-height: var(--line-height-tight);
 		color: var(--color-2);
-	}
-
-	& .content-wrapper {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-	}
-
-	& .actions-wrapper {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-xs);
-		align-items: flex-end;
-		justify-content: space-between;
-		height: 100%;
-	}
-
-	.btn-group {
-		display: flex;
-		gap: var(--space-xs);
 	}
 
 	/* 宣言時と同じ構造と詳細度にして上書きする */
