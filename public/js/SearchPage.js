@@ -121,8 +121,8 @@ class SearchPage {
 				<td class="col-actions">
 					<div class="flex flex-col gap-s items-end justify-between h-full">
 						<div class="flex gap-s">
-							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">edit</span></button>
-							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="material-symbols-outlined">delete</span></button>
+							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="icon">edit</span></button>
+							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="icon">delete</span></button>
 						</div>
 						<span class="dates">${updatedAt}${createdAt !== updatedAt ? `<br>${createdAt}` : ''}</span>
 					</div>

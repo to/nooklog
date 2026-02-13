@@ -165,9 +165,20 @@ button:active {
 }
 
 /* ---- Material Symbols ---- */
-.material-symbols-outlined {
+.icon {
+	display: inline-block;
+	font-family: 'Material Symbols Outlined';
 	font-size: var(--font-size-m);
+	font-style: normal;
+	font-weight: normal;
+	font-feature-settings: 'liga';
 	line-height: inherit;
+	text-transform: none;
+	letter-spacing: normal;
+	overflow-wrap: normal;
+	white-space: nowrap;
+	direction: ltr;
+	-webkit-font-smoothing: antialiased;
 }
 
 /* ---- Tagify ---- */

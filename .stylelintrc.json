@@ -22,6 +22,7 @@
 		"block-no-empty": null,
 		"color-function-notation": "legacy",
 		"hue-degree-notation": "number",
+		"font-family-no-missing-generic-family-keyword": null,
 		"csstools/value-no-unknown-custom-properties": [
 			true,
 			{
