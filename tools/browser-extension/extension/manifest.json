@@ -5,7 +5,8 @@
 	"description": "Shows a badge when the current page is saved in Nookmark",
 	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsTR19fUKu5nmCLGX2CKrpvFYVZHwlztwO2eQXrx+VroPM/mnSaSJ82vaIjtjmMN4yJdBJCXFt1m0JLK5rZKGYKqS1JRwI6sbliwuFsVAUJikfSs6R0W7JtdiqrTBhPEF/CZPIRYEcbw2JRJ1wMtSL64WXIRtYz55hgu9qckfBWslA1p1ViivXuLPO8dmijPNprKgrrX7vAMQ3sui2sNNSAEPyC+qmFRZdT0zDwjbrukrxKgwS5HBt/i/Dy9QUuNasbtMiEWPZ2S6dszGM5/BmdrNRz4EZSIuqlW096HLlWwkFWMZZgiiLDZ3KgPnOUlJIoyAzEdbrreO89VhzAbOKQIDAQAB",
 	"permissions": [
-		"tabs"
+		"tabs",
+		"contextMenus"
 	],
 	"host_permissions": [
 		"http://localhost:3000/*"
@@ -15,16 +16,16 @@
 	},
 	"action": {
 		"default_icon": {
-			"16": "icon_16.png",
-			"32": "icon_32.png",
-			"48": "icon_48.png",
-			"128": "icon_128.png"
+			"16": "images/icon_16.png",
+			"32": "images/icon_32.png",
+			"48": "images/icon_48.png",
+			"128": "images/icon_128.png"
 		}
 	},
 	"icons": {
-		"16": "icon_16.png",
-		"32": "icon_32.png",
-		"48": "icon_48.png",
-		"128": "icon_128.png"
+		"16": "images/icon_16.png",
+		"32": "images/icon_32.png",
+		"48": "images/icon_48.png",
+		"128": "images/icon_128.png"
 	}
 }

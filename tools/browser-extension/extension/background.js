@@ -1,4 +1,4 @@
-const API = 'http://localhost:3000/api/bookmarks';
+const BASE = 'http://localhost:3000';
 
 async function checkUrl(tabId, url) {
 	// 特殊なページは除外する
@@ -7,7 +7,7 @@ async function checkUrl(tabId, url) {
 
 	try {
 		const res = await fetch(
-			`${API}?url=${encodeURIComponent(url)}`);
+			`${BASE}/api/bookmarks?url=${encodeURIComponent(url)}`);
 		const data = await res.json();
 
 		chrome.action.setBadgeText({
@@ -22,6 +22,22 @@ async function checkUrl(tabId, url) {
 		chrome.action.setBadgeText({ tabId, text: '' });
 	}
 }
+
+chrome.runtime.onInstalled.addListener(() => {
+	chrome.contextMenus.create({
+		id: 'searchNookmark',
+		title: 'Search Nookmark for "%s"',
+		contexts: ['selection'],
+	});
+});
+
+chrome.contextMenus.onClicked.addListener(info => {
+	if (info.menuItemId === 'searchNookmark') {
+		chrome.tabs.create({
+			url: `${BASE}/?query=${encodeURIComponent(info.selectionText)}`,
+		});
+	}
+});
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 	if (info.status === 'complete')
