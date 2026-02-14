@@ -9,6 +9,7 @@ const sanitize = str => {
 };
 
 const html = (texts, ...values) => {
+	// 配列よりも文字列連結の方が速い
 	return values.reduce((acc, v, i) =>
 		acc + texts[i] + sanitize(v), texts[0]) + texts.at(-1);
 };
