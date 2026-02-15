@@ -2,6 +2,7 @@ const BASE = 'http://localhost:3000';
 const WINDOW_WIDTH = 500;
 const WINDOW_HEIGHT = 480;
 const WINDOW_MARGIN = 25;
+const MEMO_DELIMITER = '/';
 
 chrome.action.onClicked.addListener(tab => openUpdatePage(tab));
 
@@ -52,8 +53,11 @@ async function openUpdatePage(tab) {
 		left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 10),
 		top: area.top + area.height - (WINDOW_HEIGHT - 20) - WINDOW_MARGIN,
 	});
+
+	const updateTabId = updateWin.tabs[0].id;
+
 	chrome.tabs.onUpdated.addListener(function listener(id, info) {
-		if (id !== updateWin.tabs[0].id || info.status !== 'complete')
+		if (id !== updateTabId || info.status !== 'complete')
 			return;
 		chrome.tabs.onUpdated.removeListener(listener);
 
@@ -62,6 +66,42 @@ async function openUpdatePage(tab) {
 			func: html => document.querySelector('#html').value = html,
 			args: [html],
 		});
+	});
+
+	chrome.scripting.executeScript({
+		target: { tabId: tab.id },
+		func: () => {
+			document.addEventListener('mouseup', e => {
+				if (e.button !== 0)
+					return;
+				const text = window.getSelection().toString().trim();
+				if (text)
+					chrome.runtime.sendMessage({ selection: text });
+			});
+		},
+	});
+
+	let previousSelection = '';
+	const onMessage = (msg, sender) => {
+		if (!msg.selection || sender.tab.id !== tab.id || msg.selection === previousSelection)
+			return;
+		previousSelection = msg.selection;
+		chrome.scripting.executeScript({
+			target: { tabId: updateTabId },
+			func: (text, delimiter) => {
+				const memo = document.querySelector('#memo');
+				memo.value += (memo.value.length ? delimiter : '') + text;
+			},
+			args: [msg.selection, MEMO_DELIMITER],
+		});
+	};
+	chrome.runtime.onMessage.addListener(onMessage);
+
+	chrome.windows.onRemoved.addListener(function listener(winId) {
+		if (winId !== updateWin.id)
+			return;
+		chrome.windows.onRemoved.removeListener(listener);
+		chrome.runtime.onMessage.removeListener(onMessage);
 	});
 }
 
@@ -81,16 +121,16 @@ async function checkUrl(tab) {
 			`${BASE}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
 		const data = await res.json();
 
-		chrome.action.setBadgeText({
+		await chrome.action.setBadgeText({
 			tabId: tab.id,
 			text: data ? ' ' : '',
 		});
-		chrome.action.setBadgeBackgroundColor({
+		await chrome.action.setBadgeBackgroundColor({
 			tabId: tab.id,
 			color: '#82c91e',
 		});
 	} catch {
-		chrome.action.setBadgeText({ tabId: tab.id, text: '' });
+		await chrome.action.setBadgeText({ tabId: tab.id, text: '' });
 	}
 }
 
