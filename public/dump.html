@@ -75,7 +75,7 @@
 </head>
 
 <body>
-	<h1>Nookmark Database Dump (Latest 20)</h1>
+	<h1>Nookmark Database Dump</h1>
 	<div id="loading">...</div>
 	<table id="dataTable" style="display: none; table-layout: fixed;">
 		<thead>
@@ -111,7 +111,7 @@
 			}
 		}
 
-		fetch('/api/dump')
+		fetch('/api/dump?limit=8')
 			.then(response => response.json())
 			.then(data => {
 				const tableBody = document.getElementById('tableBody');

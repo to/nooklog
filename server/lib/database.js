@@ -98,7 +98,7 @@ class Database {
 
 	async getDump(limit = 20) {
 		// 読み込み専用オブジェクトをクローンする
-		const bookmarks = (await this.getRecent(limit)).map(b => ({ ...b }));
+		const bookmarks = (await this.getRecent({ limit })).map(b => ({ ...b }));
 		for (const b of bookmarks) {
 			const [content] = await this.contents.query()
 				.select(['markdown'])
