@@ -24,16 +24,13 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener(info => {
-	if (info.menuItemId === 'search-nookmark') {
-		chrome.tabs.create({
-			url: `${BASE}/?query=${encodeURIComponent(info.selectionText)}`,
-		});
-	}
+	if (info.menuItemId === 'search-nookmark')
+		openSearchPage(info.selectionText);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 	if (info.status === 'complete')
-		checkUrl(tabId, tab.url);
+		checkUrl(tab);
 });
 
 async function openUpdatePage(tab) {
@@ -68,26 +65,32 @@ async function openUpdatePage(tab) {
 	});
 }
 
-async function checkUrl(tabId, url) {
+async function openSearchPage(query) {
+	chrome.tabs.create({
+		url: `${BASE}/?query=${encodeURIComponent(query)}`,
+	});
+}
+
+async function checkUrl(tab) {
 	// 特殊なページは除外する
-	if (!url || /^(chrome|chrome-extension|about|edge):/.test(url))
+	if (!tab.url || /^(chrome|chrome-extension|about|edge):/.test(tab.url))
 		return;
 
 	try {
 		const res = await fetch(
-			`${BASE}/api/bookmarks?url=${encodeURIComponent(url)}`);
+			`${BASE}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
 		const data = await res.json();
 
 		chrome.action.setBadgeText({
-			tabId,
+			tabId: tab.id,
 			text: data ? ' ' : '',
 		});
 		chrome.action.setBadgeBackgroundColor({
-			tabId,
+			tabId: tab.id,
 			color: '#82c91e',
 		});
 	} catch {
-		chrome.action.setBadgeText({ tabId, text: '' });
+		chrome.action.setBadgeText({ tabId: tab.id, text: '' });
 	}
 }
 
