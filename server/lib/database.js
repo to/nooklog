@@ -59,19 +59,17 @@ class Database {
 	}
 
 	async upsert(bookmark, content) {
-		await bench(async () => {
-			await this.bookmarks.mergeInsert('id')
+		await this.bookmarks.mergeInsert('id')
+			.whenMatchedUpdateAll()
+			.whenNotMatchedInsertAll()
+			.execute([bookmark]);
+
+		if (content) {
+			await this.contents.mergeInsert('id')
 				.whenMatchedUpdateAll()
 				.whenNotMatchedInsertAll()
-				.execute([bookmark]);
-
-			if (content) {
-				await this.contents.mergeInsert('id')
-					.whenMatchedUpdateAll()
-					.whenNotMatchedInsertAll()
-					.execute([content]);
-			}
-		}, 'database.upsert');
+				.execute([content]);
+		}
 
 		// 最適化(非同期実行)
 		this.optimize();
@@ -201,11 +199,7 @@ class Database {
 
 	async optimize() {
 		// 断片化が進行していなければ最適化をスキップする
-		let stats;
-		await bench(async () => {
-			stats = await this.bookmarks.stats();
-		}, 'database.optimize(stats)');
-
+		let stats = await this.bookmarks.stats();
 		const fragments = stats.fragmentStats.numSmallFragments;
 		if (fragments < OPTIMIZE_THRESHOLD)
 			return;
