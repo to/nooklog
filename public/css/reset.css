@@ -1,49 +1,51 @@
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
-}
+@layer {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
 
-body {
-	margin: 0;
-	line-height: var(--line-height-m);
-	text-size-adjust: 100%;
-}
+	body {
+		margin: 0;
+		line-height: var(--line-height-m);
+		text-size-adjust: 100%;
+	}
 
-a {
-	color: unset;
-	text-decoration: none;
-	text-underline-offset: 0.2em;
-}
+	a {
+		color: unset;
+		text-decoration: none;
+		text-underline-offset: 0.2em;
+	}
 
-a:hover {
-	text-decoration: underline;
-}
+	a:hover {
+		text-decoration: underline;
+	}
 
-input,
-textarea,
-button {
-	margin: 0;
-	font: inherit;
-	color: inherit;
-	background: transparent;
-	border: none;
-}
+	input,
+	textarea,
+	button {
+		margin: 0;
+		font: inherit;
+		color: inherit;
+		background: transparent;
+		border: none;
+	}
 
-button {
-	cursor: pointer;
-}
+	button {
+		cursor: pointer;
+	}
 
-textarea {
-	display: block;
-	width: 100%;
-	resize: vertical;
-}
+	textarea {
+		display: block;
+		width: 100%;
+		resize: vertical;
+	}
 
-table {
-	border-collapse: collapse;
-}
+	table {
+		border-collapse: collapse;
+	}
 
-td {
-	height: 1px; /* 高さを生成する */
+	td {
+		height: 1px; /* 高さを生成する */
+	}
 }

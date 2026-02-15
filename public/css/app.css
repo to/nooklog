@@ -1,188 +1,190 @@
-/* ---- Base ---- */
-html,
-body {
-	height: 100%;
-}
-
-body {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-m);
-	padding: var(--space-m);
-	font-family: var(--font-sans);
-	font-size: var(--font-size-s);
-	color: var(--color-3);
-	background-color: var(--color-0);
-}
-
-/* ---- Form ---- */
-form {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-s);
-}
-
-input,
-textarea {
-	width: 100%;
-	padding: var(--space-s);
-	outline: none;
-	border: 1px solid var(--color-2);
-	border-radius: var(--radius-m);
-
-	&::placeholder {
-		color: var(--color-2);
+@layer {
+	/* ---- Base ---- */
+	html,
+	body {
+		height: 100%;
 	}
 
-	&:focus::placeholder {
-		color: var(--color-1);
-	}
-}
-
-textarea {
-	flex: 1;
-}
-
-/* button:activeに上書きされる */
-button:hover {
-	background-color: oklch(from var(--color-3) calc(l * var(--hover-up)) c h);
-}
-
-/* グループ化によりbutton:activeの詳細度になる */
-button,
-button:active {
-	align-self: flex-end;
-	padding: var(--space-2s) var(--space-s);
-	font-weight: bold;
-	color: var(--color-0);
-	background-color: var(--color-3);
-	border-radius: var(--radius-m);
-
-	&.btn-flat,
-	&.btn-flat:active {
-		padding: 0;
-		color: var(--color-3);
-		background-color: transparent;
-	}
-
-	/* 親要素で指定した現在色を使う */
-	&.btn-flat span:hover {
-		color: oklch(from currentcolor calc(l * var(--hover-up)) c h);
-	}
-
-	&.btn-flat span:active {
-		color: currentcolor;
-	}
-}
-
-.btn-text {
-	cursor: pointer;
-
-	&:hover {
-		color: oklch(from currentcolor calc(l * var(--hover-up)) c h);
-	}
-
-	&:active {
-		color: currentcolor;
-	}
-}
-
-/* ---- Select/Radio ---- */
-.select-flat,
-.radio-flat {
-	display: flex;
-	font-weight: bold;
-	color: var(--color-2);
-
-	label {
+	body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-m);
+		padding: var(--space-m);
+		font-family: var(--font-sans);
 		font-size: var(--font-size-s);
-		line-height: 1;
-		cursor: pointer;
-		user-select: none;
-
-		& input {
-			display: none;
-		}
+		color: var(--color-3);
+		background-color: var(--color-0);
 	}
-}
 
-.select-flat{
-	gap: var(--space-2s);
+	/* ---- Form ---- */
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-s);
+	}
 
-	label {
-		padding: var(--space-2s);
+	input,
+	textarea {
+		width: 100%;
+		padding: var(--space-s);
+		outline: none;
 		border: 1px solid var(--color-2);
 		border-radius: var(--radius-m);
 
-		&:hover {
-			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
-			border-color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		&::placeholder {
+			color: var(--color-2);
 		}
 
-		&:active{
-			color: var(--color-3);
-			border-color: var(--color-3);
-		}
-
-		&:has(input:checked) {
-			color: var(--color-0);
-			background-color: var(--color-3);
-			border-color: var(--color-3);
-		}
-
-		&:has(input:checked):hover {
-			background-color: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
-		}
-
-		&:has(input:checked):active {
-			background-color: var(--color-2);
-			border-color: var(--color-2);
+		&:focus::placeholder {
+			color: var(--color-1);
 		}
 	}
-}
 
-.radio-flat {
-	gap: var(--space-s);
+	textarea {
+		flex: 1;
+	}
 
-	label {
-		padding: var(--space-2s) 0;
+	/* button:activeに上書きされる */
+	button:hover {
+		background-color: oklch(from var(--color-3) calc(l * var(--hover-up)) c h);
+	}
+
+	/* グループ化によりbutton:activeの詳細度になる */
+	button,
+	button:active {
+		align-self: flex-end;
+		padding: var(--space-2s) var(--space-s);
+		font-weight: bold;
+		color: var(--color-0);
+		background-color: var(--color-3);
+		border-radius: var(--radius-m);
+
+		&.btn-flat,
+		&.btn-flat:active {
+			padding: 0;
+			color: var(--color-3);
+			background-color: transparent;
+		}
+
+		/* 親要素で指定した現在色を使う */
+		&.btn-flat span:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-up)) c h);
+		}
+
+		&.btn-flat span:active {
+			color: currentcolor;
+		}
+	}
+
+	.btn-text {
+		cursor: pointer;
 
 		&:hover {
-			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+			color: oklch(from currentcolor calc(l * var(--hover-up)) c h);
 		}
 
 		&:active {
-			color: var(--color-3);
-		}
-
-		&:has(input:checked) {
-			color: var(--color-3);
-			border-bottom: 2px solid currentcolor;
+			color: currentcolor;
 		}
 	}
-}
 
-.error {
-	display: none;
-	margin-top: var(--space-s);
-	color: var(--color-error);
-}
+	/* ---- Select/Radio ---- */
+	.select-flat,
+	.radio-flat {
+		display: flex;
+		font-weight: bold;
+		color: var(--color-2);
 
-/* ---- Material Symbols ---- */
-.icon {
-	display: inline-block;
-	font-family: 'Material Symbols Outlined';
-	font-size: var(--font-size-m);
-	font-style: normal;
-	font-weight: normal;
-	font-feature-settings: 'liga';
-	line-height: inherit;
-	text-transform: none;
-	letter-spacing: normal;
-	overflow-wrap: normal;
-	white-space: nowrap;
-	direction: ltr;
-	-webkit-font-smoothing: antialiased;
+		label {
+			font-size: var(--font-size-s);
+			line-height: 1;
+			cursor: pointer;
+			user-select: none;
+
+			& input {
+				display: none;
+			}
+		}
+	}
+
+	.select-flat{
+		gap: var(--space-2s);
+
+		label {
+			padding: var(--space-2s);
+			border: 1px solid var(--color-2);
+			border-radius: var(--radius-m);
+
+			&:hover {
+				color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+				border-color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+			}
+
+			&:active{
+				color: var(--color-3);
+				border-color: var(--color-3);
+			}
+
+			&:has(input:checked) {
+				color: var(--color-0);
+				background-color: var(--color-3);
+				border-color: var(--color-3);
+			}
+
+			&:has(input:checked):hover {
+				background-color: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
+			}
+
+			&:has(input:checked):active {
+				background-color: var(--color-2);
+				border-color: var(--color-2);
+			}
+		}
+	}
+
+	.radio-flat {
+		gap: var(--space-s);
+
+		label {
+			padding: var(--space-2s) 0;
+
+			&:hover {
+				color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+			}
+
+			&:active {
+				color: var(--color-3);
+			}
+
+			&:has(input:checked) {
+				color: var(--color-3);
+				border-bottom: 2px solid currentcolor;
+			}
+		}
+	}
+
+	.error {
+		display: none;
+		margin-top: var(--space-s);
+		color: var(--color-error);
+	}
+
+	/* ---- Material Symbols ---- */
+	.icon {
+		display: inline-block;
+		font-family: 'Material Symbols Outlined';
+		font-size: var(--font-size-m);
+		font-style: normal;
+		font-weight: normal;
+		font-feature-settings: 'liga';
+		line-height: inherit;
+		text-transform: none;
+		letter-spacing: normal;
+		overflow-wrap: normal;
+		white-space: nowrap;
+		direction: ltr;
+		-webkit-font-smoothing: antialiased;
+	}
 }
 
 /* ---- Tagify ---- */

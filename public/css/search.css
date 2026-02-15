@@ -1,135 +1,133 @@
-body {
-	gap: 0;
-	padding: 0  var(--space-2l) var(--space-2l) var(--space-2l);
-}
-
-#themeToggle span{
-	font-size: var(--font-size-l);
-}
-
-header {
-	/* ページ全体マージンに揃える */
-	height: var(--space-2l);
-
-	/* 右側のパディングを打ち消して画面端に寄せる */
-	margin-right: calc(var(--font-size-l) * -1);
-}
-
-.radio-flat {
-	/* フォームとテーブルの距離を調整する */
-	margin: var(--space-2l) 0  var(--space-s) 0;
-}
-
-.loading {
-	text-align: center;
-}
-
-.results-table {
-	width: 100%;
-
-	& tr {
-		border-bottom: 1px solid var(--color-1);
-
-		&:last-child {
-			border-bottom: none;
-		}
+@layer {
+	body {
+		gap: 0;
+		padding: 0  var(--space-2l) var(--space-2l) var(--space-2l);
 	}
 
-	& td {
-		padding: var(--space-s) 0 var(--space-s) var(--space-m);
-		vertical-align: top;
-		border: none;
+	#themeToggle span{
+		font-size: var(--font-size-l);
 	}
 
-	& .col-rating {
-		padding-left: 0;
-		font-size: var(--font-size-m);
-		text-align: right;
+	header {
+		/* ページ全体マージンに揃える */
+		height: var(--space-2l);
 
-		& span{
-			display: inline-block;
-			transform-origin: right center;
-		}
-
-		& .rating-5 {
-			transform: scale(0.95);
-		}
-
-		& .rating-4 {
-			opacity: 0.75;
-			transform: scale(0.90);
-		}
-
-		& .rating-3 {
-			opacity: 0.4;
-			transform: scale(0.85);
-		}
-
-		& .rating-2 {
-			opacity: 0.2;
-			transform: scale(0.8);
-		}
-
-		& .rating-1 {
-			opacity: 0.1;
-			transform: scale(0.7);
-		}
-
-		& .rating-0 {
-			opacity: 0;
-		}
+		/* 右側のパディングを打ち消して画面端に寄せる */
+		margin-right: calc(var(--font-size-l) * -1);
 	}
 
-	& .col-favicon {
-		font-size: var(--font-size-m);
-		line-height: var(--line-height-m);
+	.radio-flat {
+		/* フォームとテーブルの距離を調整する */
+		margin: var(--space-2l) 0  var(--space-s) 0;
+	}
 
-		& img {
-			/* 予めサイズを指定し画像枠を確保する */
-			width: 16px;
-			height: 16px;
-			vertical-align: middle;
-			background-color: var(--color-bg-image);
-			border-radius: var(--radius-s);
-			transform: translateY(calc(var(--font-size-m) * -0.1));
+	.loading {
+		text-align: center;
+	}
+
+	.results-table {
+		width: 100%;
+
+		& tr {
+			border-bottom: 1px solid var(--color-1);
+
+			&:last-child {
+				border-bottom: none;
+			}
 		}
-	}
 
-	& .col-actions {
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-	}
+		& td {
+			padding: var(--space-s) 0 var(--space-s) var(--space-m);
+			vertical-align: top;
+			border: none;
+		}
 
-	& .title {
-		font-size: var(--font-size-m);
-		font-weight: bold;
-		color: var(--color-4);
-	}
+		& .col-rating {
+			padding-left: 0;
+			font-size: var(--font-size-m);
+			text-align: right;
 
-	& .memo {
-		font-size: var(--font-size-s);
-		color: var(--color-3);
-		overflow-wrap: anywhere;
-		white-space: pre-wrap;
-	}
+			& span{
+				display: inline-block;
+				transform-origin: right center;
+			}
 
-	& .tags {
-		font-size: var(--font-size-s);
-		font-weight: bold;
-		color: var(--color-2);
-	}
+			& .rating-5 {
+				transform: scale(0.95);
+			}
 
-	& .dates {
-		font-size: var(--font-size-s);
-		line-height: var(--line-height-s);
-		color: var(--color-2);
-	}
+			& .rating-4 {
+				opacity: 0.75;
+				transform: scale(0.90);
+			}
 
-	/* 宣言時と同じ構造と詳細度にして上書きする */
-	button,
-	button:active {
-		&.btn-delete,
-		&.btn-delete:active {
+			& .rating-3 {
+				opacity: 0.4;
+				transform: scale(0.85);
+			}
+
+			& .rating-2 {
+				opacity: 0.2;
+				transform: scale(0.8);
+			}
+
+			& .rating-1 {
+				opacity: 0.1;
+				transform: scale(0.7);
+			}
+
+			& .rating-0 {
+				opacity: 0;
+			}
+		}
+
+		& .col-favicon {
+			font-size: var(--font-size-m);
+			line-height: var(--line-height-m);
+
+			& img {
+				/* 予めサイズを指定し画像枠を確保する */
+				width: 16px;
+				height: 16px;
+				vertical-align: middle;
+				background-color: var(--color-bg-image);
+				border-radius: var(--radius-s);
+				transform: translateY(calc(var(--font-size-m) * -0.1));
+			}
+		}
+
+		& .col-actions {
+			font-variant-numeric: tabular-nums;
+			white-space: nowrap;
+		}
+
+		& .title {
+			font-size: var(--font-size-m);
+			font-weight: bold;
+			color: var(--color-4);
+		}
+
+		& .memo {
+			font-size: var(--font-size-s);
+			color: var(--color-3);
+			overflow-wrap: anywhere;
+			white-space: pre-wrap;
+		}
+
+		& .tags {
+			font-size: var(--font-size-s);
+			font-weight: bold;
+			color: var(--color-2);
+		}
+
+		& .dates {
+			font-size: var(--font-size-s);
+			line-height: var(--line-height-s);
+			color: var(--color-2);
+		}
+
+		.btn-delete,
+		.btn-delete:active {
 			color: var(--color-error);
 		}
 	}
