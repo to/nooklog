@@ -6,20 +6,6 @@ import nookmark from './lib/nookmark.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const PARAMS_SCHEMA = {
-	id: '',
-	url: '',
-	title: '',
-	memo: '',
-	html: '',
-	rating: 0,
-	tags: [],
-	query: '',
-	fields: [],
-	sortBy: '',
-	limit: 0,
-};
-
 // Private Network Access (PNA) 対応
 // HTTPSのサイト(HuggingFaceなど)からlocalhostへのアクセスを許可するために必要
 // cors()ミドルウェアより前に書かないと、プリフライト(OPTIONS)リクエストでヘッダーが付与されずブロックされる
@@ -39,54 +25,14 @@ process.on('unhandledRejection', (reason, promise) => {
 	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-function handle(handler, errorContext) {
-	return async (req, res) => {
-		// データベースの空の返り値などを許容する
-		res._json = res.json;
-		res.json = body => res._json.call(res, body === undefined ? null : body);
-
-		const ps = useParams({ ...req.query, ...req.body, ...req.params });
-		try {
-			await handler(req, res, ps);
-		} catch (error) {
-			console.error(`${errorContext}:`, error);
-			res.status(500).json({ error: error.message });
-		}
-	};
-}
-
-function useParams(ps, schema = PARAMS_SCHEMA) {
-	const res = {};
-	for (const [key, type] of Object.entries(schema)) {
-		const val = ps[key];
-		if (val == null)
-			continue;
-
-		if (Array.isArray(type)) {
-			res[key] =
-				Array.isArray(val) ? val :
-					val ? val.split(',') : [];
-		} else if (typeof type === 'number') {
-			res[key] = parseInt(val) || undefined;
-		} else {
-			res[key] = val;
-		}
-	}
-	return res;
-}
-
 app.get('/api/bookmarks/:id', handle(async (req, res, ps) => {
-	res.json(
-		await nookmark.findById(ps.id));
+	res.json(await nookmark.findById(ps.id));
 }, 'Error: GET /api/bookmarks/:id'));
 
 app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 	// 新規作成の場合はURLが必須
 	if (!ps.id && !ps.url)
 		return res.status(400).json({ error: 'Missing id or url' });
-
-	console.log(
-		`${ps.id ? 'Update' : 'Save'}: ${ps.title}\nURL: ${ps.url}${ps.id ? '\nID: ' + ps.id : ''}`);
 
 	const result = await nookmark.upsert(ps);
 	res.json({
@@ -121,3 +67,53 @@ app.listen(PORT, async () => {
 	await nookmark.initialize();
 	console.log(`Server running on http://localhost:${PORT}`);
 });
+
+function handle(handler, errorContext) {
+	return async (req, res) => {
+		// データベースの空の返り値などを許容する
+		res._json = res.json;
+		res.json = body => res._json.call(res, body === undefined ? null : body);
+
+		const ps = useParams({ ...req.query, ...req.body, ...req.params });
+		try {
+			await handler(req, res, ps);
+		} catch (error) {
+			console.error(`${errorContext}:`, error);
+			res.status(500).json({ error: error.message });
+		}
+	};
+}
+
+const PARAMS_SCHEMA = {
+	id: '',
+	url: '',
+	title: '',
+	memo: '',
+	html: '',
+	rating: 0,
+	tags: [],
+	query: '',
+	fields: [],
+	sortBy: '',
+	limit: 0,
+};
+
+function useParams(ps, schema = PARAMS_SCHEMA) {
+	const res = {};
+	for (const [key, type] of Object.entries(schema)) {
+		const val = ps[key];
+		if (val == null)
+			continue;
+
+		if (Array.isArray(type)) {
+			res[key] =
+				Array.isArray(val) ? val :
+					val ? val.split(',') : [];
+		} else if (typeof type === 'number') {
+			res[key] = parseInt(val) || undefined;
+		} else {
+			res[key] = val;
+		}
+	}
+	return res;
+}
