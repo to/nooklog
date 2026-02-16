@@ -102,7 +102,12 @@ async function openUpdatePage(tab) {
 			func: (text, delimiter) => {
 				// サービスワーカーとは別のスコープになる
 				const memo = document.querySelector('#memo');
-				memo.value += (memo.value.length ? delimiter : '') + text;
+				const { selectionStart: start, selectionEnd: end } = memo;
+				const separator = /[\p{P}\p{S}\p{Z}]/u;
+				delimiter = (!start || separator.test(memo.value.slice(start - 1, start)) ?
+					'' :
+					delimiter);
+				memo.setRangeText(delimiter + text, start, end, 'end');
 			},
 			args: [msg.selection, MEMO_DELIMITER],
 		});
