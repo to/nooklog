@@ -2,17 +2,12 @@
 <html lang="en">
 
 <head>
-	<script>
-		document.documentElement.classList.add(localStorage.theme ??
-			(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-		document.documentElement.lang = navigator.language.slice(0, 2);
-	</script>
+	<script src="js/init.js"></script>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Nookmark</title>
-	<link rel="stylesheet"
-		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
+	<link rel="stylesheet" href="lib/material-symbols/material-symbols.css">
+	<link rel="stylesheet" href="lib/tagify/tagify.css">
 	<link rel="stylesheet" href="css/token.css">
 	<link rel="stylesheet" href="css/reset.css">
 	<link rel="stylesheet" href="css/layout.css">
@@ -52,7 +47,7 @@
 		<tbody id="resultsBody"></tbody>
 	</table>
 
-	<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+	<script src="lib/tagify/tagify.js"></script>
 	<script src="js/util.js"></script>
 	<script src="js/TagInput.js"></script>
 	<script src="js/Nookmark.js"></script>

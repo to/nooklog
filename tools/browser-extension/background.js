@@ -1,8 +1,7 @@
-const BASE = 'http://localhost:3000';
+const SERVER_URL = 'http://localhost:3000';
 const WINDOW_WIDTH = 500;
 const WINDOW_HEIGHT = 480;
 const WINDOW_MARGIN = 25;
-const MEMO_DELIMITER = '/';
 
 chrome.action.onClicked.addListener(tab => openUpdatePage(tab));
 
@@ -29,25 +28,20 @@ chrome.contextMenus.onClicked.addListener(info => {
 		openSearchPage(info.selectionText);
 });
 
-chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+chrome.tabs.onUpdated.addListener((info, tab) => {
 	if (info.status === 'complete')
 		checkUrl(tab);
 });
 
-async function openUpdatePage(tab) {
-	// 対象ページのHTMLを取得する
-	const [{ result: html }] = await chrome.scripting.executeScript({
-		target: { tabId: tab.id },
-		func: () => document.documentElement.outerHTML,
-	});
-
+async function openUpdatePage(contentTab) {
 	// 更新ページを開く
 	const display = await getCurrentDisplay();
 	const area = display.workArea;
 	const updateWin = await chrome.windows.create({
-		url: `${BASE}/update.html`
-			+ `?url=${encodeURIComponent(tab.url)}`
-			+ `&title=${encodeURIComponent(tab.title)}`,
+		url: 'public/update.html'
+			+ `?url=${encodeURIComponent(contentTab.url)}`
+			+ `&title=${encodeURIComponent(contentTab.title)}`
+			+ `&contentTabId=${contentTab.id}`,
 		type: 'popup',
 		width: WINDOW_WIDTH,
 		height: WINDOW_HEIGHT,
@@ -55,78 +49,40 @@ async function openUpdatePage(tab) {
 		top: area.top + area.height - (WINDOW_HEIGHT - 20) - WINDOW_MARGIN,
 	});
 
-	// HTMLを更新ページにセットする
 	const updateTabId = updateWin.tabs[0].id;
-	chrome.tabs.onUpdated.addListener(function listener(id, info) {
-		if (id !== updateTabId || info.status !== 'complete')
-			return;
+	chrome.runtime.onMessage.addListener(function listener(msg, sender) {
+		// 更新ページの準備ができてからHTMLを送信する
+		if (msg.status === 'ready' && sender?.tab?.id === updateTabId) {
+			chrome.runtime.onMessage.removeListener(listener);
 
-		chrome.tabs.onUpdated.removeListener(listener);
+			chrome.scripting.executeScript({
+				target: { tabId: contentTab.id },
+				func: contentScript,
+			});
+		}
+	});
+}
 
-		chrome.scripting.executeScript({
-			target: { tabId: id },
-			func: html => document.querySelector('#html').value = html,
-			args: [html],
-		});
+function contentScript() {
+	// 対象ページのHTMLを送信する
+	chrome.runtime.sendMessage({
+		html: document.documentElement.outerHTML,
 	});
 
 	// テキスト選択を監視する
-	chrome.scripting.executeScript({
-		target: { tabId: tab.id },
-		func: () => {
-			// サービスワーカーがスリーブするのを防ぐ
-			setInterval(() => {
-				chrome.runtime.sendMessage({});
-			}, 20 * 1000);
-
-			document.addEventListener('mouseup', e => {
-				if (e.button !== 0)
-					return;
-
-				const text = window.getSelection().toString().trim();
-				if (text)
-					chrome.runtime.sendMessage({ selection: text });
-			});
-		},
-	});
-
-	// 選択テキストを更新ページにセットする
-	let previousSelection = '';
-	const onMessage = (msg, sender) => {
-		if (!msg.selection || sender.tab.id !== tab.id || msg.selection === previousSelection)
+	document.addEventListener('mouseup', e => {
+		if (e.button !== 0)
 			return;
 
-		previousSelection = msg.selection;
-		chrome.scripting.executeScript({
-			target: { tabId: updateTabId },
-			func: (text, delimiter) => {
-				// サービスワーカーとは別のスコープになる
-				const memo = document.querySelector('#memo');
-				const { selectionStart: start, selectionEnd: end } = memo;
-				const separator = /[\p{P}\p{S}\p{Z}]/u;
-				delimiter = (!start || separator.test(memo.value.slice(start - 1, start)) ?
-					'' :
-					delimiter);
-				memo.setRangeText(delimiter + text, start, end, 'end');
-			},
-			args: [msg.selection, MEMO_DELIMITER],
-		});
-	};
-	chrome.runtime.onMessage.addListener(onMessage);
-
-	// メッセージリスナーを解放する
-	chrome.windows.onRemoved.addListener(function listener(winId) {
-		if (winId !== updateWin.id)
-			return;
-
-		chrome.windows.onRemoved.removeListener(listener);
-		chrome.runtime.onMessage.removeListener(onMessage);
+		const selection = window.getSelection().toString().trim();
+		if (selection)
+			chrome.runtime.sendMessage({ selection });
 	});
 }
 
 async function openSearchPage(query) {
 	chrome.tabs.create({
-		url: `${BASE}/?query=${encodeURIComponent(query)}`,
+		url: `${SERVER_URL}/?query=${encodeURIComponent(query)}`,
 	});
 }
 
@@ -138,7 +94,7 @@ async function checkUrl(tab) {
 	try {
 		// ブックマーク済みかチェックする
 		const res = await fetch(
-			`${BASE}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
+			`${SERVER_URL}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
 		const data = await res.json();
 		await chrome.action.setBadgeText({
 			tabId: tab.id,

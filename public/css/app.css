@@ -1,3 +1,9 @@
+/* Chrome拡張内でブラウザのデフォルトスタイルを上書きする */
+body {
+	font-family: var(--font-sans);
+	font-size: var(--font-size-s);
+}
+
 @layer {
 	/* ---- Base ---- */
 	html,
@@ -10,8 +16,6 @@
 		flex-direction: column;
 		gap: var(--space-m);
 		padding: var(--space-m);
-		font-family: var(--font-sans);
-		font-size: var(--font-size-s);
 		color: var(--color-3);
 		background-color: var(--color-0);
 	}
@@ -169,7 +173,7 @@
 		color: var(--color-error);
 	}
 
-	/* ---- Material Symbols ---- */
+	/* ---- Icon(Material Symbols) ---- */
 	.icon {
 		display: inline-block;
 		font-family: 'Material Symbols Outlined';

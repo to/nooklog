@@ -1,3 +1,5 @@
+const MEMO_DELIMITER = '/';
+
 class UpdateForm {
 	constructor() {
 		this.els = {
@@ -14,13 +16,14 @@ class UpdateForm {
 
 		this.originalMemo = '';
 
-		this._bindEvents();
 		this._init();
+		this._bindEvents();
 	}
 
 	async _init() {
 		const ps = getSearchParams();
 		this.id = ps.id;
+		this.contentTabId = parseInt(ps.contentTabId, 10);
 
 		if (ps.url)
 			this.els.url.value = ps.url;
@@ -74,6 +77,33 @@ class UpdateForm {
 			if (this.originalMemo !== this.els.memo.value)
 				e.returnValue = 'Changes you made may not be saved.';
 		});
+
+		// 拡張内で開かれているか？
+		if (window?.chrome?.runtime) {
+			chrome.runtime.onMessage.addListener((msg, sender) => {
+				if (sender?.tab?.id !== this.contentTabId)
+					return;
+
+				if (msg.html) {
+					this.els.html.value = msg.html;
+					return;
+				}
+
+				if (msg.selection && this.previousSelection !== msg.selection) {
+					this.previousSelection = msg.selection;
+
+					const { selectionStart: start, selectionEnd: end } = this.els.memo;
+					const delimiter = (!start || /[\p{P}\p{S}\p{Z}]/u.test(
+						this.els.memo.value.slice(start - 1, start)))
+						? '' : MEMO_DELIMITER;
+					this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
+					return;
+				}
+			});
+
+			// 準備ができたことを通知しHTMLを受診する
+			chrome.runtime.sendMessage({ status: 'ready' });
+		}
 	}
 
 	async _handleSubmit() {
