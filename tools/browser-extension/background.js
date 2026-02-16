@@ -35,14 +35,15 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 });
 
 async function openUpdatePage(tab) {
+	// 対象ページのHTMLを取得する
 	const [{ result: html }] = await chrome.scripting.executeScript({
 		target: { tabId: tab.id },
 		func: () => document.documentElement.outerHTML,
 	});
 
+	// 更新ページを開く
 	const display = await getCurrentDisplay();
 	const area = display.workArea;
-
 	const updateWin = await chrome.windows.create({
 		url: `${BASE}/update.html`
 			+ `?url=${encodeURIComponent(tab.url)}`
@@ -54,11 +55,12 @@ async function openUpdatePage(tab) {
 		top: area.top + area.height - (WINDOW_HEIGHT - 20) - WINDOW_MARGIN,
 	});
 
+	// HTMLを更新ページにセットする
 	const updateTabId = updateWin.tabs[0].id;
-
 	chrome.tabs.onUpdated.addListener(function listener(id, info) {
 		if (id !== updateTabId || info.status !== 'complete')
 			return;
+
 		chrome.tabs.onUpdated.removeListener(listener);
 
 		chrome.scripting.executeScript({
@@ -68,12 +70,19 @@ async function openUpdatePage(tab) {
 		});
 	});
 
+	// テキスト選択を監視する
 	chrome.scripting.executeScript({
 		target: { tabId: tab.id },
 		func: () => {
+			// サービスワーカーがスリーブするのを防ぐ
+			setInterval(() => {
+				chrome.runtime.sendMessage({});
+			}, 20 * 1000);
+
 			document.addEventListener('mouseup', e => {
 				if (e.button !== 0)
 					return;
+
 				const text = window.getSelection().toString().trim();
 				if (text)
 					chrome.runtime.sendMessage({ selection: text });
@@ -81,14 +90,17 @@ async function openUpdatePage(tab) {
 		},
 	});
 
+	// 選択テキストを更新ページにセットする
 	let previousSelection = '';
 	const onMessage = (msg, sender) => {
 		if (!msg.selection || sender.tab.id !== tab.id || msg.selection === previousSelection)
 			return;
+
 		previousSelection = msg.selection;
 		chrome.scripting.executeScript({
 			target: { tabId: updateTabId },
 			func: (text, delimiter) => {
+				// サービスワーカーとは別のスコープになる
 				const memo = document.querySelector('#memo');
 				memo.value += (memo.value.length ? delimiter : '') + text;
 			},
@@ -97,9 +109,11 @@ async function openUpdatePage(tab) {
 	};
 	chrome.runtime.onMessage.addListener(onMessage);
 
+	// メッセージリスナーを解放する
 	chrome.windows.onRemoved.addListener(function listener(winId) {
 		if (winId !== updateWin.id)
 			return;
+
 		chrome.windows.onRemoved.removeListener(listener);
 		chrome.runtime.onMessage.removeListener(onMessage);
 	});
@@ -113,14 +127,14 @@ async function openSearchPage(query) {
 
 async function checkUrl(tab) {
 	// 特殊なページは除外する
-	if (!tab.url || /^(chrome|chrome-extension|about|edge):/.test(tab.url))
+	if (!tab.url || /^(chrome|chrome-extension|devtools|about|edge):/.test(tab.url))
 		return;
 
 	try {
+		// ブックマーク済みかチェックする
 		const res = await fetch(
 			`${BASE}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
 		const data = await res.json();
-
 		await chrome.action.setBadgeText({
 			tabId: tab.id,
 			text: data ? ' ' : '',
@@ -130,7 +144,6 @@ async function checkUrl(tab) {
 			color: '#82c91e',
 		});
 	} catch {
-		await chrome.action.setBadgeText({ tabId: tab.id, text: '' });
 	}
 }
 
