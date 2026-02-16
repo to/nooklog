@@ -75,7 +75,7 @@ class UpdateForm {
 				id: this.id,
 				url: this.els.url.value,
 				title: this.els.title.value,
-				memo: this.els.memo.value,
+				memo: this._normalizeText(this.els.memo.value),
 				tags: this.tagInput.getTags(),
 				html: this.els.html.value,
 			});
@@ -83,6 +83,13 @@ class UpdateForm {
 		} catch (err) {
 			this.showError(err.message);
 		}
+	}
+
+	_normalizeText(text) {
+		return text
+			.replace(/（/g, '(')
+			.replace(/）/g, ')')
+			.replace(/／/g, '/');
 	}
 }
 
