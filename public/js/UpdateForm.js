@@ -12,6 +12,8 @@ class UpdateForm {
 		this.tagInput = new TagInput(this.els.tags);
 		this.tagInput.focus();
 
+		this.originalMemo = '';
+
 		this._bindEvents();
 		this._init();
 	}
@@ -43,6 +45,7 @@ class UpdateForm {
 		this.els.url.value = bookmark.url;
 		this.els.title.value = bookmark.title;
 		this.els.memo.value = bookmark.memo || '';
+		this.originalMemo = this.els.memo.value;
 		this.tagInput.setTags(
 			[].concat(bookmark.rating || [], bookmark.tags || []));
 	}
@@ -66,6 +69,11 @@ class UpdateForm {
 			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter')
 				await this._handleSubmit();
 		});
+
+		window.addEventListener('beforeunload', e => {
+			if (this.originalMemo !== this.els.memo.value)
+				e.returnValue = 'Changes you made may not be saved.';
+		});
 	}
 
 	async _handleSubmit() {
@@ -79,6 +87,9 @@ class UpdateForm {
 				tags: this.tagInput.getTags(),
 				html: this.els.html.value,
 			});
+
+			// 編集結果をオリジナルとする
+			this.originalMemo = this.els.memo.value;
 			window.close();
 		} catch (err) {
 			this.showError(err.message);
