@@ -4,5 +4,6 @@ data/
 work/
 *.log
 logs/
+.agent/
 .gemini/
 .vscode/
