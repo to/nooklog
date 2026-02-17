@@ -74,6 +74,7 @@ class UpdateForm {
 		});
 
 		window.addEventListener('beforeunload', e => {
+			// ブラウザのデフォルトメッセージが表示される
 			if (this.originalMemo !== this.els.memo.value)
 				e.returnValue = 'Changes you made may not be saved.';
 		});
@@ -102,7 +103,12 @@ class UpdateForm {
 			});
 
 			// 準備ができたことを通知しHTMLを受診する
-			chrome.runtime.sendMessage({ status: 'ready' });
+			chrome.tabs.getCurrent().then(tab => {
+				chrome.tabs.sendMessage(this.contentTabId, {
+					status: 'ready',
+					updateTabId: tab.id,
+				});
+			});
 		}
 	}
 

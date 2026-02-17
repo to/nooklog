@@ -45,28 +45,25 @@ async function openUpdatePage(contentTab) {
 		type: 'popup',
 		width: WINDOW_WIDTH,
 		height: WINDOW_HEIGHT,
-		left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 10),
-		top: area.top + area.height - (WINDOW_HEIGHT - 20) - WINDOW_MARGIN,
+		left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 6),
+		top: area.top + area.height - WINDOW_HEIGHT - (WINDOW_MARGIN - 24),
 	});
 
-	const updateTabId = updateWin.tabs[0].id;
-	chrome.runtime.onMessage.addListener(function listener(msg, sender) {
-		// 更新ページの準備ができてからHTMLを送信する
-		if (msg.status === 'ready' && sender?.tab?.id === updateTabId) {
-			chrome.runtime.onMessage.removeListener(listener);
-
-			chrome.scripting.executeScript({
-				target: { tabId: contentTab.id },
-				func: contentScript,
-			});
-		}
+	chrome.scripting.executeScript({
+		target: { tabId: contentTab.id },
+		func: contentScript,
+		args: [updateWin.tabs[0].id],
 	});
 }
 
-function contentScript() {
-	// 対象ページのHTMLを送信する
-	chrome.runtime.sendMessage({
-		html: document.documentElement.outerHTML,
+function contentScript(updateTabId) {
+	chrome.runtime.onMessage.addListener(msg => {
+		// 更新ページの準備ができてからHTMLを送信する
+		if (msg.status === 'ready' && msg.updateTabId === updateTabId) {
+			chrome.runtime.sendMessage({
+				html: document.documentElement.outerHTML,
+			});
+		}
 	});
 
 	// テキスト選択を監視する
