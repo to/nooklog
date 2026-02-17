@@ -80,7 +80,7 @@ class UpdateForm {
 		});
 
 		// 拡張内で開かれているか？
-		if (window?.chrome?.runtime) {
+		if (isExtension) {
 			chrome.runtime.onMessage.addListener((msg, sender) => {
 				if (sender?.tab?.id !== this.contentTabId)
 					return;
@@ -90,6 +90,7 @@ class UpdateForm {
 					return;
 				}
 
+				// コンテンツページで新たなテキストが選択されたか？
 				if (msg.selection && this.previousSelection !== msg.selection) {
 					this.previousSelection = msg.selection;
 

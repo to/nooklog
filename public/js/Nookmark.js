@@ -1,8 +1,7 @@
 const SERVER_URL = 'http://localhost:3000';
 
 const Nookmark = {
-	apiBase: (window.location.protocol === 'chrome-extension:' ?
-		SERVER_URL : '') + '/api',
+	apiBase: (isExtension ? SERVER_URL : '') + '/api',
 
 	async getTags() {
 		const res = await fetch(`${this.apiBase}/tags`);
