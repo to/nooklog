@@ -8,10 +8,33 @@
 		"start": "node server/server.js",
 		"dev": "node --watch server/server.js",
 		"dev:browser": "pm2 stop nookmark & concurrently \"pnpm dev\" \"npx browser-sync start --proxy localhost:3000 --port 4000 --files public/**/*\"",
-		"pm2:start": "pm2 start ecosystem.config.cjs",
+		"pm2:start": "pm2 delete nookmark 2>nul & pm2 start ecosystem.config.cjs",
 		"pm2:stop": "pm2 stop nookmark",
 		"pm2:logs": "pm2 logs nookmark",
-		"pm2:monit": "pm2 monit"
+		"pm2:monit": "pm2 monit",
+		"electron": "electron electron/main.cjs",
+		"build": "pnpm rebuild && electron-builder -w"
+	},
+	"build": {
+		"appId": "com.nookmark.app",
+		"productName": "Nookmark",
+		"files": [
+			"**/*",
+			"!**/*.db",
+			"!.git",
+			"!work",
+			"!logs",
+			"!node_modules/**/.bin",
+			"node_modules/**/*",
+			"electron/**/*",
+			"!data",
+			"!work"
+		],
+		"asar": false,
+		"win": {
+			"target": "nsis",
+			"icon": "electron/icon_256.png"
+		}
 	},
 	"dependencies": {
 		"@lancedb/lancedb": "^0.23.0",
@@ -25,15 +48,17 @@
 		"turndown": "^7.2.0"
 	},
 	"devDependencies": {
-		"@eslint/js": "^9.39.2",
-		"@stylistic/stylelint-plugin": "^5.0.1",
-		"concurrently": "^9.2.1",
-		"eslint": "^9.39.2",
-		"globals": "^17.0.0",
-		"stylelint": "^16.26.1",
-		"stylelint-config-recess-order": "^7.4.0",
-		"stylelint-config-standard": "^39.0.1",
-		"stylelint-order": "^7.0.1",
-		"stylelint-value-no-unknown-custom-properties": "^6.1.0"
+		"@eslint/js": "*",
+		"@stylistic/stylelint-plugin": "*",
+		"concurrently": "*",
+		"electron": "*",
+		"electron-builder": "*",
+		"eslint": "*",
+		"globals": "*",
+		"stylelint": "*",
+		"stylelint-config-recess-order": "*",
+		"stylelint-config-standard": "*",
+		"stylelint-order": "*",
+		"stylelint-value-no-unknown-custom-properties": "*"
 	}
 }
