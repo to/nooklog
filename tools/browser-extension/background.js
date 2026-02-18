@@ -16,6 +16,7 @@ chrome.commands.onCommand.addListener(async command => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
+	// 拡張アイコンのコンテキストメニューに常に表示されてしまう(解決方法不明)
 	chrome.contextMenus.create({
 		id: 'search-nookmark',
 		title: 'Search Nookmark for "%s"',
@@ -24,12 +25,13 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener(info => {
-	if (info.menuItemId === 'search-nookmark')
+	// 拡張アイコンをクリックされた時を除外する
+	if (info.menuItemId === 'search-nookmark' && info.selectionText)
 		openSearchPage(info.selectionText);
 });
 
-chrome.tabs.onUpdated.addListener((info, tab) => {
-	if (info.status === 'complete')
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+	if (info.status == 'loading')
 		checkUrl(tab);
 });
 
@@ -49,11 +51,16 @@ async function openUpdatePage(contentTab) {
 		top: area.top + area.height - WINDOW_HEIGHT - (WINDOW_MARGIN - 24),
 	});
 
-	chrome.scripting.executeScript({
-		target: { tabId: contentTab.id },
-		func: contentScript,
-		args: [updateWin.tabs[0].id],
-	});
+	try {
+		const updateTabId = updateWin.tabs[0].id;
+		await chrome.scripting.executeScript({
+			target: { tabId: contentTab.id },
+			func: contentScript,
+			args: [updateTabId],
+		});
+	} catch {
+		// スクリプトの埋め込みが許可されないページ(chrome://や拡張ストアなど)
+	}
 }
 
 function contentScript(updateTabId) {

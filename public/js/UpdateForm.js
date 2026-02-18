@@ -62,7 +62,7 @@ class UpdateForm {
 		this.els.error.style.display = 'none';
 	}
 
-	_bindEvents() {
+	async _bindEvents() {
 		this.els.form.addEventListener('submit', async e => {
 			e.preventDefault();
 			await this._handleSubmit();
@@ -104,12 +104,15 @@ class UpdateForm {
 			});
 
 			// 準備ができたことを通知しHTMLを受診する
-			chrome.tabs.getCurrent().then(tab => {
-				chrome.tabs.sendMessage(this.contentTabId, {
+			try {
+				const updateTabId = (await chrome.tabs.getCurrent()).id;
+				await chrome.tabs.sendMessage(this.contentTabId, {
+					updateTabId,
 					status: 'ready',
-					updateTabId: tab.id,
 				});
-			});
+			} catch {
+				// スクリプトの埋め込みが許可されないページの場合 リスナーがいない
+			}
 		}
 	}
 
