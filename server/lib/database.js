@@ -1,17 +1,10 @@
 import lancedb from '@lancedb/lancedb';
 const { MultiMatchQuery } = lancedb;
-import path from 'path';
-import { fileURLToPath } from 'url';
+
 import { bench } from './util.js';
+import config from './config.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const DB_DIR = path.join(__dirname, '..', '..', 'data', 'lancedb');
-
-const OPTIMIZE_THRESHOLD = 100;
-const KEEP_VERSIONS_DAYS = 7;
-const RECENT_THRESHOLD_DAYS = 7;
+console.log(config);
 
 class Database {
 	constructor() {
@@ -21,7 +14,7 @@ class Database {
 	}
 
 	async initialize() {
-		this.db = await lancedb.connect(DB_DIR);
+		this.db = await lancedb.connect(config.database.path);
 		this.bookmarks = await this.db.openTable('bookmarks');
 		this.contents = await this.db.openTable('contents');
 
@@ -81,7 +74,7 @@ class Database {
 	}
 
 	async getRecent({ limit = 100, sortBy = 'updated_at' } = {}) {
-		const recentThreshold = Date.now() - RECENT_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+		const recentThreshold = Date.now() - config.database.recentThresholdDays * 24 * 60 * 60 * 1000;
 		return this._populate(
 			(await this.bookmarks.query()
 				.select([
@@ -126,7 +119,8 @@ class Database {
 	}
 
 	async search({
-		tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 200 }) {
+		tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 200,
+	}) {
 
 		const { conditions, ftsQuery, patterns } = this.buildSearchQuery({
 			tags, query, fields, rating,
@@ -198,17 +192,17 @@ class Database {
 	}
 
 	async optimize() {
-		// 断片化が進行していなければ最適化をスキップする
+		// 断片化した小ファイルが閾値を超えたら最適化する
 		let stats = await this.bookmarks.stats();
 		const fragments = stats.fragmentStats.numSmallFragments;
-		if (fragments < OPTIMIZE_THRESHOLD)
+		if (fragments < config.database.optimization.maxSmallFragments)
 			return;
 
 		for (const table of [this.bookmarks, this.contents]) {
 			await bench(async () => {
 				await table.optimize({
 					cleanupOlderThan: new Date(
-						Date.now() - KEEP_VERSIONS_DAYS * 24 * 60 * 60 * 1000),
+						Date.now() - config.database.optimization.keepVersionsDays * 24 * 60 * 60 * 1000),
 				});
 			}, `database.optimize: ${table.name}(fragments: ${fragments})`);
 		}

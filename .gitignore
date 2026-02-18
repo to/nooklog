@@ -8,3 +8,4 @@ logs/
 .agent/
 .gemini/
 .vscode/
+user.config.js

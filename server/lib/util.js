@@ -1,8 +1,10 @@
-export const merge = (target, source) => {
-	Object.keys(source).forEach(key => {
-		if (source[key] !== undefined)
-			target[key] = source[key];
-	});
+export const merge = (target = {}, source) => {
+	for (const key of Object.keys(source)) {
+		if (source[key] instanceof Object && key in target)
+			Object.assign(source[key], merge(target[key], source[key]));
+	}
+
+	Object.assign(target, source);
 	return target;
 };
 

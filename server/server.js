@@ -1,14 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import nookmark from './lib/nookmark.js';
-
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import config from './lib/config.js';
+import nookmark from './lib/nookmark.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Private Network Access (PNA) 対応
 // HTTPSのサイト(HuggingFaceなど)からlocalhostへのアクセスを許可するために必要
@@ -67,9 +67,9 @@ app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
 	res.json({ success: true });
 }, 'Error: DELETE /api/bookmarks/:id'));
 
-app.listen(PORT, async () => {
+app.listen(config.server.port, async () => {
 	await nookmark.initialize();
-	console.log(`Server running on http://localhost:${PORT}`);
+	console.log(`Server running on http://localhost:${config.server.port}`);
 });
 
 function handle(handler, errorContext) {
