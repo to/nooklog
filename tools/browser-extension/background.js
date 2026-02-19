@@ -36,41 +36,47 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 });
 
 async function openUpdatePage(contentTab) {
+	// 更新ページより先にリスナーを準備する
+	const sessionId = '' + Date.now();
+	chrome.runtime.onMessage.addListener(async msg => {
+		if (msg.sessionId !== sessionId)
+			return;
+
+		// 更新ページの準備ができてからHTMLを送信する
+		if (msg.status === 'ready') {
+			try {
+				await chrome.scripting.executeScript({
+					target: { tabId: contentTab.id },
+					func: contentScript,
+					args: [sessionId],
+				});
+			} catch {
+				// スクリプトの埋め込みが許可されないページ(chrome://や拡張ストアなど)
+			}
+		}
+	});
+
 	// 更新ページを開く
 	const display = await getCurrentDisplay();
 	const area = display.workArea;
-	const updateWin = await chrome.windows.create({
+	chrome.windows.create({
 		url: 'public/update.html'
 			+ `?url=${encodeURIComponent(contentTab.url)}`
 			+ `&title=${encodeURIComponent(contentTab.title)}`
-			+ `&contentTabId=${contentTab.id}`,
+			+ `&contentTabId=${contentTab.id}`
+			+ `&sessionId=${sessionId}`,
 		type: 'popup',
 		width: WINDOW_WIDTH,
 		height: WINDOW_HEIGHT,
 		left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 6),
 		top: area.top + area.height - WINDOW_HEIGHT - (WINDOW_MARGIN - 24),
 	});
-
-	try {
-		const updateTabId = updateWin.tabs[0].id;
-		await chrome.scripting.executeScript({
-			target: { tabId: contentTab.id },
-			func: contentScript,
-			args: [updateTabId],
-		});
-	} catch {
-		// スクリプトの埋め込みが許可されないページ(chrome://や拡張ストアなど)
-	}
 }
 
-function contentScript(updateTabId) {
-	chrome.runtime.onMessage.addListener(msg => {
-		// 更新ページの準備ができてからHTMLを送信する
-		if (msg.status === 'ready' && msg.updateTabId === updateTabId) {
-			chrome.runtime.sendMessage({
-				html: document.documentElement.outerHTML,
-			});
-		}
+function contentScript(sessionId) {
+	chrome.runtime.sendMessage({
+		sessionId,
+		html: document.documentElement.outerHTML,
 	});
 
 	// テキスト選択を監視する
@@ -80,7 +86,7 @@ function contentScript(updateTabId) {
 
 		const selection = window.getSelection().toString().trim();
 		if (selection)
-			chrome.runtime.sendMessage({ selection });
+			chrome.runtime.sendMessage({ sessionId, selection });
 	});
 }
 

@@ -23,7 +23,7 @@ class UpdateForm {
 	async _init() {
 		const ps = getSearchParams();
 		this.id = ps.id;
-		this.contentTabId = parseInt(ps.contentTabId, 10);
+		this.sessionId = ps.sessionId;
 
 		if (ps.url)
 			this.els.url.value = ps.url;
@@ -62,7 +62,7 @@ class UpdateForm {
 		this.els.error.style.display = 'none';
 	}
 
-	async _bindEvents() {
+	_bindEvents() {
 		this.els.form.addEventListener('submit', async e => {
 			e.preventDefault();
 			await this._handleSubmit();
@@ -81,8 +81,8 @@ class UpdateForm {
 
 		// 拡張内で開かれているか？
 		if (isExtension) {
-			chrome.runtime.onMessage.addListener((msg, sender) => {
-				if (sender?.tab?.id !== this.contentTabId)
+			chrome.runtime.onMessage.addListener(msg => {
+				if (msg.sessionId !== this.sessionId)
 					return;
 
 				if (msg.html) {
@@ -105,9 +105,8 @@ class UpdateForm {
 
 			// 準備ができたことを通知しHTMLを受診する
 			try {
-				const updateTabId = (await chrome.tabs.getCurrent()).id;
-				await chrome.tabs.sendMessage(this.contentTabId, {
-					updateTabId,
+				chrome.runtime.sendMessage({
+					sessionId: this.sessionId,
 					status: 'ready',
 				});
 			} catch {
