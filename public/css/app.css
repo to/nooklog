@@ -4,6 +4,25 @@ body {
 	font-size: var(--font-size-s);
 }
 
+@layer{
+	/* ---- Icon(Material Symbols) ---- */
+	.icon {
+		display: inline-block;
+		font-family: 'Material Symbols Outlined';
+		font-size: var(--font-size-m);
+		font-style: normal;
+		font-weight: normal;
+		font-feature-settings: 'liga';
+		line-height: inherit;
+		text-transform: none;
+		letter-spacing: normal;
+		overflow-wrap: normal;
+		white-space: nowrap;
+		direction: ltr;
+		-webkit-font-smoothing: antialiased;
+	}
+}
+
 @layer {
 	/* ---- Base ---- */
 	html,
@@ -56,6 +75,7 @@ body {
 	/* グループ化によりbutton:activeの詳細度になる */
 	button,
 	button:active {
+		display: flex; /* 僅かな行の余白を除去する */
 		align-self: flex-end;
 		padding: var(--space-2s) var(--space-s);
 		font-weight: bold;
@@ -162,32 +182,23 @@ body {
 
 			&:has(input:checked) {
 				color: var(--color-3);
-				border-bottom: 2px solid currentcolor;
+				text-decoration: underline;
+				text-decoration-thickness: 2px;
+				text-underline-offset: var(--space-2s);
+
+				/* border-bottom: 2px solid currentcolor; */
 			}
 		}
+	}
+
+	.loading {
+		line-height: 1;
 	}
 
 	.error {
 		display: none;
 		margin-top: var(--space-s);
 		color: var(--color-error);
-	}
-
-	/* ---- Icon(Material Symbols) ---- */
-	.icon {
-		display: inline-block;
-		font-family: 'Material Symbols Outlined';
-		font-size: var(--font-size-m);
-		font-style: normal;
-		font-weight: normal;
-		font-feature-settings: 'liga';
-		line-height: inherit;
-		text-transform: none;
-		letter-spacing: normal;
-		overflow-wrap: normal;
-		white-space: nowrap;
-		direction: ltr;
-		-webkit-font-smoothing: antialiased;
 	}
 }
 

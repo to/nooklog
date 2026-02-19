@@ -3,8 +3,9 @@ const MEMO_DELIMITER = '/';
 class UpdateForm {
 	constructor() {
 		this.els = {
-			form: $('#updateForm'),
+			form: $('#form-update'),
 			error: $('#error'),
+			close: $('#btn-close'),
 			url: $('#url'),
 			title: $('#title'),
 			memo: $('#memo'),
@@ -45,10 +46,7 @@ class UpdateForm {
 	}
 
 	_bindEvents() {
-		this.els.form.addEventListener('submit', async e => {
-			e.preventDefault();
-			await this._handleSubmit();
-		});
+		this.els.close.addEventListener('click', () => this.close());
 
 		document.addEventListener('keydown', async e => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter')
@@ -59,6 +57,11 @@ class UpdateForm {
 			// ブラウザのデフォルトメッセージが表示される
 			if (this.originalMemo !== this.els.memo.value)
 				e.returnValue = 'Changes you made may not be saved.';
+		});
+
+		this.els.form.addEventListener('submit', async e => {
+			e.preventDefault();
+			await this._handleSubmit();
 		});
 
 		// 拡張内で開かれているか？

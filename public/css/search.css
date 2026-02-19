@@ -1,6 +1,6 @@
 @layer {
 	body {
-		gap: 0;
+		gap: var(--space-s);
 		padding: 0  var(--space-2l) var(--space-2l) var(--space-2l);
 	}
 
@@ -16,16 +16,11 @@
 		margin-right: calc(var(--font-size-l) * -1);
 	}
 
-	.radio-flat {
-		/* フォームとテーブルの距離を調整する */
-		margin: var(--space-2l) 0  var(--space-s) 0;
+	form {
+		gap: var(--space-2l);
 	}
 
-	.loading {
-		text-align: center;
-	}
-
-	.results-table {
+	.table-result {
 		width: 100%;
 
 		& tr {

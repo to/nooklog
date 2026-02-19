@@ -18,12 +18,12 @@
 </head>
 
 <body>
-	<header class="flex shrink-0 items-end justify-end">
+	<header class="flex shrink-0 justify-end items-end">
 		<button id="themeToggle" class="btn-flat">
 			<span class="icon">dark_mode</span>
 		</button>
 	</header>
-	<form id="searchForm" class="search-form w-full gap-0">
+	<form id="form-search" class="search-form w-full">
 		<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
 			<input name="tags" placeholder="Tags">
 			<input type="text" id="query" placeholder="Query" class="row-2">
@@ -33,19 +33,21 @@
 				<label> <input type="checkbox" name="field" value="memo" checked>Memo</label>
 			</div>
 		</div>
-		<div class="radio-flat self-end">
-			<label> <input type="radio" name="sortBy" value="created_at" checked>Created</label>
-			<label> <input type="radio" name="sortBy" value="updated_at">Updated</label>
-			<label> <input type="radio" name="sortBy" value="rating">Rating</label>
+		<div class="none">
+			<button type="submit">Search</button>
 		</div>
-		<button type="submit" class="none">Search</button>
+		<div class="flex items-end">
+			<span class="icon loading animate-spin">progress_activity</span>
+			<div class="radio-flat ml-auto">
+				<label> <input type="radio" name="sortBy" value="created_at" checked>Created</label>
+				<label> <input type="radio" name="sortBy" value="updated_at">Updated</label>
+				<label> <input type="radio" name="sortBy" value="rating">Rating</label>
+			</div>
+		</div>
 	</form>
 
-	<div id="loading" class="loading none">
-		<span class="icon animate-spin">progress_activity</span>
-	</div>
-	<table id="resultsTable" class="results-table none">
-		<tbody id="resultsBody"></tbody>
+	<table class="table-result">
+		<tbody></tbody>
 	</table>
 
 	<script src="lib/tagify/tagify.js"></script>

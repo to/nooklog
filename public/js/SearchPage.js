@@ -1,12 +1,12 @@
 class SearchPage {
 	constructor() {
 		this.els = {
-			form: $('#searchForm'),
+			form: $('#form-search'),
 			query: $('#query'),
 
-			loading: $('#loading'),
-			table: $('#resultsTable'),
-			tbody: $('#resultsBody'),
+			loading: $('.loading'),
+			table: $('.table-result'),
+			tbody: $('.table-result tbody'),
 			tags: $('input[name=tags]'),
 		};
 		this.tagInput = new TagInput(this.els.tags);
@@ -72,7 +72,6 @@ class SearchPage {
 
 	async _search() {
 		this.els.loading.style.display = 'block';
-		this.els.table.style.display = 'none';
 
 		const tags = this.tagInput?.getTags();
 		const query = this.els.query.value;
@@ -94,7 +93,6 @@ class SearchPage {
 		}
 
 		this.els.loading.style.display = 'none';
-		this.els.table.style.display = 'table';
 	}
 
 	_render(results) {
