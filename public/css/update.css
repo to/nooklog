@@ -1,0 +1,9 @@
+@layer {
+	body {
+		/* 狭い外周は目の錯覚で数値以上に狭く見える */
+		padding: calc(var(--space-s) +
+		clamp(var(--space-s) / 4,
+		2px + (100vw - 380px) * (8 - 2) / (460 - 380),
+		var(--space-s)));
+	}
+}

@@ -12,15 +12,16 @@
 	<link rel="stylesheet" href="css/layout.css">
 	<link rel="stylesheet" href="css/theme.css">
 	<link rel="stylesheet" href="css/app.css">
+	<link rel="stylesheet" href="css/update.css">
 </head>
 
 <body>
 	<form id="updateForm" class="h-full">
-		<input type="hidden" id="html">
 		<input type="text" id="url" required>
 		<input type="text" id="title" placeholder="Title" required>
 		<input name="tags" placeholder="Tags">
 		<textarea id="memo" placeholder="Memo"></textarea>
+		<input type="hidden" id="html">
 		<button type="submit">Save</button>
 		<div id="error" class="error"></div>
 	</form>

@@ -35,5 +35,15 @@
 		"open-update-page": {
 			"description": "Open update page"
 		}
-	}
+	},
+	"web_accessible_resources": [
+		{
+			"resources": [
+				"public/*"
+			],
+			"matches": [
+				"<all_urls>"
+			]
+		}
+	]
 }

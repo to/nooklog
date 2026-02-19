@@ -44,24 +44,6 @@ class UpdateForm {
 		}
 	}
 
-	_populate(bookmark) {
-		this.els.url.value = bookmark.url;
-		this.els.title.value = bookmark.title;
-		this.els.memo.value = bookmark.memo || '';
-		this.originalMemo = this.els.memo.value;
-		this.tagInput.setTags(
-			[].concat(bookmark.rating || [], bookmark.tags || []));
-	}
-
-	showError(message) {
-		this.els.error.textContent = message;
-		this.els.error.style.display = 'block';
-	}
-
-	hideError() {
-		this.els.error.style.display = 'none';
-	}
-
 	_bindEvents() {
 		this.els.form.addEventListener('submit', async e => {
 			e.preventDefault();
@@ -115,6 +97,30 @@ class UpdateForm {
 		}
 	}
 
+	_populate(bookmark) {
+		this.els.url.value = bookmark.url;
+		this.els.title.value = bookmark.title;
+		this.els.memo.value = bookmark.memo || '';
+		this.originalMemo = this.els.memo.value;
+		this.tagInput.setTags(
+			[].concat(bookmark.rating || [], bookmark.tags || []));
+	}
+
+	showError(message) {
+		this.els.error.textContent = message;
+		this.els.error.style.display = 'block';
+	}
+
+	hideError() {
+		this.els.error.style.display = 'none';
+	}
+
+	close() {
+		window.close();
+		window.parent.postMessage(
+			{ status: 'unload', sessionId: this.sessionId }, '*');
+	}
+
 	async _handleSubmit() {
 		this.hideError();
 		try {
@@ -127,9 +133,10 @@ class UpdateForm {
 				html: this.els.html.value,
 			});
 
-			// 編集結果をオリジナルとする
+			// 編集結果をオリジナルとする(beforeunloadでチェック)
 			this.originalMemo = this.els.memo.value;
-			window.close();
+
+			this.close();
 		} catch (err) {
 			this.showError(err.message);
 		}

@@ -38,12 +38,11 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 async function openUpdatePage(contentTab) {
 	// 更新ページより先にリスナーを準備する
 	const sessionId = '' + Date.now();
-	chrome.runtime.onMessage.addListener(async msg => {
-		if (msg.sessionId !== sessionId)
-			return;
-
+	chrome.runtime.onMessage.addListener(async function listener(msg) {
 		// 更新ページの準備ができてからHTMLを送信する
-		if (msg.status === 'ready') {
+		if (msg.status === 'ready' && msg.sessionId === sessionId) {
+			chrome.runtime.onMessage.removeListener(listener);
+
 			try {
 				await chrome.scripting.executeScript({
 					target: { tabId: contentTab.id },
@@ -56,20 +55,52 @@ async function openUpdatePage(contentTab) {
 		}
 	});
 
-	// 更新ページを開く
-	const display = await getCurrentDisplay();
-	const area = display.workArea;
-	chrome.windows.create({
-		url: 'public/update.html'
-			+ `?url=${encodeURIComponent(contentTab.url)}`
-			+ `&title=${encodeURIComponent(contentTab.title)}`
-			+ `&contentTabId=${contentTab.id}`
-			+ `&sessionId=${sessionId}`,
-		type: 'popup',
-		width: WINDOW_WIDTH,
-		height: WINDOW_HEIGHT,
-		left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 6),
-		top: area.top + area.height - WINDOW_HEIGHT - (WINDOW_MARGIN - 24),
+	try {
+		await chrome.scripting.executeScript({
+			target: { tabId: contentTab.id },
+			func: frameScript,
+			args: [sessionId, contentTab.url, contentTab.title],
+		});
+	} catch {
+	}
+}
+
+function frameScript(sessionId, url, title) {
+	const HOST_ID = 'nookmark-shadow-host';
+	if (document.getElementById(HOST_ID))
+		return;
+
+	const host = document.createElement('div');
+	host.id = HOST_ID;
+	document.body.appendChild(host);
+
+	const iframe = document.createElement('iframe');
+	iframe.src = chrome.runtime.getURL('public/update.html')
+		+ `?url=${encodeURIComponent(url)}`
+		+ `&title=${encodeURIComponent(title)}`
+		+ `&sessionId=${sessionId}`;
+
+	Object.assign(iframe.style, {
+		position: 'fixed',
+		top: '4px',
+		right: '4px',
+		width: '300px',
+		height: '380px',
+		border: 'none',
+		zIndex: '2147483647',
+		borderRadius: '4px',
+		boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+	});
+
+	const shadow = host.attachShadow({ mode: 'open' });
+	shadow.appendChild(iframe);
+
+	window.addEventListener('message', function listener(e) {
+		if (e.data.status !== 'unload')
+			return;
+
+		window.removeEventListener('message', listener);
+		host.remove();
 	});
 }
 
