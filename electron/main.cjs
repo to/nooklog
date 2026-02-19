@@ -2,7 +2,6 @@ const { app, Tray, Menu, shell, BrowserWindow } = require('electron');
 const path = require('path');
 const { fork } = require('child_process');
 
-let mainWindow;
 let tray;
 let serverProcess;
 
