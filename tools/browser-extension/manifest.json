@@ -12,7 +12,6 @@
 		"system.display"
 	],
 	"host_permissions": [
-		"http://localhost:3000/*",
 		"<all_urls>"
 	],
 	"background": {

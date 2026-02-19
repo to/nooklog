@@ -1,10 +1,12 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import lancedb from '@lancedb/lancedb';
 const { MultiMatchQuery } = lancedb;
 
 import { bench } from './util.js';
 import config from './config.js';
 
-console.log(config);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class Database {
 	constructor() {
@@ -14,11 +16,13 @@ class Database {
 	}
 
 	async initialize() {
-		this.db = await lancedb.connect(config.database.path);
+		this.db = await lancedb.connect(
+			path.isAbsolute(config.database.path) ?
+				config.database.path :
+				path.resolve(__dirname, '../../', config.database.path));
 		this.bookmarks = await this.db.openTable('bookmarks');
 		this.contents = await this.db.openTable('contents');
 
-		console.log('LanceDB initialized.');
 		console.log(`bookmarks: ${await this.bookmarks.countRows()} rows.`);
 		console.log(`contents: ${await this.contents.countRows()} rows.`);
 	}
@@ -209,7 +213,7 @@ class Database {
 	}
 }
 
-// フィールド名が文字列変数の場合、クォートされるので注意すること
+// カラム名が文字列変数の場合 クォートされるので注意すること
 function sql(strings, ...values) {
 	return values.reduce(
 		(acc, val, i) => acc + sqlValue(val) + strings[i + 1], strings[0]);

@@ -1,4 +1,4 @@
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'http://localhost:5050';
 const WINDOW_WIDTH = 500;
 const WINDOW_HEIGHT = 480;
 const WINDOW_MARGIN = 25;

@@ -1,4 +1,4 @@
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'http://localhost:5050';
 
 const Nookmark = {
 	apiBase: (isExtension ? SERVER_URL : '') + '/api',

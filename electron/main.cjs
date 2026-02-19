@@ -33,7 +33,7 @@ if (!gotTheLock) {
 		app.on('activate', () => {
 			// Dockアイコンクリック時などの挙動（macOSなど）
 			// 必要ならここでブラウザを開く
-			shell.openExternal('http://localhost:3000');
+			shell.openExternal('http://localhost:5050');
 		});
 	});
 }
@@ -42,7 +42,7 @@ function startServer() {
 	// Expressサーバーを別プロセスとして起動
 	const serverPath = path.join(__dirname, '../server/server.js');
 	serverProcess = fork(serverPath, [], {
-		env: { ...process.env, PORT: 3000 }, // ポート指定など
+		env: { ...process.env, PORT: 5050 }, // ポート指定など
 	});
 
 	serverProcess.on('error', err => {
@@ -61,7 +61,7 @@ function createTray() {
 			label: 'Open Nookmark',
 			click: () => {
 				// デフォルトブラウザで開く
-				shell.openExternal('http://localhost:3000');
+				shell.openExternal('http://localhost:5050');
 			},
 		},
 		{ type: 'separator' },
@@ -79,7 +79,7 @@ function createTray() {
 
 	// トレイアイコンをクリックしたらブラウザを開く
 	tray.on('click', () => {
-		shell.openExternal('http://localhost:3000');
+		shell.openExternal('http://localhost:5050');
 	});
 }
 

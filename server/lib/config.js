@@ -5,28 +5,43 @@ import { fileURLToPath } from 'url';
 import _ from './util.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_CONFIG = path.join(__dirname, '../default.config.js');
-const USER_CONFIG = path.join(__dirname, '../../user.config.js');
+const CONFIG_PATH = path.join(__dirname, '../../nookmark.config.json');
 
-// 設定ファイルがなければコピー
-try {
-	fs.copyFileSync(DEFAULT_CONFIG, USER_CONFIG, fs.constants.COPYFILE_EXCL);
-} catch {
+// デフォルト設定
+let config = {
+	'server': {
+		'port': 5050,
+	},
+	'database': {
+		'path': 'data/lancedb',
+		'recentThresholdDays': 7,
+		'optimization': {
+			'maxSmallFragments': 100,
+			'keepVersionsDays': 7,
+		},
+	},
+};
+
+Object.defineProperty(config, 'save', {
+	value: function () {
+		fs.writeFileSync(CONFIG_PATH, JSON.stringify(this, null, '\t'));
+	},
+	enumerable: false,
+});
+
+// 設定ファイルがあれば読み込んでマージ
+if (fs.existsSync(CONFIG_PATH)) {
+	try {
+		config = _.merge(config,
+			JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')));
+	} catch (e) {
+		// JSONパースエラーなど致命的な場合は起動しない
+		throw new Error(`Failed to read config file: ${CONFIG_PATH}`, { cause: e });
+	}
+} else {
+	config.save();
 }
 
-// 設定を読み込みマージする
-let config;
-try {
-	config = _.merge(
-		(await import('file://' + DEFAULT_CONFIG)).default,
-		(await import('file://' + USER_CONFIG)).default);
-} catch (e) {
-	// アプリケーションを終了する
-	throw new Error('Failed to load config', { cause: e });
-}
-
-// パスを解決する
-if (!path.isAbsolute(config.database.path))
-	config.database.path = path.resolve(__dirname, '../../', config.database.path);
+console.log('config: ', config);
 
 export default config;
