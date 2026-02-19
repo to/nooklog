@@ -7,13 +7,13 @@
 	"scripts": {
 		"start": "node server/server.js",
 		"dev": "node --watch server/server.js",
-		"dev:browser": "pm2 stop nookmark & concurrently \"pnpm dev\" \"npx browser-sync start --proxy localhost:3000 --port 4000 --files public/**/*\"",
+		"dev:browser": "pm2 stop nookmark & concurrently \"npm run dev\" \"npx browser-sync start --proxy localhost:3000 --port 4000 --files public/**/*\"",
 		"pm2:start": "pm2 delete nookmark 2>nul & pm2 start ecosystem.config.cjs",
 		"pm2:stop": "pm2 stop nookmark",
 		"pm2:logs": "pm2 logs nookmark",
 		"pm2:monit": "pm2 monit",
 		"electron": "electron electron/main.cjs",
-		"build": "pnpm rebuild && electron-builder -w"
+		"build": "npm rebuild && electron-builder -w"
 	},
 	"build": {
 		"appId": "com.nookmark.app",
@@ -48,17 +48,17 @@
 		"turndown": "^7.2.0"
 	},
 	"devDependencies": {
-		"@eslint/js": "*",
-		"@stylistic/stylelint-plugin": "*",
-		"concurrently": "*",
-		"electron": "*",
-		"electron-builder": "*",
-		"eslint": "*",
-		"globals": "*",
-		"stylelint": "*",
-		"stylelint-config-recess-order": "*",
-		"stylelint-config-standard": "*",
-		"stylelint-order": "*",
-		"stylelint-value-no-unknown-custom-properties": "*"
+		"@eslint/js": "^10.0.1",
+		"@stylistic/stylelint-plugin": "^2.1.3",
+		"concurrently": "^9.2.1",
+		"electron": "^40.6.0",
+		"electron-builder": "^26.8.1",
+		"eslint": "^10.0.0",
+		"globals": "^17.3.0",
+		"stylelint": "^16.12.0",
+		"stylelint-config-recess-order": "^7.6.1",
+		"stylelint-config-standard": "^36.0.1",
+		"stylelint-order": "^7.0.1",
+		"stylelint-value-no-unknown-custom-properties": "^6.1.1"
 	}
 }
