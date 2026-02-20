@@ -1,3 +1,5 @@
+@charset "UTF-8";
+
 /* Chrome拡張内でブラウザのデフォルトスタイルを上書きする */
 body {
 	font-family: var(--font-sans);
