@@ -9,7 +9,8 @@
 		"contextMenus",
 		"scripting",
 		"activeTab",
-		"system.display"
+		"system.display",
+		"storage"
 	],
 	"host_permissions": [
 		"<all_urls>"

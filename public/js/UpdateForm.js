@@ -43,6 +43,15 @@ class UpdateForm {
 		} catch (err) {
 			this.showError(err.message);
 		}
+
+		if (isExtension) {
+			const storageKey = 'html:' + this.sessionId;
+			const items = await chrome.storage.local.get(storageKey);
+			if (items[storageKey]) {
+				this.els.html.value = items[storageKey];
+				chrome.storage.local.remove(storageKey);
+			}
+		}
 	}
 
 	_bindEvents() {
@@ -70,11 +79,6 @@ class UpdateForm {
 				if (msg.sessionId !== this.sessionId)
 					return;
 
-				if (msg.html) {
-					this.els.html.value = msg.html;
-					return;
-				}
-
 				// コンテンツページで新たなテキストが選択されたか？
 				if (msg.selection && this.previousSelection !== msg.selection) {
 					this.previousSelection = msg.selection;
@@ -84,19 +88,8 @@ class UpdateForm {
 						this.els.memo.value.slice(start - 1, start)))
 						? '' : MEMO_DELIMITER;
 					this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
-					return;
 				}
 			});
-
-			// 準備ができたことを通知しHTMLを受診する
-			try {
-				chrome.runtime.sendMessage({
-					sessionId: this.sessionId,
-					status: 'ready',
-				});
-			} catch {
-				// スクリプトの埋め込みが許可されないページの場合 リスナーがいない
-			}
 		}
 	}
 
