@@ -28,7 +28,7 @@ chrome.runtime.onStartup.addListener(() => cleanupHtmlStorage());
 chrome.contextMenus.onClicked.addListener(info => {
 	// 拡張アイコンをクリックされた時を除外する
 	if (info.menuItemId === 'search-nookmark' && info.selectionText)
-		openSearchPage(info.selectionText);
+		openSearchPage(info.selectionText.trim());
 });
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
