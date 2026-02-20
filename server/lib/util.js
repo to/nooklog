@@ -17,7 +17,13 @@ export const bench = async (task, label = 'bench') => {
 	return result;
 };
 
+export const parseNumber = val => {
+	const n = parseInt(val);
+	return isNaN(n) ? undefined : n;
+};
+
 export default {
 	merge,
 	bench,
+	parseNumber,
 };

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import lancedb from '@lancedb/lancedb';
 const { MultiMatchQuery } = lancedb;
 
-import { bench } from './util.js';
+import _ from './util.js';
 import config from './config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -203,7 +203,7 @@ class Database {
 			return;
 
 		for (const table of [this.bookmarks, this.contents]) {
-			await bench(async () => {
+			await _.bench(async () => {
 				await table.optimize({
 					cleanupOlderThan: new Date(
 						Date.now() - config.database.optimization.keepVersionsDays * 24 * 60 * 60 * 1000),

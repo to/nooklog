@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import _ from './lib/util.js';
 import express from 'express';
 
 import path from 'path';
@@ -103,7 +103,7 @@ function useParams(ps, schema = PARAMS_SCHEMA) {
 				Array.isArray(val) ? val :
 					val ? val.split(',') : [];
 		} else if (typeof type === 'number') {
-			res[key] = parseInt(val) || undefined;
+			res[key] = _.parseNumber(val);
 		} else {
 			res[key] = val;
 		}
