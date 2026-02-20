@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import cors from 'cors';
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,18 +10,7 @@ import nookmark from './lib/nookmark.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-// Private Network Access (PNA) 対応
-// HTTPSのサイト(HuggingFaceなど)からlocalhostへのアクセスを許可するために必要
-// cors()ミドルウェアより前に書かないと、プリフライト(OPTIONS)リクエストでヘッダーが付与されずブロックされる
-app.use((req, res, next) => {
-	res.setHeader('Access-Control-Allow-Private-Network', 'true');
-	next();
-});
-app.use(cors({
-	origin: true, // リクエスト元のオリジンを許可（ユーザースクリプトから動くように）
-	credentials: true,
-}));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
