@@ -29,6 +29,7 @@ class UpdateForm {
 		const ps = getSearchParams();
 		this.id = ps.id;
 		this.sessionId = ps.sessionId;
+		this.contentTabId = +this.sessionId.split(':')[0];
 
 		if (ps.url)
 			this.els.url.value = ps.url;
@@ -129,8 +130,11 @@ class UpdateForm {
 	}
 
 	close() {
+		if (isExtension) {
+			chrome.tabs.sendMessage(this.contentTabId,
+				{ type: 'dismiss', sessionId: this.sessionId });
+		}
 		window.close();
-		window.parent.postMessage({ type: 'close' }, '*');
 	}
 
 	async detach() {
@@ -157,7 +161,8 @@ class UpdateForm {
 			left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 6),
 			top: area.top + area.height - WINDOW_HEIGHT - (WINDOW_MARGIN - 24),
 		});
-		window.parent.postMessage({ type: 'close' }, '*');
+		chrome.tabs.sendMessage(this.contentTabId,
+			{ type: 'detach', sessionId: this.sessionId });
 	}
 
 	async _handleSubmit() {
