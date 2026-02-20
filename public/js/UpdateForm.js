@@ -100,7 +100,7 @@ class UpdateForm {
 					this.previousSelection = msg.selection;
 
 					const { selectionStart: start, selectionEnd: end } = this.els.memo;
-					const delimiter = (!start || /[\p{P}\p{S}\p{Z}]/u.test(
+					const delimiter = (!start || /[／\/、。←→]/u.test(
 						this.els.memo.value.slice(start - 1, start)))
 						? '' : MEMO_DELIMITER;
 					this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
