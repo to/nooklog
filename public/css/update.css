@@ -1,6 +1,6 @@
 @layer {
 	body {
-		gap: calc(var(--space-s) * 0.75);
+		gap: calc(var(--space-s) * 0.8);
 
 		/* 狭い外周は目の錯覚で数値以上に狭く見える */
 		padding: calc(var(--space-s) +
@@ -9,11 +9,16 @@
 		var(--space-s)));
 	}
 
-	.extension header {
+	.frame header {
 		display: flex;
+		gap: var(--space-s);
 
 		* {
 			line-height: 1;
+		}
+
+		.icon{
+			font-weight: bold;
 		}
 	}
 }

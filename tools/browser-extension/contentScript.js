@@ -31,7 +31,7 @@
 	shadow.appendChild(iframe);
 
 	chrome.storage.local.set({
-		['html:' + sessionId]: document.documentElement.outerHTML,
+		['session:' + sessionId + ':html']: document.documentElement.outerHTML,
 	});
 
 	// テキスト選択を監視する
@@ -45,10 +45,9 @@
 	});
 
 	window.addEventListener('message', function listener(e) {
-		if (e.data.status !== 'unload')
-			return;
-
-		window.removeEventListener('message', listener);
-		host.remove();
+		if (e.data.type === 'close') {
+			window.removeEventListener('message', listener);
+			host.remove();
+		}
 	});
 })();

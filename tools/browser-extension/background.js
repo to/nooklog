@@ -1,7 +1,4 @@
 const SERVER_URL = 'http://localhost:5050';
-const WINDOW_WIDTH = 500;
-const WINDOW_HEIGHT = 480;
-const WINDOW_MARGIN = 25;
 
 chrome.action.onClicked.addListener(tab => openUpdatePage(tab));
 
@@ -78,18 +75,9 @@ async function checkUrl(tab) {
 	}
 }
 
-async function getCurrentDisplay() {
-	const currentWin = await chrome.windows.getCurrent();
-	const centerX = currentWin.left + currentWin.width / 2;
-	const displays = await chrome.system.display.getInfo();
-	return displays.find(d =>
-		(centerX >= d.workArea.left) && (centerX < d.workArea.left + d.workArea.width),
-	) || displays[0];
-}
-
 async function cleanupHtmlStorage() {
-	const items = await chrome.storage.local.get(null);
+	const items = await chrome.storage.local.get();
 	const keys = Object.keys(items)
-		.filter(k => k.startsWith('html:'));
+		.filter(k => k.startsWith('session:'));
 	chrome.storage.local.remove(keys);
 }

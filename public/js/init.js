@@ -1,6 +1,7 @@
 const isExtension = window.location.protocol === 'chrome-extension:';
-if (isExtension)
-	document.documentElement.classList.add('extension');
+const isFrame = window.parent !== window;
+if (isFrame)
+	document.documentElement.classList.add('frame');
 
 // Chrome拡張ではセキュリティポリシーによりインラインスクリプトは使えない
 document.documentElement.classList.add(localStorage.theme ??
