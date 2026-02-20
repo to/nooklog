@@ -104,6 +104,7 @@ class UpdateForm {
 						this.els.memo.value.slice(start - 1, start)))
 						? '' : MEMO_DELIMITER;
 					this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
+					this.els.memo.focus();
 				}
 			});
 		}
