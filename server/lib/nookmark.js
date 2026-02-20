@@ -61,8 +61,8 @@ const nookmark = {
 
 			bm = {
 				id: crypto.randomUUID(),
-				url: url,
-				title: title || '',
+				url: '',
+				title: '',
 				memo: '',
 				rating: 0,
 				keywords: [],

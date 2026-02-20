@@ -66,11 +66,11 @@ const Nookmark = {
 
 	_separateRating(tags) {
 		let rating = null;
-		const filtered = tags.filter(t => {
+		tags = tags.filter(t => {
 			if (!/^\d$/.test(t))
 				return true;
 			rating = (t > rating) ? +t : rating;
 		});
-		return { tags: filtered, rating };
+		return { tags, rating };
 	},
 };
