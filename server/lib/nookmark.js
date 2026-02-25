@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { processHtml } from './librarian.js';
 import db from './database.js';
+import config from './config.js';
 import _ from './util.js';
 
 let tagCache = new Set();
@@ -10,6 +11,14 @@ const nookmark = {
 		await db.initialize();
 		(await db.getTags()).forEach(t => tagCache.add(t));
 		console.log(`tagCache: ${tagCache.size} tags.`);
+	},
+
+	getConfig() {
+		return config;
+	},
+
+	saveConfig(values) {
+		config.save(values);
 	},
 
 	getTags() {

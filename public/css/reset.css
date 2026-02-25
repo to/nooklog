@@ -23,6 +23,10 @@
 		text-decoration: underline;
 	}
 
+	hr{
+		margin: 0;
+	}
+
 	input,
 	textarea,
 	button {

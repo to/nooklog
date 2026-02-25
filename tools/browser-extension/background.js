@@ -1,4 +1,44 @@
-const SERVER_URL = 'http://localhost:5050';
+let config = {};
+chrome.storage.local.get('config').then(r => {
+	Object.assign(config, r.config || {});
+
+	// ワーカー起動時に整合性チェックを開始
+	registerMessagingBridge();
+});
+
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+	if (reason === 'install') {
+		// 設定のデフォルト値を保存する
+		await chrome.storage.local.set({
+			config: {
+				'extension.serverAddress': 'http://localhost:5050',
+			},
+		});
+
+		chrome.tabs.create({
+			url: 'page/settings.html',
+		});
+	}
+
+	// 拡張アイコンのコンテキストメニューに常に表示されてしまう(解決方法不明)
+	chrome.contextMenus.create({
+		id: 'search-nookmark',
+		title: 'Search Nookmark for "%s"',
+		contexts: ['selection'],
+	});
+
+	cleanupSessionData();
+});
+
+// 設定の変更を監視して同期する
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area === 'local' && changes.config) {
+		Object.assign(config, changes.config.newValue || {});
+		registerMessagingBridge();
+	}
+});
+
+chrome.runtime.onStartup.addListener(() => cleanupSessionData());
 
 chrome.action.onClicked.addListener(tab => openUpdatePage(tab));
 
@@ -12,19 +52,6 @@ chrome.commands.onCommand.addListener(async command => {
 	}
 });
 
-chrome.runtime.onInstalled.addListener(() => {
-	// 拡張アイコンのコンテキストメニューに常に表示されてしまう(解決方法不明)
-	chrome.contextMenus.create({
-		id: 'search-nookmark',
-		title: 'Search Nookmark for "%s"',
-		contexts: ['selection'],
-	});
-
-	cleanupHtmlStorage();
-});
-
-chrome.runtime.onStartup.addListener(() => cleanupHtmlStorage());
-
 chrome.contextMenus.onClicked.addListener(info => {
 	// 拡張アイコンをクリックされた時を除外する
 	if (info.menuItemId === 'search-nookmark' && info.selectionText)
@@ -36,12 +63,14 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 		checkUrl(tab);
 });
 
-async function openUpdatePage(contentTab) {
+async function openUpdatePage(tab) {
 	try {
 		await chrome.scripting.executeScript({
-			target: { tabId: contentTab.id },
-			func: contentScript,
-			args: [contentTab.id],
+			target: { tabId: tab.id },
+			files: [
+				'content/messaging.js',
+				'content/content.js',
+			],
 		});
 	} catch {
 		// スクリプトの埋め込みが許可されないページ(chrome://や拡張ストアなど)
@@ -50,7 +79,8 @@ async function openUpdatePage(contentTab) {
 
 async function openSearchPage(query) {
 	chrome.tabs.create({
-		url: `${SERVER_URL}/?query=${encodeURIComponent(query)}`,
+		url: `${config['extension.serverAddress']}/?query=${encodeURIComponent(query)}`,
+		active: !!config['extension.openSearchInForeground'],
 	});
 }
 
@@ -62,7 +92,7 @@ async function checkUrl(tab) {
 	try {
 		// ブックマーク済みかチェックする
 		const res = await fetch(
-			`${SERVER_URL}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
+			`${config['extension.serverAddress']}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
 		const data = await res.json();
 		await chrome.action.setBadgeText({
 			tabId: tab.id,
@@ -76,70 +106,39 @@ async function checkUrl(tab) {
 	}
 }
 
-async function cleanupHtmlStorage() {
+// 異常終了したセッションデータをクリアする
+async function cleanupSessionData() {
 	const items = await chrome.storage.local.get();
 	const keys = Object.keys(items)
 		.filter(k => k.startsWith('session:'));
 	chrome.storage.local.remove(keys);
 }
 
-function contentScript(tabId) {
-	const HOST_ID = 'nookmark-shadow-host';
-	if (document.getElementById(HOST_ID))
-		return;
-
-	const sessionId = tabId + ':' + Date.now();
-
-	const host = document.createElement('div');
-	host.id = HOST_ID;
-	document.body.appendChild(host);
-
-	const iframe = document.createElement('iframe');
-	iframe.src = chrome.runtime.getURL('public/update.html')
-		+ `?url=${encodeURIComponent(location.href)}`
-		+ `&title=${encodeURIComponent(document.title)}`
-		+ `&sessionId=${sessionId}`;
-
-	Object.assign(iframe.style, {
-		position: 'fixed',
-		top: '4px',
-		right: '4px',
-		width: '300px',
-		height: '380px',
-		border: 'none',
-		zIndex: '2147483647',
-		borderRadius: '4px',
-		boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-	});
-
-	const shadow = host.attachShadow({ mode: 'open' });
-	shadow.appendChild(iframe);
-
-	chrome.storage.local.set({
-		['session:' + sessionId + ':html']: document.documentElement.outerHTML,
-	});
-
-	// テキスト選択を監視する
-	const handleSelection = e => {
-		if (e.button !== 0)
+async function registerMessagingBridge() {
+	try {
+		const scriptId = 'messaging-bridge';
+		const url = config['extension.serverAddress'];
+		if (!url)
 			return;
 
-		const selection = window.getSelection().toString().trim();
-		if (selection)
-			chrome.runtime.sendMessage({ sessionId, selection });
-	};
-	document.addEventListener('mouseup', handleSelection);
+		const scripts = await chrome.scripting.getRegisteredContentScripts({ ids: [scriptId] });
+		const currentMatch = scripts[0]?.matches?.[0];
+		const targetMatch = `${url}/*`;
 
-	chrome.runtime.onMessage.addListener(function listener(msg) {
-		if (msg.sessionId !== sessionId)
+		if (currentMatch === targetMatch)
 			return;
 
-		if (msg.type === 'detach' || msg.type === 'dismiss')
-			host.remove();
+		if (scripts.length > 0)
+			await chrome.scripting.unregisterContentScripts({ ids: [scriptId] });
 
-		if (msg.type === 'dismiss' || msg.type === 'close') {
-			chrome.runtime.onMessage.removeListener(listener);
-			document.removeEventListener('mouseup', handleSelection);
-		}
-	});
+		await chrome.scripting.registerContentScripts([{
+			id: scriptId,
+			matches: [targetMatch],
+			js: ['content/messaging.js'],
+			runAt: 'document_start',
+			allFrames: true,
+		}]);
+	} catch (e) {
+		console.error('Failed to register messaging bridge:', e);
+	}
 }

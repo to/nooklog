@@ -10,7 +10,7 @@ class TagInput {
 				enabled: 1, // フォーカス直後に表示しない(フォーカス移動に反応しないように)
 				closeOnSelect: true,
 				searchKeys: ['value'],
-				fuzzySearch: false,
+				fuzzySearch: config['client.tagMatchMode'] === 'contains',
 				highlightFirst: true,
 			},
 		});
@@ -32,24 +32,27 @@ class TagInput {
 			tagify.removeTags(e.detail.tag);
 		});
 
-		tagify.dropdown.filterListItems = value => {
-			if (!value)
-				return tagify.whitelist;
+		if (config['client.tagMatchMode'] === 'smart') {
+			tagify.dropdown.filterListItems = value => {
+				if (!value)
+					return tagify.whitelist;
 
-			const regex = new RegExp(
-				`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
+				const regex = new RegExp(
+					`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
 
-			const whitelist = tagify.whitelist
-				.filter(t => regex.test(t))
-				.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
-				.slice(0, this.maxWhitelist);
+				const whitelist = tagify.whitelist
+					.filter(t => regex.test(t))
+					.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
+					.slice(0, this.maxWhitelist);
 
-			// 要素が十分に絞られたら自動的に確定して閉じる
-			if (whitelist.length == 1 || whitelist.filter(t => t.startsWith(value)).length == 1)
-				setTimeout(() => this.enter(), 16);
+				// 要素が十分に絞られたら自動的に確定して閉じる
+				if (config['client.autoCompleteTags'] &&
+					(whitelist.length == 1 || whitelist.filter(t => t.startsWith(value)).length == 1))
+					setTimeout(() => this.enter(), 16);
 
-			return whitelist;
-		};
+				return whitelist;
+			};
+		}
 	}
 
 	enter() {

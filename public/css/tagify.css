@@ -1,0 +1,91 @@
+/* ---- Tagify ---- */
+.tagify {
+	--tags-border-color: var(--color-2);
+	--tags-focus-border-color: var(--color-2);
+	--tags-hover-border-color: var(--color-2);
+
+	--tag-bg: var(--color-5);
+	--tag-text-color: var(--color-0);
+	--tag-hover: oklch(from var(--color-5) calc(l * var(--hover-off)) c h);
+	--tag-border-radius: var(--radius-m);
+	--tag-pad: var(--space-2s);
+
+	--tag-invalid-bg: var(--color-error);
+
+	--placeholder-color: var(--color-3);
+	--placeholder-color-focus: var(--color-2);
+
+	&, *, *::before, *::after  {
+		transition: none !important;
+		animation: none !important;
+	}
+
+	gap: var(--space-s);
+	padding: var(--space-2s) var(--space-s);
+	border-radius: var(--radius-m);
+
+	.tagify__input{
+		min-height: calc(1.5lh - 1px);
+		padding: var(--space-2s) 0;
+		margin: 0;
+		line-height: var(--line-height-m);
+	}
+
+	.tagify__tag {
+		margin: 0;
+		cursor: pointer;
+
+		&>div {
+			padding: var(--space-2s);
+			font-weight: bold;
+			line-height: var(--line-height-m);
+		}
+
+		&:focus div::before,
+		&:hover:not([readonly]) div::before {
+			--tag-bg-inset: 0 !important;
+		}
+
+		&:active:not([readonly]) div::before {
+			--tag-bg: var(--color-3);
+		}
+
+		&.tagify--notAllowed:not(.tagify__tag--editable) div>span {
+			opacity: 1;
+		}
+	}
+
+	/* 削除ボタンを非表示 */
+	.tagify__tag__removeBtn {
+		display: none !important;
+	}
+}
+
+.tagify__dropdown {
+	--tagify-dd-color-primary: var(--color-3);
+	--tagify-dd-text-color: var(--color-5);
+	--tagify-dd-bg-color: var(--color-0);
+
+	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
+	pointer-events: none;
+
+	&, *, *::before, *::after  {
+		transition: none !important;
+		animation: none !important;
+	}
+
+	.tagify__dropdown__item {
+		/* 左側の余白を無くす */
+		text-indent: 0 !important;
+
+		/* チェックマーク(✓)を非表示 */
+		&::before {
+			display: none !important;
+		}
+
+		&.tagify__dropdown__item--active {
+			color: var(--color-0) !important;
+			background: var(--color-5) !important;
+		}
+	}
+}

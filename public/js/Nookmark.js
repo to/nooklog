@@ -1,37 +1,47 @@
-const SERVER_URL = 'http://localhost:5050';
+window.Nookmark = {
+	apiBase: window.location.origin + '/api',
 
-const Nookmark = {
-	apiBase: (isExtension ? SERVER_URL : '') + '/api',
+	async getConfig() {
+		const values = await this._getJSON(`${this.apiBase}/config`);
+		this._saveConfig(values);
+		return config;
+	},
+
+	async saveConfig(values) {
+		this._saveConfig(values);
+		await this._postJSON(`${this.apiBase}/config`, values);
+	},
+
+	_saveConfig(values) {
+		Object.assign(config, values);
+		localStorage.config = JSON.stringify(config);
+		this._dispatch('command', { event: 'config', config });
+	},
 
 	async getTags() {
-		const res = await fetch(`${this.apiBase}/tags`);
-		return ['5', '4', '3', '2', '1', '0'].concat(await res.json());
+		return ['5', '4', '3', '2', '1', '0'].concat(await this._getJSON(`${this.apiBase}/tags`));
 	},
 
 	async getBookmark(id) {
-		const res = await fetch(`${this.apiBase}/bookmarks/${id}`);
-		if (!res.ok)
-			throw new Error('Failed to load bookmark');
-		return this._populate(await res.json());
+		return this._populate(await this._getJSON(`${this.apiBase}/bookmarks/${id}`));
 	},
 
 	async findByUrl(url) {
-		const res = await fetch(`${this.apiBase}/bookmarks?${new URLSearchParams({ url })}`);
-		const json = await res.json();
-		return json && this._populate(json);
+		const bookmark = await this._getJSON(`${this.apiBase}/bookmarks?${new URLSearchParams({ url })}`);
+		return bookmark && this._populate(bookmark);
 	},
 
 	async getBookmarks({ sortBy } = {}) {
-		const res = await fetch(`${this.apiBase}/bookmarks?${new URLSearchParams({ sortBy })}`);
-		return (await res.json()).map(this._populate);
+		const bookmarks = await this._getJSON(`${this.apiBase}/bookmarks?${new URLSearchParams({ sortBy })}`);
+		return bookmarks.map(this._populate);
 	},
 
 	async search({ tags, query, fields, sortBy }) {
-		const res = await fetch(`${this.apiBase}/search?${new URLSearchParams({
+		const bookmarks = await this._getJSON(`${this.apiBase}/search?${new URLSearchParams({
 			query, fields, sortBy,
 			...this._separateRating(tags),
 		})}`);
-		return (await res.json()).map(this._populate);
+		return bookmarks.map(this._populate);
 	},
 
 	async updateBookmark(bookmark) {
@@ -39,13 +49,9 @@ const Nookmark = {
 			`${this.apiBase}/bookmarks/${bookmark.id}` :
 			`${this.apiBase}/bookmarks`;
 
-		const res = await fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				...bookmark,
-				...this._separateRating(bookmark.tags),
-			}),
+		const res = await this._postJSON(url, {
+			...bookmark,
+			...this._separateRating(bookmark.tags),
 		});
 
 		if (!res.ok)
@@ -73,4 +79,25 @@ const Nookmark = {
 		});
 		return { tags, rating };
 	},
+
+	async _postJSON(url, data) {
+		return await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(data),
+		});
+	},
+
+	async _getJSON(url) {
+		const res = await fetch(url);
+		if (!res.ok)
+			throw new Error(`GET failed: ${res.status} ${url}`);
+		return await res.json();
+	},
+
+	_dispatch(type, msg = {}) {
+		window.dispatchEvent(new CustomEvent(`nookmark:${type}`, { detail: msg }));
+	},
 };
+
+await Nookmark.getConfig();

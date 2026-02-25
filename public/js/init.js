@@ -1,9 +1,15 @@
-const isExtension = window.location.protocol === 'chrome-extension:';
-const isFrame = window.parent !== window;
+// Chrome拡張ではセキュリティポリシーによりインラインスクリプトは使えない
+isExtension = window.location.protocol === 'chrome-extension:';
+isFrame = window.parent !== window;
 if (isFrame)
 	document.documentElement.classList.add('frame');
 
-// Chrome拡張ではセキュリティポリシーによりインラインスクリプトは使えない
-document.documentElement.classList.add(localStorage.theme ??
-	(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+config = Object.assign({
+	'client.theme': 'system',
+}, JSON.parse(localStorage.config || '{}'));
+
+document.documentElement.classList.add(
+	(config['client.theme'] === 'system') ?
+		(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') :
+		config['client.theme']);
 document.documentElement.lang = navigator.language.slice(0, 2);

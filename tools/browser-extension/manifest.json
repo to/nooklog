@@ -16,21 +16,26 @@
 		"<all_urls>"
 	],
 	"background": {
-		"service_worker": "background.js"
+		"service_worker": "background.js",
+		"type": "module"
+	},
+	"options_ui": {
+		"page": "page/setting.html",
+		"open_in_tab": true
 	},
 	"action": {
 		"default_icon": {
-			"16": "images/icon_16.png",
-			"32": "images/icon_32.png",
-			"48": "images/icon_48.png",
-			"128": "images/icon_128.png"
+			"16": "image/icon_16.png",
+			"32": "image/icon_32.png",
+			"48": "image/icon_48.png",
+			"128": "image/icon_128.png"
 		}
 	},
 	"icons": {
-		"16": "images/icon_16.png",
-		"32": "images/icon_32.png",
-		"48": "images/icon_48.png",
-		"128": "images/icon_128.png"
+		"16": "image/icon_16.png",
+		"32": "image/icon_32.png",
+		"48": "image/icon_48.png",
+		"128": "image/icon_128.png"
 	},
 	"commands": {
 		"open-update-page": {
@@ -40,7 +45,11 @@
 	"web_accessible_resources": [
 		{
 			"resources": [
-				"public/*"
+				"public/*",
+				"content/content.js",
+				"content/frame.html",
+				"content/frame.js",
+				"content/messaging.js"
 			],
 			"matches": [
 				"<all_urls>"

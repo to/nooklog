@@ -30,6 +30,12 @@ export default [
 			'no-constant-condition': 'off',
 			'no-unreachable': 'off',
 			'no-empty': 'off', // 明示的に空にしたいときもある！
+			'no-irregular-whitespace': ['error', {
+				'skipRegExps': true,
+				'skipTemplates': true,
+				'skipStrings': true,
+				'skipComments': true,
+			}],
 		},
 	},
 	// Userscript 用に GM_ 関数の定義を許可する設定

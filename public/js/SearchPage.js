@@ -71,7 +71,7 @@ class SearchPage {
 	}
 
 	async _search() {
-		this.els.loading.style.display = 'block';
+		this.els.loading.classList.remove('none');
 
 		const tags = this.tagInput?.getTags();
 		const query = this.els.query.value;
@@ -92,7 +92,7 @@ class SearchPage {
 			this.els.tbody.innerHTML = `<tr><td colspan="3">Error: ${err.message}</td></tr>`;
 		}
 
-		this.els.loading.style.display = 'none';
+		this.els.loading.classList.add('none');
 	}
 
 	_render(results) {
@@ -130,9 +130,12 @@ class SearchPage {
 	}
 
 	_openEdit(id) {
-		const width = 500, height = 480, margin = 25;
-		const left = screen.availWidth - width - (margin + 9);
-		const top = screen.availHeight - (height - 10) - margin;
+		const width = 500;
+		const height = 480;
+		const left = screen.availLeft + screen.availWidth - width - 30;
+		const top = config['client.windowPosition'] === 'top-right'
+			? screen.availTop + 8
+			: screen.availTop + screen.availHeight - height - 2;
 		window.open(
 			`/update.html?id=${id}`, '_blank',
 			`width=${width},height=${height},left=${left},top=${top},toolbar=0,menubar=0,location=0,status=1,scrollbars=1,resizable=1`,

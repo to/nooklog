@@ -10,5 +10,6 @@ logs/
 *.log
 data/
 work/
+public/work/
 dist/
 nookmark.config.json

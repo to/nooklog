@@ -11,6 +11,15 @@
 		var(--space-s)));
 	}
 
+	input,
+	textarea {
+		padding: var(--space-2s);
+	}
+
+	form {
+		gap: var(--space-2s);
+	}
+
 	.frame header {
 		display: flex;
 		gap: var(--space-s);
@@ -21,6 +30,23 @@
 
 		.icon{
 			font-weight: bold;
+		}
+	}
+}
+
+/* ---- Tagify ---- */
+.tagify {
+	gap: var(--space-2s);
+	padding: var(--space-2s);
+
+	.tagify__input{
+		min-height: calc(1lh - 1px);
+		padding: 0;
+	}
+
+	.tagify__tag {
+		&>div {
+			padding: 0 var(--space-2s);
 		}
 	}
 }

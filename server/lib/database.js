@@ -1,12 +1,9 @@
 import path from 'path';
-import { fileURLToPath } from 'url';
 import lancedb from '@lancedb/lancedb';
 const { MultiMatchQuery } = lancedb;
 
 import _ from './util.js';
 import config from './config.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class Database {
 	constructor() {
@@ -16,10 +13,7 @@ class Database {
 	}
 
 	async initialize() {
-		this.db = await lancedb.connect(
-			path.isAbsolute(config.database.path) ?
-				config.database.path :
-				path.resolve(__dirname, '../../', config.database.path));
+		this.db = await lancedb.connect(path.join(config['server.data.path'], 'db'));
 		this.bookmarks = await this.db.openTable('bookmarks');
 		this.contents = await this.db.openTable('contents');
 
@@ -78,7 +72,7 @@ class Database {
 	}
 
 	async getRecent({ limit = 100, sortBy = 'updated_at' } = {}) {
-		const recentThreshold = Date.now() - config.database.recentThresholdDays * 24 * 60 * 60 * 1000;
+		const recentThreshold = Date.now() - config['database.recentThresholdDays'] * 24 * 60 * 60 * 1000;
 		return this._populate(
 			(await this.bookmarks.query()
 				.select([
@@ -199,14 +193,14 @@ class Database {
 		// 断片化した小ファイルが閾値を超えたら最適化する
 		let stats = await this.bookmarks.stats();
 		const fragments = stats.fragmentStats.numSmallFragments;
-		if (fragments < config.database.optimization.maxSmallFragments)
+		if (fragments < config['database.optimization.maxSmallFragments'])
 			return;
 
 		for (const table of [this.bookmarks, this.contents]) {
 			await _.bench(async () => {
 				await table.optimize({
 					cleanupOlderThan: new Date(
-						Date.now() - config.database.optimization.keepVersionsDays * 24 * 60 * 60 * 1000),
+						Date.now() - config['database.optimization.versionRetentionDays'] * 24 * 60 * 60 * 1000),
 				});
 			}, `database.optimize: ${table.name}(fragments: ${fragments})`);
 		}

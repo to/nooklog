@@ -1,4 +1,3 @@
-const MEMO_DELIMITER = '/';
 const WINDOW_WIDTH = 500;
 const WINDOW_HEIGHT = 480;
 const WINDOW_MARGIN = 25;
@@ -28,8 +27,7 @@ class UpdateForm {
 	async _init() {
 		const ps = getSearchParams();
 		this.id = ps.id;
-		this.sessionId = ps.sessionId;
-		this.contentTabId = +this.sessionId.split(':')[0];
+		this._dispatch('command', { event: 'restore' });
 
 		if (ps.url)
 			this.els.url.value = ps.url;
@@ -48,23 +46,6 @@ class UpdateForm {
 				this._populate(bookmark);
 		} catch (err) {
 			this.showError(err.message);
-		}
-
-		// 編集内容を引き継ぐ
-		if (isExtension) {
-			const prefix = 'session:' + this.sessionId + ':';
-			const items = await chrome.storage.local.get();
-			if (items[prefix + 'html'])
-				this.els.html.value = items[prefix + 'html'];
-
-			if (items[prefix + 'memo'])
-				this.els.memo.value = items[prefix + 'memo'];
-
-			if (items[prefix + 'tags'])
-				this.tagInput.setTags(JSON.parse(items[prefix + 'tags']));
-
-			chrome.storage.local.remove(
-				Object.keys(items).filter(k => k.startsWith(prefix)));
 		}
 	}
 
@@ -90,25 +71,38 @@ class UpdateForm {
 			await this._handleSubmit();
 		});
 
-		// 拡張内で開かれているか？
-		if (isExtension) {
-			chrome.runtime.onMessage.addListener(msg => {
-				if (msg.sessionId !== this.sessionId)
-					return;
+		window.addEventListener('nookmark:receive', ({ detail: msg }) => {
+			if (msg.event === 'restore') {
+				// HTMLを取得または復元する
+				if (msg.html)
+					this.els.html.value = msg.html;
 
-				// コンテンツページで新たなテキストが選択されたか？
-				if (msg.selection && this.previousSelection !== msg.selection) {
-					this.previousSelection = msg.selection;
+				// 編集内容を復元する
+				if (msg.memo)
+					this.els.memo.value = msg.memo;
 
-					const { selectionStart: start, selectionEnd: end } = this.els.memo;
-					const delimiter = (!start || /[／\/、。←→]/u.test(
-						this.els.memo.value.slice(start - 1, start)))
-						? '' : MEMO_DELIMITER;
-					this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
+				if (msg.tags)
+					this.tagInput.setTags(msg.tags);
+				return;
+			}
+
+			// コンテンツページで新たなテキストが選択されたか？
+			if (msg.event === 'select' && this.previousSelection !== msg.selection) {
+				this.previousSelection = msg.selection;
+
+				const { selectionStart: start, selectionEnd: end } = this.els.memo;
+				const delimiter = (!start || /[／\/、。←→, \.\s]/u.test(
+					this.els.memo.value.slice(start - 1, start)))
+					? '' : config['extension.selectionDelimiter'];
+				this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
+
+				console.log(config['extension.focusMemoOnSelection']);
+
+				if (config['extension.focusMemoOnSelection'])
 					this.els.memo.focus();
-				}
-			});
-		}
+				return;
+			}
+		});
 	}
 
 	_populate(bookmark) {
@@ -122,47 +116,27 @@ class UpdateForm {
 
 	showError(message) {
 		this.els.error.textContent = message;
-		this.els.error.style.display = 'block';
+		this.els.error.classList.remove('none');
 	}
 
 	hideError() {
-		this.els.error.style.display = 'none';
+		this.els.error.classList.add('none');
 	}
 
 	close() {
-		if (isExtension) {
-			chrome.tabs.sendMessage(this.contentTabId,
-				{ type: 'dismiss', sessionId: this.sessionId });
-		}
+		this._dispatch('send', { event: 'close' });
 		window.close();
 	}
 
 	async detach() {
-		// 編集内容を引き継ぐ
-		const prefix = 'session:' + this.sessionId + ':';
-		await chrome.storage.local.set({
-			[prefix + 'html']: this.els.html.value,
-			[prefix + 'memo']: this.els.memo.value,
-			[prefix + 'tags']: JSON.stringify(this.tagInput.getTags()),
+		// 編集内容を保存する
+		this._dispatch('command', {
+			event: 'save',
+			html: this.els.html.value,
+			memo: this.els.memo.value,
+			tags: this.tagInput.getTags(),
 		});
-
-		// 拡張の機能を使いクロスオリジンでも確実にウィンドウを開く
-		const display = await getCurrentDisplay();
-		const area = display.workArea;
-		await chrome.windows.create({
-			url: chrome.runtime.getURL('public/update.html')
-				+ `?url=${encodeURIComponent(this.els.url.value)}`
-				+ `&title=${encodeURIComponent(this.els.title.value)}`
-				+ `&sessionId=${this.sessionId}`
-				+ (this.id ? `&id=${this.id}` : ''),
-			type: 'popup',
-			width: WINDOW_WIDTH,
-			height: WINDOW_HEIGHT,
-			left: area.left + area.width - WINDOW_WIDTH - (WINDOW_MARGIN + 6),
-			top: area.top + area.height - WINDOW_HEIGHT - (WINDOW_MARGIN - 24),
-		});
-		chrome.tabs.sendMessage(this.contentTabId,
-			{ type: 'detach', sessionId: this.sessionId });
+		this._dispatch('send', { event: 'detach' });
 	}
 
 	async _handleSubmit() {
@@ -172,7 +146,9 @@ class UpdateForm {
 				id: this.id,
 				url: this.els.url.value,
 				title: this.els.title.value,
-				memo: this._normalizeText(this.els.memo.value),
+				memo: config['client.normalizeFullWidth']
+					? this._normalizeText(this.els.memo.value)
+					: this.els.memo.value,
 				tags: this.tagInput.getTags(),
 				html: this.els.html.value,
 			});
@@ -186,21 +162,18 @@ class UpdateForm {
 		}
 	}
 
+	_dispatch(type, msg = {}) {
+		const detail = { ...msg };
+		window.dispatchEvent(new CustomEvent(`nookmark:${type}`, { detail }));
+	}
+
 	_normalizeText(text) {
 		return text
+			.replace(/[ 　]+/g, ' ')
 			.replace(/（/g, '(')
 			.replace(/）/g, ')')
 			.replace(/／/g, '/');
 	}
-}
-
-async function getCurrentDisplay() {
-	const currentWin = await chrome.windows.getCurrent();
-	const centerX = currentWin.left + currentWin.width / 2;
-	const displays = await chrome.system.display.getInfo();
-	return displays.find(d =>
-		(centerX >= d.workArea.left) && (centerX < d.workArea.left + d.workArea.width),
-	) || displays[0];
 }
 
 new UpdateForm();

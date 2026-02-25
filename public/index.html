@@ -9,21 +9,24 @@
 	<link rel="icon" type="image/png" sizes="192x192" href="icon_48.png">
 	<link rel="stylesheet" href="lib/material-symbols/material-symbols.css">
 	<link rel="stylesheet" href="lib/tagify/tagify.css">
+	<link rel="stylesheet" href="css/tagify.css">
 	<link rel="stylesheet" href="css/token.css">
 	<link rel="stylesheet" href="css/reset.css">
 	<link rel="stylesheet" href="css/layout.css">
 	<link rel="stylesheet" href="css/theme.css">
 	<link rel="stylesheet" href="css/app.css">
 	<link rel="stylesheet" href="css/search.css">
+	<link rel="stylesheet" href="css/config.css">
 </head>
 
 <body>
-	<header class="flex shrink-0 justify-end items-end">
-		<button id="themeToggle" class="btn-flat">
-			<span class="icon">dark_mode</span>
+	<header class="flex shrink-0 items-end">
+		<button id="btn-config" class="btn-flat ml-auto">
+			<span class="icon">settings</span>
 		</button>
 	</header>
-	<form id="form-search" class="search-form w-full">
+
+	<form id="form-search" class="flex flex-col search-form w-full">
 		<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
 			<input name="tags" placeholder="Tags">
 			<input type="text" id="query" placeholder="Query" class="row-2">
@@ -33,7 +36,7 @@
 				<label> <input type="checkbox" name="field" value="memo" checked>Memo</label>
 			</div>
 		</div>
-		<div class="none">
+		<div class="hidden">
 			<button type="submit">Search</button>
 		</div>
 		<div class="flex items-end">
@@ -46,6 +49,158 @@
 		</div>
 	</form>
 
+	<dialog id="dialog-config">
+
+		<form id="form-config" class="flex flex-col h-full">
+			<header class="flex items-center shrink-0">
+				<button type="button" class="btn-flat ml-auto" id="btn-config-close">
+					<span class="icon">close</span>
+				</button>
+			</header>
+
+			<div class="grid items-center">
+				<h2>Client</h2>
+
+				<div>
+					<label>Theme</label>
+					<div class="radio-flat">
+						<label><input type="radio" name="client.theme" value="system"> System</label>
+						<label><input type="radio" name="client.theme" value="light"> Light</label>
+						<label><input type="radio" name="client.theme" value="dark"> Dark</label>
+					</div>
+				</div>
+
+				<div>
+					<label>Window Position</label>
+					<div class="radio-flat">
+						<label><input type="radio" name="client.windowPosition" value="bottom-right"> Bottom Right</label>
+						<label><input type="radio" name="client.windowPosition" value="top-right"> Top Right</label>
+					</div>
+				</div>
+
+				<hr>
+
+				<div>
+					<label>Rating Input Mode</label>
+					<div class="radio-flat">
+						<label><input type="radio" name="client.ratingInputMode" value="stars"> Stars</label>
+						<label><input type="radio" name="client.ratingInputMode" value="tags"> Tags</label>
+						<label><input type="radio" name="client.ratingInputMode" value="both"> Both</label>
+					</div>
+					<span class="description">Tags: 数値タグを選択することでレートを入力する</span>
+				</div>
+
+				<div>
+					<label>Tag Match Mode</label>
+					<div class="radio-flat">
+						<label><input type="radio" name="client.tagMatchMode" value="smart"> Smart</label>
+						<label><input type="radio" name="client.tagMatchMode" value="contains"> Contains</label>
+						<label><input type="radio" name="client.tagMatchMode" value="starts-with"> Starts-with</label>
+					</div>
+					<span class="description">Smart: 飛び石マッチ(例:「javascript」に対して「js」でマッチ)で検索する</span>
+				</div>
+
+				<div>
+					<label>Auto Complete Tags</label>
+					<label class="toggle">
+						<input type="checkbox" name="client.autoCompleteTags">
+						<span></span>
+					</label>
+					<span class="description">タグ候補が絞り込まれた時、自動的に決定する(Smartモード時のみ有効)</span>
+				</div>
+
+				<div>
+					<label>Normalize Full Width</label>
+					<label class="toggle">
+						<input type="checkbox" name="client.normalizeFullWidth">
+						<span></span>
+					</label>
+					<span class="description">全角の括弧やスラッシュなどを半角記号に保存時に変換する</span>
+				</div>
+
+				<h2>Extension</h2>
+
+				<div>
+					<label>Server Address</label>
+					<input type="text" name="extension.serverAddress" placeholder="http://localhost:5050">
+				</div>
+
+				<div>
+					<label>Open Search in Foreground</label>
+					<label class="toggle">
+						<input type="checkbox" name="extension.openSearchInForeground">
+						<span></span>
+					</label>
+				</div>
+
+				<div>
+					<label>Auto Append Selection</label>
+					<label class="toggle">
+						<input type="checkbox" name="extension.autoAppendSelection">
+						<span></span>
+					</label>
+					<span class="description">対象ページで選択されたテキストを自動的にメモに追加する</span>
+				</div>
+
+				<div>
+					<label>Focus Memo on Selection</label>
+					<label class="toggle">
+						<input type="checkbox" name="extension.focusMemoOnSelection">
+						<span></span>
+					</label>
+					<span class="description">自動追加時にメモ欄へフォーカスを移動する</span>
+				</div>
+
+				<div>
+					<label>Selection Delimiter</label>
+					<input type="text" name="extension.selectionDelimiter">
+					<span class="description">選択されたテキストの先頭に追加する文字列</span>
+				</div>
+
+				<h2>Server</h2>
+
+				<div>
+					<label>Port</label>
+					<input type="number" name="server.port">
+					<span class="description error none">Requires server restart & extension config update.</span>
+				</div>
+
+				<div>
+					<label>Data Path</label>
+					<input type="text" name="server.data.path">
+					<span class="description error none">Requires server restart. Changing the path will point to a different data
+						location.</span>
+				</div>
+
+				<h2>Database</h2>
+
+				<div>
+					<label>Tokenizer</label>
+					<div class="radio-flat">
+						<label><input type="radio" name="database.tokenizer" value="standard"> Standard</label>
+						<label><input type="radio" name="database.tokenizer" value="n-gram"> N-gram</label>
+					</div>
+					<span class="description">Standard: スペース区切りの言語(例:英語/スペイン語)</span>
+					<span class="description">N-gram: 単語で分割できない言語(例:日本語/中国語/韓国語)</span>
+					<span class="description error none">Changing the tokenizer requires a full re-index.<br /> The next startup
+						may take several seconds to minutes depending on your data size.</span>
+				</div>
+
+				<hr>
+
+				<div>
+					<label>Max Small Fragments</label>
+					<input type="number" name="database.optimization.maxSmallFragments">
+					<span class="description">最適化処理を行うフラグメント断片化の最大値（デフォルト: 100）</span>
+				</div>
+			</div>
+
+			<footer class="flex">
+				<button type="submit" class="ml-auto">Save</button>
+			</footer>
+		</form>
+	</dialog>
+
 	<table class="table-result">
 		<tbody></tbody>
 	</table>
@@ -53,9 +208,8 @@
 	<script src="lib/tagify/tagify.js"></script>
 	<script src="js/util.js"></script>
 	<script src="js/TagInput.js"></script>
-	<script src="js/Nookmark.js"></script>
-	<script src="js/ThemeToggle.js"></script>
-	<script src="js/SearchPage.js"></script>
+	<script type="module" src="index.mjs"></script>
 </body>
+
 
 </html>

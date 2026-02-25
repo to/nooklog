@@ -15,7 +15,7 @@ body {
 		font-style: normal;
 		font-weight: normal;
 		font-feature-settings: 'liga';
-		line-height: inherit;
+		line-height: 1;
 		text-transform: none;
 		letter-spacing: normal;
 		overflow-wrap: normal;
@@ -26,6 +26,9 @@ body {
 }
 
 @layer {
+	/* スクリプトから表示状態を変更する */
+	.none { display: none !important; }
+
 	/* ---- Base ---- */
 	html,
 	body {
@@ -37,32 +40,56 @@ body {
 		flex-direction: column;
 		gap: var(--space-m);
 		padding: var(--space-m);
-		color: var(--color-3);
+		color: var(--color-5);
 		background-color: var(--color-0);
+	}
+
+	h2 {
+		margin: var(--space-m) 0;
+		font-size: var(--font-size-l);
+		color: var(--color-6);
+		border-bottom: 1px solid var(--color-1);
 	}
 
 	/* ---- Form ---- */
 	form {
-		display: flex;
-		flex-direction: column;
 		gap: var(--space-s);
 	}
 
 	input,
-	textarea {
+	textarea,
+	select {
 		width: 100%;
 		padding: var(--space-s);
+		color: inherit;
 		outline: none;
+		background-color: var(--color-0);
 		border: 1px solid var(--color-2);
 		border-radius: var(--radius-m);
 
 		&::placeholder {
-			color: var(--color-2);
+			color: var(--color-3);
 		}
 
 		&:focus::placeholder {
-			color: var(--color-1);
+			color: var(--color-2);
 		}
+	}
+
+	/* Chrome/Safari/Edge/Opera */
+	input::-webkit-outer-spin-button,
+	input::-webkit-inner-spin-button {
+		margin: 0;
+		appearance: none;
+	}
+
+	/* Firefox */
+	input[type='number'] {
+		appearance: textfield;
+	}
+
+	select {
+		cursor: pointer;
 	}
 
 	textarea {
@@ -71,7 +98,7 @@ body {
 
 	/* button:activeに上書きされる */
 	button:hover {
-		background-color: oklch(from var(--color-3) calc(l * var(--hover-up)) c h);
+		background-color: oklch(from var(--color-5) calc(l * var(--hover-up)) c h);
 	}
 
 	/* グループ化によりbutton:activeの詳細度になる */
@@ -82,13 +109,13 @@ body {
 		padding: var(--space-2s) var(--space-s);
 		font-weight: bold;
 		color: var(--color-0);
-		background-color: var(--color-3);
+		background-color: var(--color-5);
 		border-radius: var(--radius-m);
 
 		&.btn-flat,
 		&.btn-flat:active {
 			padding: 0;
-			color: var(--color-3);
+			color: var(--color-5);
 			background-color: transparent;
 		}
 
@@ -119,7 +146,7 @@ body {
 	.radio-flat {
 		display: flex;
 		font-weight: bold;
-		color: var(--color-2);
+		color: var(--color-3);
 
 		label {
 			font-size: var(--font-size-s);
@@ -138,7 +165,7 @@ body {
 
 		label {
 			padding: var(--space-2s);
-			border: 1px solid var(--color-2);
+			border: 1px solid var(--color-3);
 			border-radius: var(--radius-m);
 
 			&:hover {
@@ -147,23 +174,23 @@ body {
 			}
 
 			&:active{
-				color: var(--color-3);
-				border-color: var(--color-3);
+				color: var(--color-5);
+				border-color: var(--color-5);
 			}
 
 			&:has(input:checked) {
 				color: var(--color-0);
-				background-color: var(--color-3);
-				border-color: var(--color-3);
+				background-color: var(--color-5);
+				border-color: var(--color-5);
 			}
 
 			&:has(input:checked):hover {
-				background-color: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
+				background-color: oklch(from var(--color-5) calc(l * var(--hover-off)) c h);
 			}
 
 			&:has(input:checked):active {
-				background-color: var(--color-2);
-				border-color: var(--color-2);
+				background-color: var(--color-3);
+				border-color: var(--color-3);
 			}
 		}
 	}
@@ -179,113 +206,60 @@ body {
 			}
 
 			&:active {
-				color: var(--color-3);
+				color: var(--color-5);
 			}
 
 			&:has(input:checked) {
-				color: var(--color-3);
+				color: var(--color-5);
 				text-decoration: underline;
 				text-decoration-thickness: 2px;
-				text-underline-offset: var(--space-2s);
+				text-underline-offset: calc(var(--space-2s) * 1.5);
 
 				/* border-bottom: 2px solid currentcolor; */
 			}
 		}
 	}
 
-	.loading {
-		line-height: 1;
-	}
-
-	.error {
-		display: none;
-		margin-top: var(--space-s);
-		color: var(--color-error);
-	}
-}
-
-/* ---- Tagify ---- */
-.tagify {
-	--tags-border-color: var(--color-2);
-	--tags-focus-border-color: var(--color-2);
-	--tags-hover-border-color: var(--color-2);
-
-	--tag-bg: var(--color-3);
-	--tag-text-color: var(--color-0);
-	--tag-hover: oklch(from var(--color-3) calc(l * var(--hover-off)) c h);
-	--tag-border-radius: var(--radius-m);
-
-	--tag-invalid-bg: var(--color-error);
-
-	--placeholder-color: var(--color-2);
-	--placeholder-color-focus: var(--color-1);
-
-	border-radius: var(--radius-m);
-
-	&, *, *::before, *::after  {
-		transition: none !important;
-		animation: none !important;
-	}
-
-	.tagify__input{
-		line-height: var(--line-height-m);
-	}
-
-	.tagify__tag {
+	/* ---- Toggle ---- */
+	.toggle {
+		display: inline-flex;
 		cursor: pointer;
 
-		&>div {
-			font-weight: bold;
-			line-height: var(--line-height-m);
+		input {
+			display: none;
 		}
 
-		&:focus div::before,
-		&:hover:not([readonly]) div::before {
-			--tag-bg-inset: 0 !important;
+		span {
+			position: relative;
+			width: calc((var(--space-m) * 2) + 4px);
+			height: calc(var(--space-m) + 4px);
+			background: var(--color-3);
+			border-radius: 999px;
 		}
 
-		&:active:not([readonly]) div::before {
-			--tag-bg: var(--color-2);
+		span::after {
+			position: absolute;
+			top: 2px;
+			left: 2px;
+			width: var(--space-m);
+			height: var(--space-m);
+			content: "";
+			background: var(--color-0);
+			border-radius: 50%;
 		}
 
-		&.tagify--notAllowed:not(.tagify__tag--editable) div>span {
-			opacity: 1;
+		input:checked+span {
+			background: var(--color-5);
 		}
-	}
 
-	/* 削除ボタンを非表示 */
-	.tagify__tag__removeBtn {
-		display: none !important;
+		input:checked+span::after {
+			transform: translateX(14px);
+		}
 	}
 }
 
-.tagify__dropdown {
-	--tagify-dd-color-primary: var(--color-2);
-	--tagify-dd-text-color: var(--color-3);
-	--tagify-dd-bg-color: var(--color-0);
-
-	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
-	pointer-events: none;
-
-	&, *, *::before, *::after  {
-		transition: none !important;
-		animation: none !important;
-	}
-
-	.tagify__dropdown__item {
-		/* 左側の余白を無くす */
-		text-indent: 0 !important;
-
-		/* チェックマーク(✓)を非表示 */
-		&::before {
-			display: none !important;
-		}
-
-		&.tagify__dropdown__item--active {
-			color: var(--color-0) !important;
-			background: var(--color-3) !important;
-		}
-	}
+.error {
+	color: var(--color-error);
 }
 
 /* ---- Animation ---- */

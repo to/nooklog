@@ -18,6 +18,8 @@ process.on('unhandledRejection', (reason, promise) => {
 	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
+app.get('/api/alive', (req, res) => res.json({ alive: true }));
+
 app.get('/api/bookmarks/:id', handle(async (req, res, ps) => {
 	res.json(await nookmark.findById(ps.id));
 }, 'Error: GET /api/bookmarks/:id'));
@@ -51,14 +53,23 @@ app.get('/api/tags', handle(async (req, res, ps) => {
 	res.json(await nookmark.getTags());
 }, 'Error: GET /api/tags'));
 
+app.get('/api/config', handle(async (req, res) => {
+	res.json(nookmark.getConfig());
+}, 'Error: GET /api/config'));
+
+app.post('/api/config', handle(async (req, res) => {
+	nookmark.saveConfig(req.body);
+	res.json({ success: true });
+}, 'Error: POST /api/config'));
+
 app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
 	await nookmark.deleteById(ps.id);
 	res.json({ success: true });
 }, 'Error: DELETE /api/bookmarks/:id'));
 
-app.listen(config.server.port, async () => {
+app.listen(config['server.port'], async () => {
 	await nookmark.initialize();
-	console.log(`Server running on http://localhost:${config.server.port}`);
+	console.log(`Server running on http://localhost:${config['server.port']}`);
 });
 
 function handle(handler, errorContext) {
