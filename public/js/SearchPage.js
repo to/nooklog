@@ -131,9 +131,9 @@ class SearchPage {
 		this.els.tbody.innerHTML = results.map(r => {
 			const createdAt = r.created_at.toISOString().split('T')[0];
 			const updatedAt = r.updated_at.toISOString().split('T')[0];
-			const rating = [1, 2, 3, 4, 5].reduceRight((acc, i) =>
+			const rating = [5, 4, 3, 2, 1].reduce((acc, i) =>
 				`<span class="icon btn-text${i == r.rating ? ' active' : ''}" data-rating="${i}">` +
-				`star${acc ? `${acc}` : ''}` +
+				`star${acc}` +
 				'</span>', '');
 
 			return `

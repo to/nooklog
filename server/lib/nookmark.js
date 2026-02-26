@@ -6,6 +6,16 @@ import _ from './util.js';
 
 let tagCache = new Set();
 
+const DEFAULT_COLUMNS = [
+	'id', 'url', 'title', 'memo',
+	'tags', 'rating',
+	'updated_at', 'created_at',
+];
+
+const DETAIL_COLUMNS = [
+	...DEFAULT_COLUMNS, 'markdown',
+];
+
 const nookmark = {
 	async initialize() {
 		await db.initialize();
@@ -26,20 +36,19 @@ const nookmark = {
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	},
 
-	async getRecent(options) {
-		return await db.getRecent(options);
-	},
-
-	async getDump(limit) {
-		return await db.getDump(limit);
+	async getRecent(options = {}) {
+		return await db.getRecent({
+			columns: DEFAULT_COLUMNS,
+			...options,
+		});
 	},
 
 	async findById(id) {
-		return await db.findById(id);
+		return await db.findById(id, { columns: DETAIL_COLUMNS });
 	},
 
 	async findByUrl(url) {
-		return await db.findByUrl(url);
+		return await db.findByUrl(url, { columns: DETAIL_COLUMNS });
 	},
 
 	async deleteById(id) {
@@ -50,8 +59,11 @@ const nookmark = {
 			this._syncTagCache(bookmark.tags, []);
 	},
 
-	async search(options) {
-		return await db.search(options);
+	async search(options = {}) {
+		return await db.search({
+			columns: DEFAULT_COLUMNS,
+			...options,
+		});
 	},
 
 	async upsert({ id, url, title, memo, rating, tags, html }) {
@@ -87,23 +99,19 @@ const nookmark = {
 		}
 		bookmark.updated_at = now;
 
-		let content = null;
 		if (html) {
 			const parsed = processHtml(url, title, html);
 			bookmark.title = parsed.title;
 			if (isNew)
 				bookmark.keywords = parsed.keywords || [];
 
-			content = {
-				id: bookmark.id,
-				html: parsed.cleanHtml,
-				markdown: parsed.markdown,
-			};
+			bookmark.html = parsed.cleanHtml;
+			bookmark.markdown = parsed.markdown;
 		}
 
 		// データベースに保存または更新
 		_.merge(bookmark, { url, title, memo, rating, tags });
-		await db.upsert(bookmark, content);
+		await db.upsert(bookmark);
 
 		this._syncTagCache(oldTags, bookmark.tags);
 

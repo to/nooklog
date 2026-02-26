@@ -9,16 +9,12 @@ class Database {
 	constructor() {
 		this.db = null;
 		this.bookmarks = null;
-		this.contents = null;
 	}
 
 	async initialize() {
 		this.db = await lancedb.connect(path.join(config['server.data.path'], 'db'));
 		this.bookmarks = await this.db.openTable('bookmarks');
-		this.contents = await this.db.openTable('contents');
-
 		console.log(`bookmarks: ${await this.bookmarks.countRows()} rows.`);
-		console.log(`contents: ${await this.contents.countRows()} rows.`);
 	}
 
 	// LanceDBのVector型をJSの標準配列に変換する
@@ -37,65 +33,47 @@ class Database {
 		return results;
 	}
 
-	async findByUrl(url) {
-		const results = await this.bookmarks.query()
-			.where(sql`url = ${url}`).limit(1).toArray();
+	async _find(where, { columns } = {}) {
+		let builder = this.bookmarks.query();
+		if (columns)
+			builder = builder.select(columns);
+		const results = await builder
+			.where(where).limit(1).toArray();
 		return this._populate(results)[0];
 	}
 
-	async findById(id) {
-		const results = await this.bookmarks.query()
-			.where(sql`id = ${id}`).limit(1).toArray();
-		return this._populate(results)[0];
+	async findByUrl(url, options) {
+		return this._find(sql`url = ${url}`, options);
 	}
 
-	async upsert(bookmark, content) {
+	async findById(id, options) {
+		return this._find(sql`id = ${id}`, options);
+	}
+
+	async upsert(bookmark) {
 		await this.bookmarks.mergeInsert('id')
 			.whenMatchedUpdateAll()
 			.whenNotMatchedInsertAll()
 			.execute([bookmark]);
 
-		if (content) {
-			await this.contents.mergeInsert('id')
-				.whenMatchedUpdateAll()
-				.whenNotMatchedInsertAll()
-				.execute([content]);
-		}
-
-		// 最適化(非同期実行)
 		this.optimize();
 	}
 
 	async deleteById(id) {
 		await this.bookmarks.delete(sql`id = ${id}`);
-		await this.contents.delete(sql`id = ${id}`);
 	}
 
-	async getRecent({ limit = 100, sortBy = 'updated_at' } = {}) {
+	async getRecent({ columns, limit = 100, sortBy = 'updated_at' } = {}) {
 		const recentThreshold = Date.now() - config['database.recentThresholdDays'] * 24 * 60 * 60 * 1000;
+		let builder = this.bookmarks.query();
+		if (columns)
+			builder = builder.select(columns);
 		return this._populate(
-			(await this.bookmarks.query()
-				.select([
-					'id', 'url', 'title', 'memo',
-					'tags', 'rating',
-					'updated_at', 'created_at'])
+			(await builder
 				.where(`${sortBy === 'rating' ? 'created_at' : sortBy} > ${recentThreshold}`)
 				.toArray())
 				.sort((a, b) => b[sortBy] - a[sortBy])
 				.slice(0, limit));
-	}
-
-	async getDump(limit = 20) {
-		// 読み込み専用オブジェクトをクローンする
-		const bookmarks = (await this.getRecent({ limit })).map(b => ({ ...b }));
-		for (const b of bookmarks) {
-			const [content] = await this.contents.query()
-				.select(['markdown'])
-				.where(sql`id = ${b.id}`).limit(1).toArray();
-			if (content)
-				b.markdown = content.markdown;
-		}
-		return bookmarks;
 	}
 
 	async getTags() {
@@ -117,7 +95,8 @@ class Database {
 	}
 
 	async search({
-		tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 200,
+		columns, tags = [], query = '', fields = [],
+		rating, sortBy = 'updated_at', limit = 200,
 	}) {
 
 		const { conditions, ftsQuery, patterns } = this.buildSearchQuery({
@@ -125,6 +104,14 @@ class Database {
 		});
 
 		let builder = this.bookmarks.query();
+		if (columns) {
+			const cols = [...columns];
+			for (const f of fields) {
+				if (!cols.includes(f))
+					cols.push(f);
+			}
+			builder = builder.select(cols);
+		}
 
 		if (conditions)
 			builder = builder.where(conditions);
@@ -191,19 +178,17 @@ class Database {
 
 	async optimize() {
 		// 断片化した小ファイルが閾値を超えたら最適化する
-		let stats = await this.bookmarks.stats();
+		const stats = await this.bookmarks.stats();
 		const fragments = stats.fragmentStats.numSmallFragments;
 		if (fragments < config['database.optimization.maxSmallFragments'])
 			return;
 
-		for (const table of [this.bookmarks, this.contents]) {
-			await _.bench(async () => {
-				await table.optimize({
-					cleanupOlderThan: new Date(
-						Date.now() - config['database.optimization.versionRetentionDays'] * 24 * 60 * 60 * 1000),
-				});
-			}, `database.optimize: ${table.name}(fragments: ${fragments})`);
-		}
+		await _.bench(async () => {
+			await this.bookmarks.optimize({
+				cleanupOlderThan: new Date(
+					Date.now() - config['database.optimization.versionRetentionDays'] * 24 * 60 * 60 * 1000),
+			});
+		}, `database.optimize: bookmarks(fragments: ${fragments})`);
 	}
 }
 

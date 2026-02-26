@@ -13,7 +13,7 @@ class RatingInput {
 		this.els.rating.className = 'input-rating';
 		this.els.rating.dataset.rating = this.value;
 
-		this.els.rating.innerHTML = [1, 2, 3, 4, 5].reduceRight((acc, i) =>
+		this.els.rating.innerHTML = [5, 4, 3, 2, 1].reduce((acc, i) =>
 			`<span class="icon btn-text${i == this.value ? ' active' : ''}" data-rating="${i}">` +
 			`star${acc}` +
 			'</span>', '');

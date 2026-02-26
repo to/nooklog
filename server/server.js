@@ -41,10 +41,6 @@ app.get('/api/bookmarks', handle(async (req, res, ps) => {
 		await nookmark.getRecent(ps));
 }, 'Error: GET /api/bookmarks'));
 
-app.get('/api/dump', handle(async (req, res, ps) => {
-	res.json(await nookmark.getDump(ps.limit));
-}, 'Error: GET /api/dump'));
-
 app.get('/api/search', handle(async (req, res, ps) => {
 	res.json(await nookmark.search(ps));
 }, 'Error: GET /api/search'));
@@ -100,6 +96,7 @@ const PARAMS_SCHEMA = {
 	fields: [],
 	sortBy: '',
 	limit: 0,
+	columns: [],
 };
 
 function useParams(ps, schema = PARAMS_SCHEMA) {
