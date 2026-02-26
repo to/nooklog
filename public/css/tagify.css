@@ -67,7 +67,8 @@
 	--tagify-dd-bg-color: var(--color-0);
 
 	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
-	pointer-events: none;
+
+	/* pointer-events: none; */
 
 	&, *, *::before, *::after  {
 		transition: none !important;

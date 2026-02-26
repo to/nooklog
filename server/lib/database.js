@@ -18,7 +18,7 @@ class Database {
 	}
 
 	// LanceDBのVector型をJSの標準配列に変換する
-	// (Vector型はaddできない/v0.11)
+	// (Vector型はaddできない/v0.27)
 	_populate(results) {
 		if (results.length === 0)
 			return results;
