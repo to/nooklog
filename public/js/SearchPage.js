@@ -58,15 +58,47 @@ class SearchPage {
 				return;
 			}
 
-			const button = e.target.closest('button');
-			if (!button)
+			const row = e.target.closest('tr');
+			const id = row?.dataset?.id;
+			if (!row || !id)
 				return;
 
-			const id = button.dataset.id;
-			if (button.classList.contains('btn-edit'))
-				this._openEdit(id);
-			else if (button.classList.contains('btn-delete'))
-				this._delete(id, button);
+			const star = e.target.closest('.input-rating .icon');
+			if (star) {
+				const ratingEl = star.closest('.input-rating');
+				const rating = +star.dataset.rating;
+				if (ratingEl.dataset.rating == rating)
+					return;
+
+				ratingEl.dataset.rating = rating;
+				ratingEl.classList.remove('hover');
+				ratingEl.querySelectorAll('.icon').forEach(s =>
+					s.classList.toggle('active', s.dataset.rating == rating));
+
+				Nookmark.updateBookmark({ id, rating });
+				return;
+			}
+
+			const button = e.target.closest('button');
+			if (button) {
+				if (button.classList.contains('btn-edit'))
+					this._openEdit(id);
+				else if (button.classList.contains('btn-delete'))
+					this._delete(id, row);
+				return;
+			}
+		});
+
+		this.els.tbody.addEventListener('mouseover', e => {
+			const rating = e.target.closest('.input-rating');
+			if (rating)
+				rating.classList.add('hover');
+		});
+
+		this.els.tbody.addEventListener('mouseout', e => {
+			const rating = e.target.closest('.input-rating');
+			if (rating && !rating.contains(e.relatedTarget))
+				rating.classList.remove('hover');
 		});
 	}
 
@@ -99,11 +131,16 @@ class SearchPage {
 		this.els.tbody.innerHTML = results.map(r => {
 			const createdAt = r.created_at.toISOString().split('T')[0];
 			const updatedAt = r.updated_at.toISOString().split('T')[0];
+			const rating = [1, 2, 3, 4, 5].reduceRight((acc, i) =>
+				`<span class="icon btn-text${i == r.rating ? ' active' : ''}" data-rating="${i}">` +
+				`star${acc ? `${acc}` : ''}` +
+				'</span>', '');
+
 			return `
-			<tr>
+			<tr data-id="${r.id}">
 				<td class="col-rating">
-					<div class="input-rating rating-${r.rating}">
-						${[...Array(5)].map((_, i) => `<span class="icon${(5 - i) <= r.rating ? ' active' : ''}">star</span>`).join('')}
+					<div class="input-rating" data-rating="${r.rating}">
+						${rating}
 					</div>
 				</td>
 				<td class="col-favicon">
@@ -121,8 +158,8 @@ class SearchPage {
 				<td class="col-actions">
 					<div class="flex flex-col gap-s items-end justify-between h-full">
 						<div class="flex gap-s">
-							<button class="btn-edit btn-flat" data-id="${r.id}"><span class="icon">edit</span></button>
-							<button class="btn-delete btn-flat" data-id="${r.id}"><span class="icon">delete</span></button>
+							<button class="btn-edit btn-flat"><span class="icon">edit</span></button>
+							<button class="btn-delete btn-flat"><span class="icon">delete</span></button>
 						</div>
 						<span class="dates">${updatedAt}${createdAt !== updatedAt ? `<br>${createdAt}` : ''}</span>
 					</div>
@@ -144,13 +181,13 @@ class SearchPage {
 		);
 	}
 
-	async _delete(id, button) {
+	async _delete(id, row) {
 		if (!confirm('Are you sure you want to delete this bookmark?'))
 			return;
 
 		try {
 			await Nookmark.deleteBookmark(id);
-			button.closest('tr').remove();
+			row.remove();
 		} catch (err) {
 			alert(err.message);
 		}

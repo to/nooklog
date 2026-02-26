@@ -54,8 +54,7 @@ window.Nookmark = {
 
 		const res = await this._postJSON(url, {
 			...bookmark,
-			...this._separateRating(
-				bookmark.tags, bookmark.rating),
+			...(bookmark.tags ? this._separateRating(bookmark.tags, bookmark.rating) : {}),
 		});
 
 		if (!res.ok)
