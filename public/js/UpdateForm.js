@@ -11,10 +11,15 @@ class UpdateForm {
 			close: $('#btn-close'),
 			url: $('#url'),
 			title: $('#title'),
+			rating: $('#rating'),
 			memo: $('#memo'),
 			tags: $('input[name=tags]'),
 			html: $('#html'),
 		};
+		this.ratingInput = new RatingInput(this.els.rating);
+		if (config['client.ratingInputMode'] === 'tags')
+			this.ratingInput.hide();
+
 		this.tagInput = new TagInput(this.els.tags);
 		this.tagInput.focus();
 
@@ -81,6 +86,9 @@ class UpdateForm {
 				if (msg.memo)
 					this.els.memo.value = msg.memo;
 
+				if (msg.rating != null)
+					this.ratingInput.setValue(msg.rating);
+
 				if (msg.tags)
 					this.tagInput.setTags(msg.tags);
 				return;
@@ -96,8 +104,6 @@ class UpdateForm {
 					? '' : config['extension.selectionDelimiter'];
 				this.els.memo.setRangeText(delimiter + msg.selection, start, end, 'end');
 
-				console.log(config['extension.focusMemoOnSelection']);
-
 				if (config['extension.focusMemoOnSelection'])
 					this.els.memo.focus();
 				return;
@@ -110,8 +116,11 @@ class UpdateForm {
 		this.els.title.value = bookmark.title;
 		this.els.memo.value = bookmark.memo || '';
 		this.originalMemo = this.els.memo.value;
+		this.ratingInput.setValue(bookmark.rating);
 		this.tagInput.setTags(
-			[].concat(bookmark.rating || [], bookmark.tags || []));
+			[].concat(
+				(config['client.ratingInputMode'] === 'tags') ?
+					bookmark.rating : [], bookmark.tags || []));
 	}
 
 	showError(message) {
@@ -134,6 +143,7 @@ class UpdateForm {
 			event: 'save',
 			html: this.els.html.value,
 			memo: this.els.memo.value,
+			rating: this.ratingInput.getValue(),
 			tags: this.tagInput.getTags(),
 		});
 		this._dispatch('send', { event: 'detach' });
@@ -149,6 +159,7 @@ class UpdateForm {
 				memo: config['client.normalizeFullWidth']
 					? this._normalizeText(this.els.memo.value)
 					: this.els.memo.value,
+				rating: this.ratingInput.getValue(),
 				tags: this.tagInput.getTags(),
 				html: this.els.html.value,
 			});

@@ -256,6 +256,25 @@ body {
 			transform: translateX(14px);
 		}
 	}
+
+	/* ---- Rating ---- */
+	.input-rating {
+		display: flex;
+
+		.icon {
+			font-family: 'Material Symbols Filled';
+			color: var(--color-2);
+			user-select: none;
+		}
+
+		.icon.active {
+			color: var(--color-5);
+		}
+
+		.icon.hover {
+			color: var(--color-4);
+		}
+	}
 }
 
 .error {

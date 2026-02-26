@@ -19,7 +19,10 @@ window.Nookmark = {
 	},
 
 	async getTags() {
-		return ['5', '4', '3', '2', '1', '0'].concat(await this._getJSON(`${this.apiBase}/tags`));
+		const tags = await this._getJSON(`${this.apiBase}/tags`);
+		return config['client.ratingInputMode'] !== 'stars'
+			? ['5', '4', '3', '2', '1', '0'].concat(tags)
+			: tags;
 	},
 
 	async getBookmark(id) {
@@ -51,7 +54,8 @@ window.Nookmark = {
 
 		const res = await this._postJSON(url, {
 			...bookmark,
-			...this._separateRating(bookmark.tags),
+			...this._separateRating(
+				bookmark.tags, bookmark.rating),
 		});
 
 		if (!res.ok)
@@ -70,8 +74,7 @@ window.Nookmark = {
 		return r;
 	},
 
-	_separateRating(tags) {
-		let rating = null;
+	_separateRating(tags, rating = 0) {
 		tags = tags.filter(t => {
 			if (!/^\d$/.test(t))
 				return true;

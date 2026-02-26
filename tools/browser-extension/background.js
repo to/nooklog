@@ -16,7 +16,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 		});
 
 		chrome.tabs.create({
-			url: 'page/settings.html',
+			url: 'page/setting.html',
 		});
 	}
 

@@ -43,11 +43,11 @@ const nookmark = {
 	},
 
 	async deleteById(id) {
-		const bm = await db.findById(id);
+		const bookmark = await db.findById(id);
 		await db.deleteById(id);
 
-		if (bm)
-			this._syncTagCache(bm.tags, []);
+		if (bookmark)
+			this._syncTagCache(bookmark.tags, []);
 	},
 
 	async search(options) {
@@ -55,12 +55,12 @@ const nookmark = {
 	},
 
 	async upsert({ id, url, title, memo, rating, tags, html }) {
-		let bm = id ?
+		let bookmark = id ?
 			await db.findById(id) :
 			await db.findByUrl(url);
 
-		const oldTags = bm?.tags || [];
-		const isNew = !bm;
+		const oldTags = bookmark?.tags || [];
+		const isNew = !bookmark;
 		const now = Date.now();
 
 		// 新規作成時の初期化
@@ -68,7 +68,7 @@ const nookmark = {
 			if (!url)
 				throw new Error('URL is required for new pages');
 
-			bm = {
+			bookmark = {
 				id: crypto.randomUUID(),
 				url: '',
 				title: '',
@@ -82,34 +82,34 @@ const nookmark = {
 		} else if (!memo && !rating && !tags) {
 			return {
 				isNew: isNew,
-				bookmark: bm,
+				bookmark: bookmark,
 			};
 		}
-		bm.updated_at = now;
+		bookmark.updated_at = now;
 
 		let content = null;
 		if (html) {
 			const parsed = processHtml(url, title, html);
-			bm.title = parsed.title;
+			bookmark.title = parsed.title;
 			if (isNew)
-				bm.keywords = parsed.keywords || [];
+				bookmark.keywords = parsed.keywords || [];
 
 			content = {
-				id: bm.id,
+				id: bookmark.id,
 				html: parsed.cleanHtml,
 				markdown: parsed.markdown,
 			};
 		}
 
 		// データベースに保存または更新
-		_.merge(bm, { url, title, memo, rating, tags });
-		await db.upsert(bm, content);
+		_.merge(bookmark, { url, title, memo, rating, tags });
+		await db.upsert(bookmark, content);
 
-		this._syncTagCache(oldTags, bm.tags);
+		this._syncTagCache(oldTags, bookmark.tags);
 
 		return {
 			isNew: isNew,
-			bookmark: bm,
+			bookmark: bookmark,
 		};
 	},
 

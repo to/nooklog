@@ -31,6 +31,7 @@
 	<form id="form-update" class="flex flex-col h-full">
 		<input type="text" id="url" required>
 		<input type="text" id="title" placeholder="Title" required>
+		<input type="number" id="rating" min="0" max="5">
 		<input name="tags" placeholder="Tags">
 		<textarea id="memo" placeholder="Memo"></textarea>
 		<input type="hidden" id="html">
@@ -41,6 +42,7 @@
 	<script src="lib/tagify/tagify.js"></script>
 	<script src="js/util.js"></script>
 	<script src="js/TagInput.js"></script>
+	<script src="js/RatingInput.js"></script>
 	<script type="module" src="update.mjs"></script>
 </body>
 
