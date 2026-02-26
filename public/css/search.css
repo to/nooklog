@@ -43,39 +43,37 @@
 		.col-rating {
 			padding-left: 0;
 			font-size: var(--font-size-m);
+			color: var(--color-6);
 			text-align: right;
 
-			span{
-				display: inline-block;
-				transform-origin: right center;
-			}
-
 			.rating-5 {
-				transform: scale(0.95);
 			}
 
 			.rating-4 {
-				opacity: 0.75;
-				transform: scale(0.90);
+				opacity: 0.9;
 			}
 
 			.rating-3 {
-				opacity: 0.4;
-				transform: scale(0.85);
+				opacity: 0.8;
 			}
 
 			.rating-2 {
-				opacity: 0.2;
-				transform: scale(0.8);
+				opacity: 0.6;
 			}
 
 			.rating-1 {
-				opacity: 0.1;
-				transform: scale(0.7);
+				opacity: 0.4;
 			}
 
-			.rating-0 {
-				opacity: 0;
+			.input-rating {
+				.icon{
+					visibility: hidden;
+					line-height: var(--line-height-m);
+				}
+
+				.active {
+					visibility: visible;
+				}
 			}
 		}
 

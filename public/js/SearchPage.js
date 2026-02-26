@@ -102,7 +102,9 @@ class SearchPage {
 			return `
 			<tr>
 				<td class="col-rating">
-					<span class="rating rating-${r.rating}">${'★'.repeat(r.rating)}</span>
+					<div class="input-rating rating-${r.rating}">
+						${[...Array(5)].map((_, i) => `<span class="icon${(5 - i) <= r.rating ? ' active' : ''}">star</span>`).join('')}
+					</div>
 				</td>
 				<td class="col-favicon">
 					<img src="https://www.google.com/s2/favicons?sz=16&domain=${this._getHostname(r.url)}">
