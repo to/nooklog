@@ -260,18 +260,21 @@ body {
 	/* ---- Rating ---- */
 	.input-rating {
 		display: flex;
+		width: fit-content;
 
 		.icon {
 			font-family: 'Material Symbols Filled';
-			color: var(--color-2);
+			color: var(--color-5);
 			user-select: none;
 		}
 
-		.icon.active {
-			color: var(--color-5);
+		&.hover .icon,
+		.active .icon,
+		&[data-rating="0"] .icon {
+			color: var(--color-2);
 		}
 
-		.icon.hover {
+		&.hover .icon:hover {
 			color: var(--color-4);
 		}
 	}
