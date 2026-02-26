@@ -105,12 +105,10 @@ class Database {
 
 		let builder = this.bookmarks.query();
 		if (columns) {
-			const cols = [...columns];
-			for (const f of fields) {
-				if (!cols.includes(f))
-					cols.push(f);
-			}
-			builder = builder.select(cols);
+			const selection = new Set([...columns, ...fields]);
+			if (ftsQuery)
+				selection.add('_score');
+			builder = builder.select([...selection]);
 		}
 
 		if (conditions)

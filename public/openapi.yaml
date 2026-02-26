@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: Nookmark API
+  description: Local-first bookmark & search system
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5050
+
+paths:
+  /api/search:
+    get:
+      operationId: searchBookmarks
+      summary: Search bookmarks by keywords and tags
+      parameters:
+        - name: query
+          in: query
+          description: Search keywords. Supports phrase search with double quotes (e.g. "exact phrase").
+          schema:
+            type: string
+        - name: fields
+          in: query
+          description: Comma-separated list of columns to search against.
+          schema:
+            type: string
+            default: title,memo,url
+          example: title,memo
+        - name: tags
+          in: query
+          description: Comma-separated list of tags to filter by (AND match).
+          schema:
+            type: string
+          example: javascript,react
+        - name: rating
+          in: query
+          description: Minimum rating filter (1-5).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: sortBy
+          in: query
+          description: Column to sort results by.
+          schema:
+            type: string
+            enum: [updated_at, created_at, rating]
+            default: updated_at
+        - name: limit
+          in: query
+          description: Maximum number of results to return.
+          schema:
+            type: integer
+            default: 200
+        - name: columns
+          in: query
+          description: Comma-separated list of columns to include in response.
+          schema:
+            type: string
+            default: id,url,title,memo,tags,rating,updated_at,created_at
+
+      responses:
+        '200':
+          description: Array of matching bookmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bookmark'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Bookmark:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        memo:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        rating:
+          type: integer
+          minimum: 0
+          maximum: 5
+        created_at:
+          type: number
+          description: Unix timestamp in milliseconds
+        updated_at:
+          type: number
+          description: Unix timestamp in milliseconds
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
