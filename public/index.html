@@ -87,7 +87,7 @@
 						<label><input type="radio" name="client.ratingInputMode" value="tags"> Tags</label>
 						<label><input type="radio" name="client.ratingInputMode" value="both"> Both</label>
 					</div>
-					<span class="description">Tags: 数値タグを選択することでレートを入力する</span>
+					<span class="description">Tags: Input ratings by selecting numeric tags</span>
 				</div>
 
 				<div>
@@ -97,7 +97,7 @@
 						<label><input type="radio" name="client.tagMatchMode" value="contains"> Contains</label>
 						<label><input type="radio" name="client.tagMatchMode" value="starts-with"> Starts-with</label>
 					</div>
-					<span class="description">Smart: 飛び石マッチ(例:「javascript」に対して「js」でマッチ)で検索する</span>
+					<span class="description">Smart: Search with subsequence matching (e.g., "js" matches "javascript")</span>
 				</div>
 
 				<div>
@@ -106,7 +106,8 @@
 						<input type="checkbox" name="client.autoCompleteTags">
 						<span></span>
 					</label>
-					<span class="description">タグ候補が絞り込まれた時、自動的に決定する(Smartモード時のみ有効)</span>
+					<span class="description">Automatically select when tag candidates are narrowed down (active only in Smart
+						mode)</span>
 				</div>
 
 				<div>
@@ -115,7 +116,8 @@
 						<input type="checkbox" name="client.normalizeFullWidth">
 						<span></span>
 					</label>
-					<span class="description">全角の括弧やスラッシュなどを半角記号に保存時に変換する</span>
+					<span class="description">Convert full-width characters (e.g., parentheses, slashes) to half-width on
+						save</span>
 				</div>
 
 				<h2>Extension</h2>
@@ -139,7 +141,7 @@
 						<input type="checkbox" name="extension.autoAppendSelection">
 						<span></span>
 					</label>
-					<span class="description">対象ページで選択されたテキストを自動的にメモに追加する</span>
+					<span class="description">Automatically append selected text from the target page to the memo</span>
 				</div>
 
 				<div>
@@ -148,13 +150,13 @@
 						<input type="checkbox" name="extension.focusMemoOnSelection">
 						<span></span>
 					</label>
-					<span class="description">自動追加時にメモ欄へフォーカスを移動する</span>
+					<span class="description">Move focus to the memo field when automatically appending</span>
 				</div>
 
 				<div>
 					<label>Selection Delimiter</label>
 					<input type="text" name="extension.selectionDelimiter">
-					<span class="description">選択されたテキストの先頭に追加する文字列</span>
+					<span class="description">String to prepend to the selected text</span>
 				</div>
 
 				<h2>Server</h2>
@@ -180,8 +182,8 @@
 						<label><input type="radio" name="database.tokenizer" value="standard"> Standard</label>
 						<label><input type="radio" name="database.tokenizer" value="n-gram"> N-gram</label>
 					</div>
-					<span class="description">Standard: スペース区切りの言語(例:英語/スペイン語)</span>
-					<span class="description">N-gram: 単語で分割できない言語(例:日本語/中国語/韓国語)</span>
+					<span class="description">Standard: Space-delimited languages (e.g., English/Spanish)</span>
+					<span class="description">N-gram: Languages without space word dividers (e.g., Japanese/Chinese/Korean)</span>
 					<span class="description error none">Changing the tokenizer requires a full re-index.<br /> The next startup
 						may take several seconds to minutes depending on your data size.</span>
 				</div>
@@ -191,7 +193,7 @@
 				<div>
 					<label>Max Small Fragments</label>
 					<input type="number" name="database.optimization.maxSmallFragments">
-					<span class="description">最適化処理を行うフラグメント断片化の最大値（デフォルト: 100）</span>
+					<span class="description">Maximum fragment fragmentation threshold for optimization (default: 100)</span>
 				</div>
 			</div>
 
