@@ -59,7 +59,7 @@ chrome.contextMenus.onClicked.addListener(info => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
-	if (info.status == 'loading')
+	if (!info.favIconUrl && info.status === 'loading')
 		checkUrl(tab);
 });
 
@@ -84,15 +84,26 @@ async function openSearchPage(query) {
 	});
 }
 
+const checkedUrls = new Map();
+
 async function checkUrl(tab) {
 	// 特殊なページは除外する
-	if (!tab.url || /^(chrome|chrome-extension|devtools|about|edge):/.test(tab.url))
+	const url = tab.url;
+	if (!url || /^(chrome|chrome-extension|devtools|about|edge):/.test(url))
 		return;
+
+	// 同一URLへの連続チェックを抑制する
+	const now = Date.now();
+	const last = checkedUrls.get(url) || 0;
+	if (now - last < 20 * 1000)
+		return;
+
+	checkedUrls.set(url, now);
 
 	try {
 		// ブックマーク済みかチェックする
 		const res = await fetch(
-			`${config['extension.serverAddress']}/api/bookmarks?url=${encodeURIComponent(tab.url)}`);
+			`${config['extension.serverAddress']}/api/bookmarks?url=${encodeURIComponent(url)}`);
 		const data = await res.json();
 		await chrome.action.setBadgeText({
 			tabId: tab.id,
