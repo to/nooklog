@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { processHtml } from './librarian.js';
-import db from './database.js';
+import store from './store.js';
 import config from './config.js';
 import _ from './util.js';
 import baseLogger from './logger.js';
@@ -21,8 +21,7 @@ const DETAIL_COLUMNS = [
 
 const nookmark = {
 	async initialize() {
-		await db.initialize();
-		(await db.getTags()).forEach(t => tagCache.add(t));
+		(await store.getTags()).forEach(t => tagCache.add(t));
 		logger.info({ count: tagCache.size }, 'tags loaded');
 	},
 
@@ -40,30 +39,30 @@ const nookmark = {
 	},
 
 	async getRecent(options = {}) {
-		return await db.getRecent({
+		return await store.getRecent({
 			columns: DEFAULT_COLUMNS,
 			...options,
 		});
 	},
 
 	async findById(id) {
-		return await db.findById(id, { columns: DETAIL_COLUMNS });
+		return await store.findById(id, { columns: DETAIL_COLUMNS });
 	},
 
 	async findByUrl(url) {
-		return await db.findByUrl(url, { columns: DETAIL_COLUMNS });
+		return await store.findByUrl(url, { columns: DETAIL_COLUMNS });
 	},
 
 	async deleteById(id) {
-		const bookmark = await db.findById(id);
-		await db.deleteById(id);
+		const bookmark = await store.findById(id);
+		await store.deleteById(id);
 
 		if (bookmark)
 			this._syncTagCache(bookmark.tags, []);
 	},
 
 	async search(options = {}) {
-		return await db.search({
+		return await store.search({
 			columns: DEFAULT_COLUMNS,
 			...options,
 		});
@@ -71,8 +70,8 @@ const nookmark = {
 
 	async upsert({ id, url, title, memo, rating, tags, html }) {
 		let bookmark = id ?
-			await db.findById(id) :
-			await db.findByUrl(url);
+			await store.findById(id) :
+			await store.findByUrl(url);
 
 		const oldTags = bookmark?.tags || [];
 		const isNew = !bookmark;
@@ -92,6 +91,7 @@ const nookmark = {
 				keywords: [],
 				keywords_full: [],
 				tags: [],
+				summary: '',
 				created_at: now,
 			};
 		} else if (!memo && !rating && !tags) {
@@ -114,7 +114,7 @@ const nookmark = {
 
 		// データベースに保存または更新
 		_.merge(bookmark, { url, title, memo, rating, tags });
-		await db.upsert(bookmark);
+		await store.upsert(bookmark);
 
 		this._syncTagCache(oldTags, bookmark.tags);
 
@@ -129,7 +129,7 @@ const nookmark = {
 			tagCache.add(tag);
 
 		for (const tag of oldTags.filter(t => !newTags.includes(t))) {
-			if (!await db.existsTag(tag))
+			if (!await store.existsTag(tag))
 				tagCache.delete(tag);
 		}
 	},

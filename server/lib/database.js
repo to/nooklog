@@ -1,180 +1,137 @@
 import path from 'path';
-import lancedb from '@lancedb/lancedb';
-const { MultiMatchQuery } = lancedb;
+import lancedb, { Index } from '@lancedb/lancedb';
+import * as arrow from 'apache-arrow';
 
 import _ from './util.js';
-import config from './config.js';
 import baseLogger from './logger.js';
+import config from './config.js';
 
 const logger = baseLogger.child({ module: 'database' });
+
+const LANGUAGES = {
+	ar: 'Arabic', da: 'Danish', nl: 'Dutch', en: 'English',
+	fi: 'Finnish', fr: 'French', de: 'German', el: 'Greek',
+	hu: 'Hungarian', it: 'Italian', no: 'Norwegian', pt: 'Portuguese',
+	ro: 'Romanian', ru: 'Russian', es: 'Spanish', sv: 'Swedish',
+	ta: 'Tamil', tr: 'Turkish',
+};
 
 class Database {
 	constructor() {
 		this.db = null;
 		this.bookmarks = null;
+		this.meta = null;
 	}
 
 	async initialize() {
 		this.db = await lancedb.connect(path.join(config['server.data.path'], 'db'));
+		await this.createTables();
+
 		this.bookmarks = await this.db.openTable('bookmarks');
+		this.meta = await this.db.openTable('meta');
 		logger.info({ count: await this.bookmarks.countRows() }, 'bookmarks table opened');
+
+		await this.createIndices();
 	}
 
-	// LanceDBのVector型をJSの標準配列に変換する
-	// (Vector型はaddできない/v0.27)
-	_populate(results) {
-		if (results.length === 0)
-			return results;
+	async createTables() {
+		const tableNames = await this.db.tableNames();
 
-		const arrayColumns = Object.keys(results[0])
-			.filter(key => results[0][key]?.toArray);
-
-		for (const row of results) {
-			for (const col of arrayColumns)
-				row[col] = row[col].toArray();
+		if (!tableNames.includes('bookmarks')) {
+			logger.info('creating bookmarks table');
+			await this.db.createEmptyTable('bookmarks', new arrow.Schema([
+				new arrow.Field('id', new arrow.Utf8()),
+				new arrow.Field('url', new arrow.Utf8()),
+				new arrow.Field('title', new arrow.Utf8()),
+				new arrow.Field('memo', new arrow.Utf8()),
+				new arrow.Field('rating', new arrow.Int32()),
+				new arrow.Field('keywords', new arrow.List(new arrow.Field('item', new arrow.Utf8()))),
+				new arrow.Field('keywords_full', new arrow.List(new arrow.Field('item', new arrow.Utf8()))),
+				new arrow.Field('tags', new arrow.List(new arrow.Field('item', new arrow.Utf8()))),
+				new arrow.Field('created_at', new arrow.Float64()),
+				new arrow.Field('updated_at', new arrow.Float64()),
+				new arrow.Field('html', new arrow.Utf8()),
+				new arrow.Field('markdown', new arrow.Utf8()),
+				new arrow.Field('summary', new arrow.Utf8()),
+			]));
 		}
-		return results;
+
+		if (!tableNames.includes('meta')) {
+			logger.info('creating meta table');
+			await this.db.createEmptyTable('meta', new arrow.Schema([
+				new arrow.Field('id', new arrow.Utf8()),
+				new arrow.Field('value', new arrow.Utf8()),
+			]));
+		}
 	}
 
-	async _find(where, { columns } = {}) {
-		let builder = this.bookmarks.query();
-		if (columns)
-			builder = builder.select(columns);
-		const results = await builder
-			.where(where).limit(1).toArray();
-		return this._populate(results)[0];
+	async getMeta(id) {
+		const row = (await this.meta.query()
+			.where(`id = '${id.replace(/'/g, '\'\'')}'`)
+			.limit(1).toArray())[0];
+		return row?.value;
 	}
 
-	async findByUrl(url, options) {
-		return this._find(sql`url = ${url}`, options);
-	}
-
-	async findById(id, options) {
-		return this._find(sql`id = ${id}`, options);
-	}
-
-	async upsert(bookmark) {
-		await this.bookmarks.mergeInsert('id')
+	async setMeta(id, value) {
+		await this.meta.mergeInsert('id')
 			.whenMatchedUpdateAll()
 			.whenNotMatchedInsertAll()
-			.execute([bookmark]);
-
-		this.optimize();
+			.execute([{ id, value }]);
 	}
 
-	async deleteById(id) {
-		await this.bookmarks.delete(sql`id = ${id}`);
-	}
-
-	async getRecent({ columns, limit = 100, sortBy = 'updated_at' } = {}) {
-		const recentThreshold = Date.now() - config['database.recentThresholdDays'] * 24 * 60 * 60 * 1000;
-		let builder = this.bookmarks.query();
-		if (columns)
-			builder = builder.select(columns);
-		return this._populate(
-			(await builder
-				.where(`${sortBy === 'rating' ? 'created_at' : sortBy} > ${recentThreshold}`)
-				.toArray())
-				.sort((a, b) => b[sortBy] - a[sortBy])
-				.slice(0, limit));
-	}
-
-	async getTags() {
-		const results = await this.bookmarks.query().select(['tags']).toArray();
-		const tags = new Set();
-		for (const row of results) {
-			for (const tag of row.tags.toArray())
-				tags.add(tag);
-		}
-		return Array.from(tags).sort();
-	}
-
-	async existsTag(tag) {
-		const results = await this.bookmarks.query()
-			.select(['tags'])
-			.where(sql`array_has_any(tags, ${[tag]})`)
-			.limit(1).toArray();
-		return results.length >= 1;
-	}
-
-	async search({
-		columns, tags = [], query = '', fields = [],
-		rating, sortBy = 'updated_at', limit = 200,
-	}) {
-
-		const { conditions, ftsQuery, patterns } = this.buildSearchQuery({
-			tags, query, fields, rating,
-		});
-
-		let builder = this.bookmarks.query();
-		if (columns) {
-			const selection = new Set([...columns, ...fields]);
-			if (ftsQuery)
-				selection.add('_score');
-			builder = builder.select([...selection]);
-		}
-
-		if (conditions)
-			builder = builder.where(conditions);
-
-		if (ftsQuery)
-			builder = builder.fullTextSearch(ftsQuery);
-
-		// 誤ヒットも想定し多めに結果を取得する
-		// (未指定の場合 結果件数は大幅に切り詰められる)
-		let results = await builder.limit(limit * 5).toArray();
-		if (patterns) {
-			// クエリワードやフレーズが含まれているもののみを抽出する
-			// (FTSで高速に広く取得し RegExpで絞り込む)
-			results = results.filter(r =>
-				patterns.every(p =>
-					fields.some(f => p.test(r[f]))));
-		}
-
-		return this._populate(
-			results
-				.sort((a, b) => b[sortBy] - a[sortBy])
-				.slice(0, limit));
-	}
-
-	buildSearchQuery({ tags = [], query = '', fields = [], rating }) {
-		const conditions = [];
-		if (tags.length > 0)
-			conditions.push(sql`array_has_all(tags, ${tags})`);
-
-		if (rating != null)
-			conditions.push(sql`rating >= ${rating}`);
-
-		query = query.trim();
-
-		let ftsQuery = null;
-		let patterns = null;
-		if (query && fields.length > 0) {
-			const tokens = (query.match(/".+?"|[^\s"]+/g) || [])
-				.map(w => w.replace(/^"|"$/g, ''));
-
-			const shortTokens = tokens.filter(t => [...t].length < 2);
-			const longTokens = tokens.filter(t => [...t].length >= 2);
-
-			if (shortTokens.length > 0) {
-				const likeOr = shortTokens.map(t =>
-					fields.map(f => `${f} LIKE ${sql`${'%' + t + '%'}`}`).join(' OR '),
-				).map(c => `(${c})`).join(' AND ');
-				conditions.push(`(${likeOr})`);
+	async createIndices() {
+		// トークナイザー言語が変更されたか？
+		const language = config['database.tokenizerLanguage'];
+		const lastLanguage = await this.getMeta('tokenizerLanguage');
+		if (lastLanguage && lastLanguage !== language) {
+			// 古い全文検索インデックスを削除する
+			logger.warn({ from: lastLanguage, to: language }, 'tokenizer language changed (dropping FTS indices)');
+			for (const idx of await this.bookmarks.listIndices()) {
+				if (idx.indexType === 'FTS')
+					await this.bookmarks.dropIndex(idx.name);
 			}
-
-			if (longTokens.length > 0)
-				ftsQuery = new MultiMatchQuery(longTokens.join(' '), fields);
-
-			patterns = tokens.map(w => new RegExp(
-				w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
 		}
 
-		return {
-			conditions: conditions.length > 0 ? conditions.join(' AND ') : null,
-			ftsQuery,
-			patterns,
-		};
+		if (lastLanguage !== language)
+			await this.setMeta('tokenizerLanguage', language);
+
+		const existing = new Set(
+			(await this.bookmarks.listIndices()).map(i => i.columns[0]));
+
+		const fts = /^(ja|zh|ko)$/.test(language)
+			? () => Index.fts({
+				baseTokenizer: 'ngram',
+				removeStopWords: false,
+				withPosition: true,
+				asciiFolding: true,
+				ngramMinLength: 2,
+				ngramMaxLength: 2,
+			})
+			: () => Index.fts({
+				baseTokenizer: 'simple',
+				stem: true,
+				removeStopWords: true,
+				language: LANGUAGES[language],
+				withPosition: true,
+				asciiFolding: true,
+			});
+
+		for (const [column, cfg] of [
+			['id'],
+			['url', fts()],
+			['title', fts()],
+			['memo', fts()],
+			['rating', Index.bitmap()],
+			['tags', Index.labelList()],
+			['keywords', fts()],
+			['created_at'],
+			['updated_at'],
+		]) {
+			if (existing.has(column))
+				continue;
+			await this.bookmarks.createIndex(column, { config: cfg });
+			logger.info({ column }, 'index created');
+		}
 	}
 
 	async optimize() {
@@ -194,7 +151,7 @@ class Database {
 }
 
 // カラム名が文字列変数の場合 クォートされるので注意すること
-function sql(strings, ...values) {
+export function sql(strings, ...values) {
 	return values.reduce(
 		(acc, val, i) => acc + sqlValue(val) + strings[i + 1], strings[0]);
 }
@@ -212,4 +169,22 @@ function sqlValue(val) {
 	return val;
 }
 
-export default new Database();
+// LanceDBのVector型をJSの標準配列に変換する
+// (Vector型はaddできない/v0.27)
+export function populate(results) {
+	if (results.length === 0)
+		return results;
+
+	const arrayColumns = Object.keys(results[0])
+		.filter(key => results[0][key]?.toArray);
+
+	for (const row of results) {
+		for (const col of arrayColumns)
+			row[col] = row[col].toArray();
+	}
+	return results;
+}
+
+const db = new Database();
+await db.initialize();
+export default db;

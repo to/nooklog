@@ -2,6 +2,9 @@ import pino from 'pino';
 
 const logger = pino({
 	level: process.env.PINO_LOG_LEVEL || 'info',
+	serializers: {
+		error: pino.stdSerializers.err,
+	},
 	transport: process.env.NODE_ENV === 'development' ? {
 		target: 'pino-pretty',
 		options: {

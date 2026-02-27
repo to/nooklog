@@ -177,13 +177,36 @@
 				<h2>Database</h2>
 
 				<div>
-					<label>Tokenizer</label>
-					<div class="radio-flat">
-						<label><input type="radio" name="database.tokenizer" value="standard"> Standard</label>
-						<label><input type="radio" name="database.tokenizer" value="n-gram"> N-gram</label>
-					</div>
-					<span class="description">Standard: Space-delimited languages (e.g., English/Spanish)</span>
-					<span class="description">N-gram: Languages without space word dividers (e.g., Japanese/Chinese/Korean)</span>
+					<label>Tokenizer Language</label>
+					<select name="database.tokenizerLanguage">
+						<optgroup label="Standard (Stemming)">
+							<option value="en">English</option>
+							<option value="es">Español (Spanish)</option>
+							<option value="fr">Français (French)</option>
+							<option value="de">Deutsch (German)</option>
+							<option value="ru">Русский (Russian)</option>
+							<option value="pt">Português (Portuguese)</option>
+							<option value="it">Italiano (Italian)</option>
+							<option value="nl">Nederlands (Dutch)</option>
+							<option value="ar">العربية (Arabic)</option>
+							<option value="da">Dansk (Danish)</option>
+							<option value="el">Ελληνικά (Greek)</option>
+							<option value="fi">Suomi (Finnish)</option>
+							<option value="hu">Magyar (Hungarian)</option>
+							<option value="no">Norsk (Norwegian)</option>
+							<option value="ro">Română (Romanian)</option>
+							<option value="sv">Svenska (Swedish)</option>
+							<option value="ta">தமிழ் (Tamil)</option>
+							<option value="tr">Türkçe (Turkish)</option>
+						</optgroup>
+						<optgroup label="N-gram (CJK)">
+							<option value="zh">中文 (Chinese)</option>
+							<option value="ja">日本語 (Japanese)</option>
+							<option value="ko">한국어 (Korean)</option>
+						</optgroup>
+					</select>
+					<span class="description">Standard: Space-delimited languages with stemming support</span>
+					<span class="description">N-gram: Languages without space word dividers (Japanese/Chinese/Korean)</span>
 					<span class="description error none">Changing the tokenizer requires a full re-index.<br /> The next startup
 						may take several seconds to minutes depending on your data size.</span>
 				</div>
