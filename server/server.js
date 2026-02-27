@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import _ from './lib/util.js';
 import express from 'express';
 
@@ -6,12 +7,15 @@ import { fileURLToPath } from 'url';
 
 import config from './lib/config.js';
 import nookmark from './lib/nookmark.js';
+import baseLogger from './lib/logger.js';
+
+const logger = baseLogger.child({ module: 'server' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.use((req, res, next) => {
-	// console.log(`${req.method} ${req.url}`);
+	logger.trace({ method: req.method, url: req.url }, 'request received');
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 	res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
 	res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
@@ -30,7 +34,7 @@ app.use(express.static(path.join(__dirname, '../public'), {
 
 // 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
 process.on('unhandledRejection', (reason, promise) => {
-	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+	logger.error({ error: reason, promise }, 'unhandled rejection');
 });
 
 app.get('/api/alive', (req, res) => res.json({ alive: true }));
@@ -80,7 +84,7 @@ app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
 
 app.listen(config['server.port'], async () => {
 	await nookmark.initialize();
-	console.log(`Server running on http://localhost:${config['server.port']}`);
+	logger.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
 });
 
 function handle(handler, errorMessage) {
@@ -93,7 +97,7 @@ function handle(handler, errorMessage) {
 		try {
 			await handler(req, res, ps);
 		} catch (error) {
-			console.error(`${errorMessage || `Error: ${req.method} ${req.url}`}:`, error);
+			logger.error({ error, method: req.method, url: req.url }, errorMessage || 'request failed');
 			res.status(500).json({ error: error.message });
 		}
 	};

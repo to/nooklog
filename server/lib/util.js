@@ -1,3 +1,7 @@
+import baseLogger from './logger.js';
+
+const logger = baseLogger.child({ module: 'util' });
+
 export const merge = (target = {}, source) => {
 	for (const key of Object.keys(source)) {
 		if (source[key] === undefined)
@@ -17,7 +21,8 @@ export const bench = async (task, label = 'bench') => {
 	const result = typeof task === 'function' ?
 		await task() :
 		await task;
-	console.log(`⏱️ ${label}: ${(performance.now() - start).toFixed(2)}ms`);
+	const duration = performance.now() - start;
+	logger.debug({ label, duration: duration.toFixed(2) }, 'benchmark finished');
 	return result;
 };
 

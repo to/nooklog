@@ -4,6 +4,9 @@ const { MultiMatchQuery } = lancedb;
 
 import _ from './util.js';
 import config from './config.js';
+import baseLogger from './logger.js';
+
+const logger = baseLogger.child({ module: 'database' });
 
 class Database {
 	constructor() {
@@ -14,7 +17,7 @@ class Database {
 	async initialize() {
 		this.db = await lancedb.connect(path.join(config['server.data.path'], 'db'));
 		this.bookmarks = await this.db.openTable('bookmarks');
-		console.log(`bookmarks: ${await this.bookmarks.countRows()} rows.`);
+		logger.info({ count: await this.bookmarks.countRows() }, 'bookmarks table opened');
 	}
 
 	// LanceDBのVector型をJSの標準配列に変換する

@@ -1,6 +1,9 @@
 import { Readability, isProbablyReaderable } from '@mozilla/readability';
 import TurndownService from 'turndown';
 import { JSDOM } from 'jsdom';
+import baseLogger from './logger.js';
+
+const logger = baseLogger.child({ module: 'librarian' });
 
 const PROGRAM_KEYWORDS = [
 	'function', 'const', 'let', 'var', 'return', 'import', 'export',
@@ -61,7 +64,7 @@ export function processHtml(url, title, html) {
 			// body全体をMarkdownに変換してみる(空文字列であることが多い)
 			page.content = turndownService.turndown(document.body.innerHTML);
 		} catch (e) {
-			console.warn(`Turndown failed in fallback, using textContent: ${e.message}`);
+			logger.warn({ error: e }, 'turndown fallback triggered');
 			page.content = document.body.textContent || '';
 		}
 	}

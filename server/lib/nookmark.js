@@ -3,6 +3,9 @@ import { processHtml } from './librarian.js';
 import db from './database.js';
 import config from './config.js';
 import _ from './util.js';
+import baseLogger from './logger.js';
+
+const logger = baseLogger.child({ module: 'nookmark' });
 
 let tagCache = new Set();
 
@@ -20,7 +23,7 @@ const nookmark = {
 	async initialize() {
 		await db.initialize();
 		(await db.getTags()).forEach(t => tagCache.add(t));
-		console.log(`tagCache: ${tagCache.size} tags.`);
+		logger.info({ count: tagCache.size }, 'tags loaded');
 	},
 
 	getConfig() {

@@ -4,6 +4,9 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 import _ from './util.js';
+import baseLogger from './logger.js';
+
+const logger = baseLogger.child({ module: 'config' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, '../../nookmark.config.json');
@@ -52,6 +55,6 @@ if (fs.existsSync(CONFIG_PATH)) {
 	config.save();
 }
 
-console.log('config: ', config);
+logger.debug({ config }, 'config loaded');
 
 export default config;
