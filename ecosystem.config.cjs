@@ -1,6 +1,6 @@
 module.exports = {
 	apps: [{
-		name: 'nookmark',
+		name: 'nooklog',
 		script: 'server/server.js',
 		watch: false,
 		// エラー時に自動再起動する設定

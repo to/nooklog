@@ -75,7 +75,7 @@ class SearchPage {
 				ratingEl.querySelectorAll('.icon').forEach(s =>
 					s.classList.toggle('active', s.dataset.rating == rating));
 
-				Nookmark.updateBookmark({ id, rating });
+				Nooklog.updateBookmark({ id, rating });
 				return;
 			}
 
@@ -109,13 +109,13 @@ class SearchPage {
 		const query = this.els.query.value;
 		try {
 			const results = (tags.length || query)
-				? await Nookmark.search({
+				? await Nooklog.search({
 					tags,
 					query,
 					fields: [...$$('input[name=field]:checked')].map(el => el.value),
 					sortBy: $('input[name="sortBy"]:checked')?.value,
 				})
-				: await Nookmark.getBookmarks({
+				: await Nooklog.getBookmarks({
 					sortBy: $('input[name="sortBy"]:checked')?.value,
 				});
 
@@ -186,7 +186,7 @@ class SearchPage {
 			return;
 
 		try {
-			await Nookmark.deleteBookmark(id);
+			await Nooklog.deleteBookmark(id);
 			row.remove();
 		} catch (err) {
 			alert(err.message);

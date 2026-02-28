@@ -43,9 +43,9 @@ class UpdateForm {
 		// 既存データを取得する
 		try {
 			const bookmark = this.id ?
-				await Nookmark.getBookmark(this.id) :
+				await Nooklog.getBookmark(this.id) :
 				ps.url ?
-					await Nookmark.findByUrl(ps.url) : null;
+					await Nooklog.findByUrl(ps.url) : null;
 
 			if (bookmark)
 				this._populate(bookmark);
@@ -76,7 +76,7 @@ class UpdateForm {
 			await this._handleSubmit();
 		});
 
-		window.addEventListener('nookmark:receive', ({ detail: msg }) => {
+		window.addEventListener('nooklog:receive', ({ detail: msg }) => {
 			if (msg.event === 'restore') {
 				// HTMLを取得または復元する
 				if (msg.html)
@@ -152,7 +152,7 @@ class UpdateForm {
 	async _handleSubmit() {
 		this.hideError();
 		try {
-			await Nookmark.updateBookmark({
+			await Nooklog.updateBookmark({
 				id: this.id,
 				url: this.els.url.value,
 				title: this.els.title.value,
@@ -175,7 +175,7 @@ class UpdateForm {
 
 	_dispatch(type, msg = {}) {
 		const detail = { ...msg };
-		window.dispatchEvent(new CustomEvent(`nookmark:${type}`, { detail }));
+		window.dispatchEvent(new CustomEvent(`nooklog:${type}`, { detail }));
 	}
 
 	_normalizeText(text) {

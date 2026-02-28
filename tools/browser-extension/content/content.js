@@ -1,7 +1,7 @@
 (async () => {
 	const { config = {} } = await chrome.storage.local.get('config');
 	// 二重実行を抑制する
-	const HOST_ID = 'nookmark-shadow-host';
+	const HOST_ID = 'nooklog-shadow-host';
 	if (document.getElementById(HOST_ID))
 		return;
 
@@ -58,7 +58,7 @@
 	if (config['extension.autoAppendSelection'] !== false)
 		document.addEventListener('mouseup', handleSelection);
 
-	window.addEventListener('nookmark:receive', ({ detail: { event } }) => {
+	window.addEventListener('nooklog:receive', ({ detail: { event } }) => {
 		if (event === 'detach' || event === 'close') {
 			// ウィンドウが開くのを待つ
 			setTimeout(() => {

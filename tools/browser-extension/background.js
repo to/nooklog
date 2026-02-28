@@ -22,8 +22,8 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 
 	// 拡張アイコンのコンテキストメニューに常に表示されてしまう(解決方法不明)
 	chrome.contextMenus.create({
-		id: 'search-nookmark',
-		title: 'Search Nookmark for "%s"',
+		id: 'search-nooklog',
+		title: 'Search Nooklog for "%s"',
 		contexts: ['selection'],
 	});
 
@@ -54,7 +54,7 @@ chrome.commands.onCommand.addListener(async command => {
 
 chrome.contextMenus.onClicked.addListener(info => {
 	// 拡張アイコンをクリックされた時を除外する
-	if (info.menuItemId === 'search-nookmark' && info.selectionText)
+	if (info.menuItemId === 'search-nooklog' && info.selectionText)
 		openSearchPage(info.selectionText.trim());
 });
 

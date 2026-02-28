@@ -1,4 +1,4 @@
-window.Nookmark = {
+window.Nooklog = {
 	apiBase: window.location.origin + '/api',
 
 	async getConfig() {
@@ -98,8 +98,8 @@ window.Nookmark = {
 	},
 
 	_dispatch(type, msg = {}) {
-		window.dispatchEvent(new CustomEvent(`nookmark:${type}`, { detail: msg }));
+		window.dispatchEvent(new CustomEvent(`nooklog:${type}`, { detail: msg }));
 	},
 };
 
-await Nookmark.getConfig();
+await Nooklog.getConfig();

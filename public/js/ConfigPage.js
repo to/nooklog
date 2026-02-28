@@ -44,7 +44,7 @@ class ConfigPage {
 					: value;
 				document.documentElement.classList.remove('dark');
 				document.documentElement.classList.add(theme);
-				Nookmark.saveConfig({ 'client.theme': value });
+				Nooklog.saveConfig({ 'client.theme': value });
 			}
 
 			// 値の変更による副作用を警告する
@@ -73,7 +73,7 @@ class ConfigPage {
 
 			config[el.name] = this._getValue(el);
 		}
-		await Nookmark.saveConfig(config);
+		await Nooklog.saveConfig(config);
 
 		this.els.dialog.close();
 	}

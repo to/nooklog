@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Nookmark API
+  title: Nooklog API
   description: Local-first bookmark & search system
   version: 1.0.0
 

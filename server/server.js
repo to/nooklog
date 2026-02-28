@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import AssetCache from 'express-asset-file-cache-middleware';
 
 import config from './lib/config.js';
-import nookmark from './lib/nookmark.js';
+import nooklog from './lib/nooklog.js';
 import baseLogger from './lib/logger.js';
 
 const logger = baseLogger.child({ module: 'server' });
@@ -73,7 +73,7 @@ process.on('unhandledRejection', (reason, promise) => {
 app.get('/api/alive', (req, res) => res.json({ alive: true }));
 
 app.get('/api/bookmarks/:id', handle(async (req, res, ps) => {
-	res.json(await nookmark.findById(ps.id));
+	res.json(await nooklog.findById(ps.id));
 }));
 
 app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
@@ -81,7 +81,7 @@ app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 	if (!ps.id && !ps.url)
 		return res.status(400).json({ error: 'Missing id or url' });
 
-	const result = await nookmark.upsert(ps);
+	const result = await nooklog.upsert(ps);
 	res.json({
 		id: result.bookmark.id,
 	});
@@ -89,34 +89,34 @@ app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 
 app.get('/api/bookmarks', handle(async (req, res, ps) => {
 	res.json(ps.url ?
-		await nookmark.findByUrl(ps.url) :
-		await nookmark.getRecent(ps));
+		await nooklog.findByUrl(ps.url) :
+		await nooklog.getRecent(ps));
 }));
 
 app.get('/api/search', handle(async (req, res, ps) => {
-	res.json(await nookmark.search(ps));
+	res.json(await nooklog.search(ps));
 }));
 
 app.get('/api/tags', handle(async (req, res, ps) => {
-	res.json(await nookmark.getTags());
+	res.json(await nooklog.getTags());
 }));
 
 app.get('/api/config', handle(async (req, res) => {
-	res.json(nookmark.getConfig());
+	res.json(nooklog.getConfig());
 }));
 
 app.post('/api/config', handle(async (req, res) => {
-	nookmark.saveConfig(req.body);
+	nooklog.saveConfig(req.body);
 	res.json({ success: true });
 }));
 
 app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
-	await nookmark.deleteById(ps.id);
+	await nooklog.deleteById(ps.id);
 	res.json({ success: true });
 }));
 
 app.listen(config['server.port'], async () => {
-	await nookmark.initialize();
+	await nooklog.initialize();
 	logger.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
 });
 

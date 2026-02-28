@@ -12,7 +12,7 @@ iframe.src = src;
 
 document.body.appendChild(iframe);
 
-window.addEventListener('nookmark:receive', ({ detail: msg }) => {
+window.addEventListener('nooklog:receive', ({ detail: msg }) => {
 	if (msg.event === 'detach')
 		openWindow(src);
 });

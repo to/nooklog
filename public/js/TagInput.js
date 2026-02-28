@@ -16,7 +16,7 @@ class TagInput {
 		});
 		this.tagify = tagify;
 
-		Nookmark.getTags().then(tags => tagify.whitelist = tags);
+		Nooklog.getTags().then(tags => tagify.whitelist = tags);
 
 		// IMEをオフにする
 		tagify.DOM.input.setAttribute('inputmode', 'url');

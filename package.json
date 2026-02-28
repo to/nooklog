@@ -1,5 +1,5 @@
 {
-	"name": "nookmark",
+	"name": "nooklog",
 	"version": "1.0.0",
 	"description": "Local-first bookmark & search system",
 	"type": "module",
@@ -7,17 +7,17 @@
 	"scripts": {
 		"start": "node server/server.js",
 		"dev": "node --watch server/server.js",
-		"dev:browser": "pm2 stop nookmark & concurrently \"npm run dev\" \"npx browser-sync start --proxy localhost:3000 --port 4000 --files public/**/*\"",
-		"pm2:start": "pm2 delete nookmark 2>nul & pm2 start ecosystem.config.cjs",
-		"pm2:stop": "pm2 stop nookmark",
-		"pm2:logs": "pm2 logs nookmark",
+		"dev:browser": "pm2 stop nooklog & concurrently \"npm run dev\" \"npx browser-sync start --proxy localhost:3000 --port 4000 --files public/**/*\"",
+		"pm2:start": "pm2 delete nooklog 2>nul & pm2 start ecosystem.config.cjs",
+		"pm2:stop": "pm2 stop nooklog",
+		"pm2:logs": "pm2 logs nooklog",
 		"pm2:monit": "pm2 monit",
 		"electron": "electron electron/main.cjs",
 		"build": "npm rebuild && electron-builder -w"
 	},
 	"build": {
-		"appId": "com.nookmark.app",
-		"productName": "Nookmark",
+		"appId": "com.nooklog.app",
+		"productName": "Nooklog",
 		"files": [
 			"**/*",
 			"!**/*.db",

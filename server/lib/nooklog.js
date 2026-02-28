@@ -5,7 +5,7 @@ import config from './config.js';
 import _ from './util.js';
 import baseLogger from './logger.js';
 
-const logger = baseLogger.child({ module: 'nookmark' });
+const logger = baseLogger.child({ module: 'nooklog' });
 
 let tagCache = new Set();
 
@@ -19,7 +19,7 @@ const DETAIL_COLUMNS = [
 	...DEFAULT_COLUMNS, 'markdown',
 ];
 
-const nookmark = {
+const nooklog = {
 	async initialize() {
 		(await store.getTags()).forEach(t => tagCache.add(t));
 		logger.info({ count: tagCache.size }, 'tags loaded');
@@ -135,4 +135,4 @@ const nookmark = {
 	},
 };
 
-export default nookmark;
+export default nooklog;

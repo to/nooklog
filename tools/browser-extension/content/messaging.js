@@ -1,12 +1,12 @@
 (() => {
 	// 二重実行を抑制する
-	if (window.nookmarkBridgeLoaded)
+	if (window.nooklogBridgeLoaded)
 		return;
 
-	window.nookmarkBridgeLoaded = true;
+	window.nooklogBridgeLoaded = true;
 
 	let sessionId = new URLSearchParams(window.location.search).get('sessionId');
-	window.addEventListener('nookmark:send', e => {
+	window.addEventListener('nooklog:send', e => {
 		if (!chrome.runtime?.id || !sessionId)
 			return;
 
@@ -16,7 +16,7 @@
 		});
 	});
 
-	window.addEventListener('nookmark:command', e => {
+	window.addEventListener('nooklog:command', e => {
 		// 拡張が更新されたか？
 		if (!chrome.runtime?.id)
 			return;
@@ -33,7 +33,7 @@
 			chrome.storage.local.get(dataKey, items => {
 				const data = items[dataKey];
 				if (data) {
-					window.dispatchEvent(new CustomEvent('nookmark:receive', {
+					window.dispatchEvent(new CustomEvent('nooklog:receive', {
 						detail: {
 							...data,
 							event: 'restore',
@@ -64,7 +64,7 @@
 
 		for (const [key, { newValue }] of Object.entries(changes)) {
 			if (newValue && key.startsWith(sessionId + 'messaage:')) {
-				window.dispatchEvent(new CustomEvent('nookmark:receive', {
+				window.dispatchEvent(new CustomEvent('nooklog:receive', {
 					detail: { ...newValue },
 				}));
 				chrome.storage.local.remove(key);
@@ -74,5 +74,5 @@
 })();
 
 function dispatch(type, msg = {}) {
-	window.dispatchEvent(new CustomEvent(`nookmark:${type}`, { detail: { ...msg } }));
+	window.dispatchEvent(new CustomEvent(`nooklog:${type}`, { detail: { ...msg } }));
 }

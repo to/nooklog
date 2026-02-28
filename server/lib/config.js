@@ -9,12 +9,12 @@ import baseLogger from './logger.js';
 const logger = baseLogger.child({ module: 'config' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_PATH = path.join(__dirname, '../../nookmark.config.json');
+const CONFIG_PATH = path.join(__dirname, '../../nooklog.config.json');
 
 // デフォルト設定
 let config = {
 	'server.port': 5050,
-	'server.data.path': path.join(os.homedir(), '.nookmark', 'data'),
+	'server.data.path': path.join(os.homedir(), '.nooklog', 'data'),
 	'database.tokenizerLanguage': '',
 	'database.contentsFormat': 'both', // 'markdown', 'html', 'both'
 	'database.recentThresholdDays': 7,

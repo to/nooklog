@@ -57,7 +57,7 @@ function createTray() {
 
 	const contextMenu = Menu.buildFromTemplate([
 		{
-			label: 'Open Nookmark',
+			label: 'Open Nooklog',
 			click: () => {
 				// デフォルトブラウザで開く
 				shell.openExternal('http://localhost:5050');
@@ -73,7 +73,7 @@ function createTray() {
 		},
 	]);
 
-	tray.setToolTip('Nookmark');
+	tray.setToolTip('Nooklog');
 	tray.setContextMenu(contextMenu);
 
 	// トレイアイコンをクリックしたらブラウザを開く
