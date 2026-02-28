@@ -144,7 +144,7 @@ class SearchPage {
 					</div>
 				</td>
 				<td class="col-favicon">
-					<img src="https://www.google.com/s2/favicons?sz=16&domain=${this._getHostname(r.url)}">
+					<img src="/api/favicon?domain=${this._getHostname(r.url)}">
 				</td>
 				<td class="col-content">
 					<div class="flex flex-col h-full gap-2s">

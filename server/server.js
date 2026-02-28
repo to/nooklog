@@ -3,7 +3,9 @@ import _ from './lib/util.js';
 import express from 'express';
 
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+import AssetCache from 'express-asset-file-cache-middleware';
 
 import config from './lib/config.js';
 import nookmark from './lib/nookmark.js';
@@ -23,6 +25,37 @@ app.use((req, res, next) => {
 	res.setHeader('Access-Control-Allow-Private-Network', 'true');
 	next();
 });
+
+const cacheDir = path.join(config['server.data.path'], 'favicon');
+if (!fs.existsSync(cacheDir))
+	fs.mkdirSync(cacheDir, { recursive: true });
+
+const assetCache = AssetCache({
+	cacheDir,
+	maxSize: 10 * 1024 * 1024, // 10MB
+});
+
+app.get('/api/favicon',
+	(req, res, next) => {
+		const domain = req.query.domain;
+		if (!domain)
+			return res.status(400).send('Missing domain');
+
+		req.url = `/${domain}`;
+		res.locals.fetchUrl = `https://www.google.com/s2/favicons?sz=16&domain=${domain}`;
+		next();
+	},
+	assetCache,
+	(req, res) => {
+		res.set({
+			'Content-Type': res.locals.contentType || 'image/png',
+			'Content-Length': res.locals.contentLength,
+			'Cache-Control': 'public, max-age=86400',
+			'Cross-Origin-Resource-Policy': 'cross-origin',
+		});
+		res.end(res.locals.buffer, 'binary');
+	},
+);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, '../public'), {
