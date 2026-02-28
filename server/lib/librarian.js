@@ -14,9 +14,8 @@ const PROGRAM_KEYWORDS = [
 
 const JUNK_TAGS = [
 	'script', 'style', 'iframe', 'link',
-	'img', 'video', 'audio', 'svg', 'noscript',
-	'canvas', 'picture', 'source', 'template', 'object', 'embed',
-	'header', 'footer', 'nav', 'aside',
+	'video', 'audio', 'svg', 'noscript',
+	'canvas', 'template', 'object', 'embed',
 	'form', 'input', 'button', 'select', 'textarea',
 	'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
 ];
@@ -31,10 +30,42 @@ const turndownService = new TurndownService({
 	codeBlockStyle: 'fenced',
 	hr: '---',
 	bulletListMarker: '-',
-}).addRule('linkRemover', {
+}).addRule('smartLink', {
 	filter: 'a',
-	replacement: function (content) {
-		return content;
+	replacement: function (content, node) {
+		const href = node.getAttribute('href');
+		const title = node.title ? ` "${node.title}"` : '';
+		const link = href ? `(${href}${title})` : '';
+
+		if (!link)
+			return content;
+
+		// 改行を持たないシンプルなリンクはそのまま
+		const trimmed = content.trim();
+		if (!/\n/.test(trimmed))
+			return `[${content}]${link}`;
+
+		// 改行を含む巨大なリンクの場合、行ごとにリンクを再配分する
+		const lines = content.split('\n');
+		const result = lines.map(line => {
+			if (!line.trim())
+				return line;
+
+			// 見出し (#### title) -> #### [title](url)
+			const matchHeading = line.match(/^(#{1,6}\s+)(.+)$/);
+			if (matchHeading)
+				return `${matchHeading[1]}[${matchHeading[2]}]${link}`;
+
+			// 画像の行 (![alt](src)) -> [![alt](src)](url)
+			// (改行だけ取り出して前後に付ける)
+			if (/^!\[.*?\]\(.*?\)$/.test(line.trim()))
+				return `[${line.trim()}]${link}`;
+
+			// それ以外のテキスト
+			return `[${line}]${link}`;
+		});
+
+		return result.join('\n');
 	},
 });
 
@@ -56,7 +87,6 @@ export function processHtml(url, title, html) {
 	if (article) {
 		page.title = article.title;
 		page.siteName = article.siteName;
-		page.excerpt = article.excerpt;
 		page.content = turndownService.turndown(article.content);
 	} else {
 		page.title = document.title;
@@ -80,31 +110,16 @@ export function processHtml(url, title, html) {
 
 // Markdown形式のテキストを生成する
 function generateMarkdown(page) {
-	// メタデータを含めた出力テキストを作成
-	const lines = [];
-	if (page.title)
-		lines.push(`# ${page.title}`);
+	const frontmatter = [
+		'---',
+		page.title && `title: "${page.title.replace(/"/g, '\\"')}"`,
+		page.siteName && `siteName: "${page.siteName.replace(/"/g, '\\"')}"`,
+		page.readerable && `readerable: ${page.readerable}`,
+		page.description && `description: "${page.description.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
+		'---',
+	].filter(Boolean).join('\n');
 
-	if (page.siteName)
-		lines.push(`- SiteName: ${page.siteName}`);
-
-	// Readabilityの判定結果をメモ（デバッグ用にも便利）
-	if (page.readerable)
-		lines.push(`- Readerable: ${page.readerable}`);
-
-	if (page.description)
-		lines.push('', '## Description', page.description);
-
-	if (page.excerpt && page.excerpt !== page.description)
-		lines.push('', '## Excerpt', page.excerpt);
-
-	// 3連続以上の改行を2つに圧縮
-	if (page.content) {
-		lines.push('', '## Content',
-			page.content.replace(/\n{3,}/g, '\n\n'));
-	}
-
-	return lines.join('\n');
+	return `${frontmatter}\n\n${page.content ? page.content.replace(/\n{3,}/g, '\n\n') : ''}`.trim();
 }
 
 // プログラムっぽいpre要素をフェンスド・コードブロックに正規化する
