@@ -1,0 +1,269 @@
+@charset "UTF-8";
+
+/* スクリプトから表示状態を変更する */
+.none { display: none !important; }
+
+/* ---- Base ---- */
+html,
+body {
+	height: 100%;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-m);
+	padding: var(--space-m);
+	font-family: var(--font-sans-s);
+	font-size: var(--font-size-s);
+	color: var(--ink-5);
+	background-color: var(--ink-0);
+}
+
+h2 {
+	margin: var(--space-m) 0;
+	font-size: var(--font-size-l);
+	color: var(--ink-6);
+	border-bottom: 1px solid var(--ink-1);
+}
+
+a {
+	color: var(--color-1);
+}
+
+/* ---- Form ---- */
+form {
+	gap: var(--space-s);
+}
+
+input,
+textarea,
+select {
+	width: 100%;
+	padding: var(--space-s);
+	color: inherit;
+	outline: none;
+	background-color: var(--ink-0);
+	border: 1px solid var(--ink-2);
+	border-radius: var(--radius-m);
+
+	&::placeholder {
+		color: var(--ink-3);
+	}
+
+	&:focus::placeholder {
+		color: var(--ink-2);
+	}
+}
+
+/* Chrome/Safari/Edge/Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+	margin: 0;
+	appearance: none;
+}
+
+/* Firefox */
+input[type='number'] {
+	appearance: textfield;
+}
+
+select {
+	cursor: pointer;
+}
+
+textarea {
+	flex: 1;
+}
+
+button {
+	/* 派生スタイルはCSS変数で色を変更する */
+	--color: var(--ink-0);
+	--background-color: var(--ink-5);
+
+	display: flex; /* 僅かな行の余白を除去する */
+	padding: var(--space-2s) var(--space-s);
+	font-weight: bold;
+	color: var(--color);
+	background-color: var(--background-color);
+	border-radius: var(--radius-m);
+
+	&:hover {
+		background-color: oklch(from var(--background-color) calc(l * var(--hover-up)) c h);
+	}
+
+	&:active {
+		background-color: var(--background-color);
+	}
+
+	&.flat {
+		--color: var(--ink-5);
+
+		padding: 0;
+		color: var(--color);
+		background-color: transparent;
+	}
+
+	&.flat:hover {
+		color: oklch(from var(--color) calc(l * var(--hover-up)) c h);
+	}
+
+	&.flat:active {
+		color: var(--color);
+	}
+}
+
+header {
+	button {
+		align-self: flex-end;
+	}
+}
+
+/* ---- Select/Radio ---- */
+.select-flat,
+.radio-flat {
+	display: flex;
+	font-weight: bold;
+	color: var(--ink-3);
+
+	label {
+		font-size: var(--font-size-s);
+		line-height: 1;
+		cursor: pointer;
+		user-select: none;
+
+		& input {
+			display: none;
+		}
+	}
+}
+
+.select-flat{
+	gap: var(--space-2s);
+
+	label {
+		padding: var(--space-2s);
+		border: 1px solid var(--ink-3);
+		border-radius: var(--radius-m);
+
+		&:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+			border-color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
+
+		&:active{
+			color: var(--ink-5);
+			border-color: var(--ink-5);
+		}
+
+		&:has(input:checked) {
+			color: var(--ink-0);
+			background-color: var(--ink-5);
+			border-color: var(--ink-5);
+		}
+
+		&:has(input:checked):hover {
+			background-color: oklch(from var(--ink-5) calc(l * var(--hover-off)) c h);
+		}
+
+		&:has(input:checked):active {
+			background-color: var(--ink-3);
+			border-color: var(--ink-3);
+		}
+	}
+}
+
+.radio-flat {
+	gap: var(--space-s);
+
+	label {
+		padding: var(--space-2s) 0;
+
+		&:hover {
+			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
+		}
+
+		&:active {
+			color: var(--ink-5);
+		}
+
+		&:has(input:checked) {
+			color: var(--ink-5);
+			text-decoration: underline;
+			text-decoration-thickness: 2px;
+			text-underline-offset: calc(var(--space-2s) * 1.5);
+		}
+	}
+}
+
+/* ---- Toggle ---- */
+.toggle {
+	display: inline-flex;
+	cursor: pointer;
+
+	input {
+		display: none;
+	}
+
+	span {
+		position: relative;
+		width: calc((var(--space-m) * 2) + 4px);
+		height: calc(var(--space-m) + 4px);
+		background: var(--ink-3);
+		border-radius: 999px;
+	}
+
+	span::after {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: var(--space-m);
+		height: var(--space-m);
+		content: "";
+		background: var(--ink-0);
+		border-radius: 50%;
+	}
+
+	input:checked+span {
+		background: var(--ink-5);
+	}
+
+	input:checked+span::after {
+		transform: translateX(14px);
+	}
+}
+
+.error {
+	color: var(--color-error);
+}
+
+/* ---- Icon(Material Symbols) ---- */
+.icon {
+	display: inline-block;
+	font-family: 'Material Symbols Outlined';
+	font-size: var(--font-size-m);
+	font-style: normal;
+	font-weight: normal;
+	font-feature-settings: 'liga';
+	line-height: 1;
+	text-transform: none;
+	letter-spacing: normal;
+	overflow-wrap: normal;
+	white-space: nowrap;
+	direction: ltr;
+	-webkit-font-smoothing: antialiased;
+}
+
+header .icon,
+footer .icon{
+	font-size: var(--font-size-l);
+}
+
+/* ---- Animation ---- */
+@keyframes animate-spin {
+	to { transform: rotate(1turn); }
+}
+
+.animate-spin {
+	animation: animate-spin 1s linear infinite;
+}

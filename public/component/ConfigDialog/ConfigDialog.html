@@ -1,0 +1,247 @@
+<header class="flex justify-end">
+	<button class="open flat icon">settings</button>
+</header>
+
+<dialog closedby="any">
+	<form class="flex flex-col h-full overflow-y-auto">
+		<header class="flex shrink-0">
+			<button class="close flat icon">close</button>
+		</header>
+
+		<div class="grid items-center">
+			<h2>Client</h2>
+
+			<div>
+				<label>Theme</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.theme" value="system"> System</label>
+					<label><input type="radio" name="client.theme" value="light"> Light</label>
+					<label><input type="radio" name="client.theme" value="dark"> Dark</label>
+					<label><input type="radio" name="client.theme" value="light-gray"> Light Gray</label>
+					<label><input type="radio" name="client.theme" value="dark-gray"> Dark Gray</label>
+				</div>
+			</div>
+
+			<div>
+				<label>Tint</label>
+				<div class="radio-flat flex-wrap" style="gap: 4px">
+					<label title="Tomato"><input type="radio" name="client.tint" value="tomato"
+							style="background-color:var(--tomato-11);"></label>
+					<label title="Red"><input type="radio" name="client.tint" value="red"
+							style="background-color:var(--red-11);"></label>
+					<label title="Ruby"><input type="radio" name="client.tint" value="ruby"
+							style="background-color:var(--ruby-11);"></label>
+					<label title="Crimson"><input type="radio" name="client.tint" value="crimson"
+							style="background-color:var(--crimson-11);"></label>
+					<label title="Pink"><input type="radio" name="client.tint" value="pink"
+							style="background-color:var(--pink-11);"></label>
+					<label title="Plum"><input type="radio" name="client.tint" value="plum"
+							style="background-color:var(--plum-11);"></label>
+					<label title="Purple"><input type="radio" name="client.tint" value="purple"
+							style="background-color:var(--purple-11);"></label>
+					<label title="Violet"><input type="radio" name="client.tint" value="violet"
+							style="background-color:var(--violet-11);"></label>
+					<label title="Iris"><input type="radio" name="client.tint" value="iris"
+							style="background-color:var(--iris-11);"></label>
+					<label title="Indigo"><input type="radio" name="client.tint" value="indigo"
+							style="background-color:var(--indigo-11);"></label>
+					<label title="Blue"><input type="radio" name="client.tint" value="blue"
+							style="background-color:var(--blue-11);"></label>
+					<label title="Cyan"><input type="radio" name="client.tint" value="cyan"
+							style="background-color:var(--cyan-11);"></label>
+					<label title="Teal"><input type="radio" name="client.tint" value="teal"
+							style="background-color:var(--teal-11);"></label>
+					<label title="Jade"><input type="radio" name="client.tint" value="jade"
+							style="background-color:var(--jade-11);"></label>
+					<label title="Green"><input type="radio" name="client.tint" value="green"
+							style="background-color:var(--green-11);"></label>
+					<label title="Grass"><input type="radio" name="client.tint" value="grass"
+							style="background-color:var(--grass-11);"></label>
+					<label title="Bronze"><input type="radio" name="client.tint" value="bronze"
+							style="background-color:var(--bronze-11);"></label>
+					<label title="Gold"><input type="radio" name="client.tint" value="gold"
+							style="background-color:var(--gold-11);"></label>
+					<label title="Brown"><input type="radio" name="client.tint" value="brown"
+							style="background-color:var(--brown-11);"></label>
+					<label title="Orange"><input type="radio" name="client.tint" value="orange"
+							style="background-color:var(--orange-11);"></label>
+					<label title="Amber"><input type="radio" name="client.tint" value="amber"
+							style="background-color:var(--amber-11);"></label>
+					<label title="Yellow"><input type="radio" name="client.tint" value="yellow"
+							style="background-color:var(--yellow-11);"></label>
+					<label title="Lime"><input type="radio" name="client.tint" value="lime"
+							style="background-color:var(--lime-11);"></label>
+					<label title="Mint"><input type="radio" name="client.tint" value="mint"
+							style="background-color:var(--mint-11);"></label>
+					<label title="Sky"><input type="radio" name="client.tint" value="sky"
+							style="background-color:var(--sky-11);"></label>
+				</div>
+			</div>
+
+			<div>
+				<label>Window Position</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.windowPosition" value="bottom-right"> Bottom Right</label>
+					<label><input type="radio" name="client.windowPosition" value="top-right"> Top Right</label>
+				</div>
+			</div>
+
+			<hr>
+
+			<div>
+				<label>Rating Input Mode</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.ratingInputMode" value="stars"> Stars</label>
+					<label><input type="radio" name="client.ratingInputMode" value="tags"> Tags</label>
+					<label><input type="radio" name="client.ratingInputMode" value="both"> Both</label>
+				</div>
+				<span class="description">Tags: Input ratings by selecting numeric tags</span>
+			</div>
+
+			<div>
+				<label>Tag Match Mode</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="client.tagMatchMode" value="smart"> Smart</label>
+					<label><input type="radio" name="client.tagMatchMode" value="contains"> Contains</label>
+					<label><input type="radio" name="client.tagMatchMode" value="starts-with"> Starts-with</label>
+				</div>
+				<span class="description">Smart: Search with subsequence matching (e.g., "js" matches "javascript")</span>
+			</div>
+
+			<div>
+				<label>Auto Complete Tags</label>
+				<label class="toggle">
+					<input type="checkbox" name="client.autoCompleteTags">
+					<span></span>
+				</label>
+				<span class="description">Automatically select when tag candidates are narrowed down (active only in Smart
+					mode)</span>
+			</div>
+
+			<div>
+				<label>Normalize Full Width</label>
+				<label class="toggle">
+					<input type="checkbox" name="client.normalizeFullWidth">
+					<span></span>
+				</label>
+				<span class="description">Convert full-width characters (e.g., parentheses, slashes) to half-width on
+					save</span>
+			</div>
+
+			<h2>Extension</h2>
+
+			<div>
+				<label>Server Address</label>
+				<input type="text" name="extension.serverAddress" placeholder="http://localhost:5050" autofocus>
+			</div>
+
+			<div>
+				<label>Open Search in Foreground</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.openSearchInForeground">
+					<span></span>
+				</label>
+			</div>
+
+			<div>
+				<label>Auto Append Selection</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.autoAppendSelection">
+					<span></span>
+				</label>
+				<span class="description">Automatically append selected text from the target page to the memo</span>
+			</div>
+
+			<div>
+				<label>Focus Memo on Selection</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.focusMemoOnSelection">
+					<span></span>
+				</label>
+				<span class="description">Move focus to the memo field when automatically appending</span>
+			</div>
+
+			<div>
+				<label>Selection Delimiter</label>
+				<input type="text" name="extension.selectionDelimiter">
+				<span class="description">String to prepend to the selected text</span>
+			</div>
+
+			<h2>Server</h2>
+
+			<div>
+				<label>Port</label>
+				<input type="number" name="server.port">
+				<span class="description error none">Requires server restart & extension config update.</span>
+			</div>
+
+			<div>
+				<label>Data Path</label>
+				<input type="text" name="server.data.path">
+				<span class="description error none">Requires server restart. Changing the path will point to a different
+					data
+					location.</span>
+			</div>
+
+			<h2>Database</h2>
+
+			<div>
+				<label>Recent Threshold Days</label>
+				<input type="number" name="database.recentThresholdDays">
+				<span class="description">Show results updated within this many days in the initial view (default: 14)</span>
+			</div>
+
+			<div>
+				<label>Search Result Limit</label>
+				<input type="number" name="database.searchLimit">
+				<span class="description">Maximum number of results to display in the table (default: 300)</span>
+			</div>
+
+			<div>
+				<label>Tokenizer Language</label>
+				<select name="database.tokenizerLanguage">
+					<optgroup label="Standard (Stemming)">
+						<option value="en">English</option>
+						<option value="es">Español (Spanish)</option>
+						<option value="fr">Français (French)</option>
+						<option value="de">Deutsch (German)</option>
+						<option value="ru">Русский (Russian)</option>
+						<option value="pt">Português (Portuguese)</option>
+						<option value="it">Italiano (Italian)</option>
+						<option value="nl">Nederlands (Dutch)</option>
+						<option value="ar">العربية (Arabic)</option>
+						<option value="da">Dansk (Danish)</option>
+						<option value="el">Ελληνικά (Greek)</option>
+						<option value="fi">Suomi (Finnish)</option>
+						<option value="hu">Magyar (Hungarian)</option>
+						<option value="no">Norsk (Norwegian)</option>
+						<option value="ro">Română (Romanian)</option>
+						<option value="sv">Svenska (Swedish)</option>
+						<option value="ta">தமிழ் (Tamil)</option>
+						<option value="tr">Türkçe (Turkish)</option>
+					</optgroup>
+					<optgroup label="N-gram (CJK)">
+						<option value="zh">中文 (Chinese)</option>
+						<option value="ja">日本語 (Japanese)</option>
+						<option value="ko">한국어 (Korean)</option>
+					</optgroup>
+				</select>
+				<span class="description">Standard: Space-delimited languages with stemming support</span>
+				<span class="description">N-gram: Languages without space word dividers (Japanese/Chinese/Korean)</span>
+				<span class="description error none">Changing the tokenizer requires a full re-index.<br /> The next startup
+					may take several seconds to minutes depending on your data size.</span>
+			</div>
+
+			<hr>
+
+			<div>
+				<label>Max Small Fragments</label>
+				<input type="number" name="database.optimization.maxSmallFragments">
+				<span class="description">Maximum fragment fragmentation threshold for optimization (default: 100)</span>
+			</div>
+		</div>
+
+		<footer class="flex">
+			<button type="submit" class="ml-auto">Save</button>
+		</footer>
+</dialog>

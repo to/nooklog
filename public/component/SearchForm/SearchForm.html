@@ -1,0 +1,22 @@
+<form class="flex flex-col search-form w-full">
+	<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
+		<input name="tags" placeholder="Tags">
+		<input type="text" name="query" placeholder="Query" class="row-2">
+		<div class="select-flat col-2 row-2">
+			<label><input type="checkbox" name="field" value="url" checked>URL</label>
+			<label><input type="checkbox" name="field" value="title" checked>Title</label>
+			<label> <input type="checkbox" name="field" value="memo" checked>Memo</label>
+		</div>
+	</div>
+	<div class="hidden">
+		<button type="submit">Search</button>
+	</div>
+	<div class="flex items-end">
+		<span class="icon loading animate-spin none">progress_activity</span>
+		<div class="radio-flat ml-auto">
+			<label> <input type="radio" name="sortBy" value="created_at" checked>Created</label>
+			<label> <input type="radio" name="sortBy" value="updated_at">Updated</label>
+			<label> <input type="radio" name="sortBy" value="rating">Rating</label>
+		</div>
+	</div>
+</form>

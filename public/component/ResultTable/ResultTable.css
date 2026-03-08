@@ -1,0 +1,127 @@
+.ResultTable {
+	display: table;
+	width: 100%;
+	cursor: pointer;
+	border-collapse: collapse;
+
+	.tr {
+		display: table-row;
+		border-bottom: 1px solid var(--ink-1);
+
+		&:hover {
+			background-color: oklch(from var(--ink-0) calc(l * (1 + (var(--hover-on) - 1) * 0.10)) c h);
+		}
+
+		&.is-selected {
+			background-color: var(--ink-1);
+		}
+
+		&:hover,
+		&.is-selected {
+			box-shadow: inset -1px 0 0 var(--ink-0);
+		}
+
+		&:last-child {
+			border-bottom: none;
+		}
+	}
+
+	.td {
+		display: table-cell;
+		padding: var(--space-s) 0 var(--space-s) var(--space-m);
+		vertical-align: top;
+		border: none;
+
+		&:first-child {
+			padding-left: var(--space-2l);
+		}
+
+		&:last-child {
+			padding-right: var(--space-2l);
+		}
+	}
+
+	.col-rating {
+		width: 1%;
+		white-space: nowrap;
+
+		.RatingInput {
+			flex-flow: row-reverse;
+
+			&[data-rating="4"]{
+				opacity: 0.9;
+			}
+
+			&[data-rating="3"]{
+				opacity: 0.8;
+			}
+
+			&[data-rating="2"]{
+				opacity: 0.6;
+			}
+
+			&[data-rating="1"]{
+				opacity: 0.4;
+			}
+
+			.icon{
+				line-height: var(--line-height-m);
+			}
+		}
+	}
+
+	.col-favicon {
+		width: 1%;
+		font-size: var(--font-size-m);
+		line-height: var(--line-height-m);
+
+		img {
+			/* 予めサイズを指定し画像枠を確保する */
+			width: 16px;
+			height: 16px;
+			vertical-align: middle;
+			background-color: var(--color-bg-image);
+			border-radius: var(--radius-s);
+			transform: translateY(calc(var(--font-size-m) * -0.1));
+		}
+	}
+
+	.title {
+		font-family: var(--font-sans-m);
+		font-size: var(--font-size-m);
+		font-weight: bold;
+	}
+
+	.memo {
+		font-size: var(--font-size-s);
+		color: var(--ink-5);
+		overflow-wrap: anywhere;
+		white-space: pre-wrap;
+	}
+
+	.tag {
+		font-size: var(--font-size-2s);
+		font-weight: bold;
+		--color: var(--ink-3);
+
+		line-height: var(--line-height-m);
+	}
+
+	.col-content{
+		.dates {
+			font-size: var(--font-size-2s);
+			font-weight: bold;
+			font-variant-numeric: tabular-nums;
+			color: var(--ink-3);
+			white-space: nowrap;
+		}
+
+		.icon{
+			line-height: 1.05;
+		}
+
+		button.delete {
+			color: var(--ink-3);
+		}
+	}
+}

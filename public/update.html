@@ -6,44 +6,42 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Nooklog</title>
-	<link rel="icon" type="image/png" sizes="192x192" href="icon_48.png">
+	<link rel="icon" type="image/png" sizes="192x192" href="image/icon_48.png">
 	<link rel="stylesheet" href="lib/material-symbols/material-symbols.css">
 	<link rel="stylesheet" href="lib/tagify/tagify.css">
-	<link rel="stylesheet" href="css/tagify.css">
-	<link rel="stylesheet" href="css/token.css">
-	<link rel="stylesheet" href="css/reset.css">
-	<link rel="stylesheet" href="css/layout.css">
-	<link rel="stylesheet" href="css/theme.css">
-	<link rel="stylesheet" href="css/app.css">
+	<link rel="stylesheet" href="css/base/gray.css">
+	<link rel="stylesheet" href="css/base/color.css">
+	<link rel="stylesheet" href="css/base/reset.css">
+	<link rel="stylesheet" href="css/base/layout.css">
+	<link rel="stylesheet" href="css/base/theme.css">
+	<link rel="stylesheet" href="css/application/tagify.css">
+	<link rel="stylesheet" href="css/application/markdown.css">
+	<link rel="stylesheet" href="css/application/application.css">
+	<link rel="stylesheet" href="component/Toast/Toast.css">
+	<link rel="stylesheet" href="component/ResizeHandle/ResizeHandle.css">
+	<link rel="stylesheet" href="component/UpdateForm/UpdateForm.css">
+	<link rel="stylesheet" href="component/RatingInput/RatingInput.css">
 	<link rel="stylesheet" href="css/update.css">
 </head>
 
 <body>
-	<header class="hidden shrink-0 justify-end">
-		<button type="button" id="btn-detach" class="btn-flat">
-			<span class="icon">open_in_new</span>
-		</button>
-		<button type="button" id="btn-close" class="btn-flat">
-			<span class="icon">close</span>
-		</button>
-	</header>
+	<nl-update-form></nl-update-form>
 
-	<form id="form-update" class="flex flex-col h-full">
-		<input type="text" id="url" required>
-		<input type="text" id="title" placeholder="Title" required>
-		<input type="number" id="rating" min="0" max="5">
-		<input name="tags" placeholder="Tags">
-		<textarea id="memo" placeholder="Memo"></textarea>
-		<input type="hidden" id="html">
-		<button type="submit" title="Ctrl + Enter">Save</button>
-		<div id="error" class="error none"></div>
-	</form>
-
+	<script src="lib/EventEmitter.min.js"></script>
+	<script src="lib/marked.min.js"></script>
+	<script src="lib/purify.min.js"></script>
 	<script src="lib/tagify/tagify.js"></script>
 	<script src="js/util.js"></script>
-	<script src="js/TagInput.js"></script>
-	<script src="js/RatingInput.js"></script>
-	<script type="module" src="update.mjs"></script>
+	<script src="js/Network.js"></script>
+	<script src="js/app.js"></script>
+	<script src="js/Component.js"></script>
+	<script src="component/Toast/Toast.js"></script>
+	<script src="component/ResizeHandle/ResizeHandle.js"></script>
+	<script src="component/TagInput.js"></script>
+	<script src="component/RatingInput/RatingInput.js"></script>
+	<script src="js/Nooklog.js"></script>
+	<script src="component/UpdateForm/UpdateForm.html.js"></script>
+	<script src="component/UpdateForm/UpdateForm.js"></script>
 </body>
 
 </html>

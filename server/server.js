@@ -9,6 +9,7 @@ import AssetCache from 'express-asset-file-cache-middleware';
 
 import config from './lib/config.js';
 import nooklog from './lib/nooklog.js';
+import * as librarian from './lib/librarian.js';
 import baseLogger from './lib/logger.js';
 
 const logger = baseLogger.child({ module: 'server' });
@@ -16,11 +17,28 @@ const logger = baseLogger.child({ module: 'server' });
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
+/* ---- Server ---- */
+
+// アプリケーションよりも先に記述する
+app.use(express.json({ limit: '50mb' }));
+
+app.use(express.static(path.join(__dirname, '../public'), {
+	index: 'home.html',
+	setHeaders: (res, path) => {
+		if (path.endsWith('.woff2'))
+			res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+	},
+}));
+
 app.use((req, res, next) => {
 	logger.trace({ method: req.method, url: req.url }, 'request received');
+
+	// iframeの中でセキュリティを厳しくし開きやすくする
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-	res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-	res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+	if (req.query.embed === 'true') {
+		res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+		res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+	}
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	res.setHeader('Access-Control-Allow-Private-Network', 'true');
 	next();
@@ -57,20 +75,50 @@ app.get('/api/favicon',
 	},
 );
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.static(path.join(__dirname, '../public'), {
-	setHeaders: (res, path) => {
-		if (path.endsWith('.woff2'))
-			res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-	},
-}));
+// HTMLパーツをスクリプトとして送信する
+app.get('/component/:component/:name.html.js', (req, res) => {
+	const { component, name } = req.params;
+	// component/UpdateForm/UpdateForm.html のような階層構造に対応
+	const filePath = path.join(__dirname, '../public/component', component, `${name}.html`);
+
+	if (!fs.existsSync(filePath))
+		return res.status(404).end();
+
+	// ファイルに変更がないか？
+	const stat = fs.statSync(filePath);
+	const mtime = stat.mtime;
+	if (req.header('If-Modified-Since') &&
+		mtime <= new Date(req.header('If-Modified-Since')))
+		return res.status(304).end();
+
+	let html = fs.readFileSync(filePath, 'utf8');
+	html = html.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+	res.setHeader('Last-Modified', mtime.toUTCString());
+	res.setHeader('Cache-Control', 'no-cache');
+	res.type('javascript');
+	res.send(`window.${name}_html = \`${html}\`;`);
+});
 
 // 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
 process.on('unhandledRejection', (reason, promise) => {
 	logger.error({ error: reason, promise }, 'unhandled rejection');
 });
 
-app.get('/api/alive', (req, res) => res.json({ alive: true }));
+/* ---- Nooklog ---- */
+
+app.get('/api/tags', handle(async (req, res, ps) => {
+	res.json(await nooklog.getTags());
+}));
+
+app.get('/api/search', handle(async (req, res, ps) => {
+	res.json(await nooklog.search(ps));
+}));
+
+app.get('/api/bookmarks', handle(async (req, res, ps) => {
+	res.json(ps.url ?
+		await nooklog.findByUrl(ps.url) :
+		await nooklog.getRecent(ps));
+}));
 
 app.get('/api/bookmarks/:id', handle(async (req, res, ps) => {
 	res.json(await nooklog.findById(ps.id));
@@ -81,24 +129,21 @@ app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 	if (!ps.id && !ps.url)
 		return res.status(400).json({ error: 'Missing id or url' });
 
-	const result = await nooklog.upsert(ps);
-	res.json({
-		id: result.bookmark.id,
-	});
+	res.json(await nooklog.upsert(ps));
 }));
 
-app.get('/api/bookmarks', handle(async (req, res, ps) => {
-	res.json(ps.url ?
-		await nooklog.findByUrl(ps.url) :
-		await nooklog.getRecent(ps));
+app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
+	await nooklog.deleteById(ps.id);
+	res.json({ success: true });
 }));
 
-app.get('/api/search', handle(async (req, res, ps) => {
-	res.json(await nooklog.search(ps));
-}));
+app.get('/api/alive', (req, res) => res.json({ alive: true }));
 
-app.get('/api/tags', handle(async (req, res, ps) => {
-	res.json(await nooklog.getTags());
+app.post('/api/markdown', handle(async (req, res, ps) => {
+	const result = librarian.processHtml(ps.url, ps.title, ps.html);
+	delete result.html;
+	delete result.title;
+	res.json(result);
 }));
 
 app.get('/api/config', handle(async (req, res) => {
@@ -110,13 +155,7 @@ app.post('/api/config', handle(async (req, res) => {
 	res.json({ success: true });
 }));
 
-app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
-	await nooklog.deleteById(ps.id);
-	res.json({ success: true });
-}));
-
 app.listen(config['server.port'], async () => {
-	await nooklog.initialize();
 	logger.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
 });
 
@@ -142,12 +181,14 @@ const PARAMS_SCHEMA = {
 	title: '',
 	memo: '',
 	html: '',
+	markdown: '',
 	rating: 0,
 	tags: [],
 	query: '',
 	fields: [],
 	sortBy: '',
 	limit: 0,
+	recentThresholdDays: 0,
 	columns: [],
 };
 

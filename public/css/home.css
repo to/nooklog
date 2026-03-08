@@ -1,0 +1,156 @@
+@charset "UTF-8";
+
+:root{
+	--_page-margin : var(--space-2l);
+}
+
+body {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	gap: 0;
+	height: 100vh;
+	padding: 0;
+}
+
+.area-main {
+	flex: 1;
+	min-width: 0;
+	padding: var(--_page-margin) 0;
+	overflow-y: auto;
+
+	.ConfigDialog {
+		> header {
+			width: var(--_page-margin);
+			height: var(--_page-margin);
+			padding: var(--space-2s);
+
+			/* アイコンを左上に寄せる */
+			margin-top: calc(var(--_page-margin) * -1);
+		}
+	}
+}
+
+.area-sub {
+	display: contents;
+
+	aside {
+		flex: none;
+		min-width: 0;
+		overflow-y: auto;
+	}
+
+	.PreviewPanel > .ResizeHandle {
+		--ResizeHandle_space: var(--space-s);
+
+		background-color: var(--ink-1);
+		border: 0 solid var(--ink-2);
+
+		&.vertical {
+			display: none;
+		}
+
+		&.horizontal {
+			width: calc(var(--space-2s) * 1.5);
+			margin-left: 1px;
+			border-width: 0 1px;
+		}
+
+		&.horizontal::before {
+			/* 左側のスクロールバーに重ならないように */
+			transform: translate(-11%, -50%);
+		}
+	}
+}
+
+@media (width > 1000px) {
+	.area-sub {
+		aside {
+			height: auto !important; /* スクリプトで設定された値をクリアする */
+		}
+	}
+}
+
+@media (width <= 1000px) {
+	body {
+		flex-direction: column;
+	}
+
+	.area-sub {
+		aside {
+			z-index: 1;
+			flex: none;
+			width: auto !important;
+			box-shadow: 0 0 10px 10px rgba(0, 0, 0, 3%);
+		}
+
+		.PreviewPanel > .ResizeHandle {
+			&.horizontal {
+				display: none;
+			}
+
+			&.vertical {
+				display: flex;
+				height: var(--space-s);
+				border-width: 1px 0;
+			}
+		}
+	}
+}
+
+.SearchForm {
+	display: contents;
+
+	form {
+		gap: var(--_page-margin);
+		padding: 0 var(--_page-margin);
+		margin-bottom: var(--space-s);
+	}
+}
+
+.PreviewPanel {
+	display: contents;
+
+	header {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		background-color: var(--ink-0);
+
+		div {
+			display: flex;
+			width: var(--_page-margin);
+			height: var(--_page-margin);
+			padding: var(--space-2s);
+		}
+
+		div:first-child {
+			justify-content: flex-end;
+		}
+	}
+
+	.content {
+		padding: 0 var(--_page-margin) var(--space-m) var(--_page-margin);
+	}
+}
+
+.UpdateForm {
+	form {
+		padding: 0 var(--_page-margin) var(--space-m) var(--_page-margin);
+	}
+}
+
+/* ---- Tagify ---- */
+.tagify {
+	gap: var(--space-s);
+	padding: var(--space-2s) var(--space-s);
+
+	.tagify__input {
+		min-height: calc(1.5lh - 1px);
+		padding: var(--space-2s) 0;
+	}
+
+	.tagify__tag > div {
+		padding: var(--space-2s);
+	}
+}

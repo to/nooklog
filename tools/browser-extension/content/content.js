@@ -7,7 +7,7 @@
 
 	// スクリプトコンテキストスコープのセッションIDを更新する
 	let sessionId = 'session:' + Date.now() + ':';
-	dispatch('command', { event: 'initialize', sessionId });
+	bridge.emit('Content:initialize', { sessionId });
 
 	const host = document.createElement('div');
 	host.id = HOST_ID;
@@ -33,40 +33,59 @@
 	const serverUrl = `${config['extension.serverAddress']}/update.html`
 		+ `?url=${encodeURIComponent(location.href)}`
 		+ `&title=${encodeURIComponent(document.title)}`
-		+ `&sessionId=${sessionId}`;
+		+ `&sessionId=${sessionId}`
+		+ '&embed=true';
 	iframe.src = chrome.runtime.getURL('content/frame.html') + `?src=${encodeURIComponent(serverUrl)}&sessionId=${sessionId}`;
 
 	const shadow = host.attachShadow({ mode: 'open' });
 	shadow.appendChild(iframe);
 
-	// HTMLを保存する(準備ができたときに取得される)
-	dispatch('command', {
-		event: 'save',
-		html: document.documentElement.outerHTML,
-	});
+	bridge.emit('Content:save:html', { html: cleanHtml() });
 
 	// テキスト選択を監視する
+	let previousSelection;
 	const handleSelection = e => {
 		if (e.button !== 0)
 			return;
 
 		const selection = window.getSelection().toString().trim();
-		if (selection)
-			dispatch('send', { event: 'select', selection });
+		if (selection && selection !== previousSelection) {
+			previousSelection = selection;
+			bridge.emit('Content:select', { selection }, true);
+		}
 	};
 
 	if (config['extension.autoAppendSelection'] !== false)
 		document.addEventListener('mouseup', handleSelection);
 
-	window.addEventListener('nooklog:receive', ({ detail: { event } }) => {
-		if (event === 'detach' || event === 'close') {
-			// ウィンドウが開くのを待つ
-			setTimeout(() => {
-				host.remove();
-			}, 32);
-		}
-
-		if (event === 'close')
-			document.removeEventListener('mouseup', handleSelection);
+	// 別ウィンドウが開く余裕を作る
+	const closeHost = () => setTimeout(() => host.remove(), 32);
+	bridge.on('UpdateForm:detach', closeHost);
+	bridge.on('UpdateForm:close', () => {
+		document.removeEventListener('mouseup', handleSelection);
+		closeHost();
 	});
 })();
+
+const JUNK_TAGS = [
+	'script', 'style', 'iframe', 'link',
+	'video', 'audio', 'svg', 'noscript',
+	'canvas', 'template', 'object', 'embed',
+	'form', 'input', 'button', 'select', 'textarea',
+	'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
+];
+function cleanHtml() {
+	const clone = document.documentElement.cloneNode(true);
+
+	// 不要な要素を削除
+	clone.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
+
+	// HTMLコメントを削除
+	const walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
+	const nodes = [];
+	while (walker.nextNode())
+		nodes.push(walker.currentNode);
+	nodes.forEach(n => n.remove());
+
+	return clone.outerHTML;
+}

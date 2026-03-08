@@ -1,13 +1,22 @@
 import lancedb from '@lancedb/lancedb';
-const { MultiMatchQuery, BooleanQuery, MatchQuery, Occur } = lancedb;
+const { BooleanQuery, MatchQuery, Occur } = lancedb;
 
 import config from './config.js';
+import _ from './util.js';
 import baseLogger from './logger.js';
 import db, { sql, populate } from './database.js';
 
 const logger = baseLogger.child({ module: 'store' });
 
 const store = {
+	async findByUrl(url, options) {
+		return this._find(sql`url = ${url}`, options);
+	},
+
+	async findById(id, options) {
+		return this._find(sql`id = ${id}`, options);
+	},
+
 	async _find(where, { columns } = {}) {
 		let builder = db.bookmarks.query();
 		if (columns)
@@ -17,19 +26,17 @@ const store = {
 		return populate(results)[0];
 	},
 
-	async findByUrl(url, options) {
-		return this._find(sql`url = ${url}`, options);
-	},
-
-	async findById(id, options) {
-		return this._find(sql`id = ${id}`, options);
-	},
-
 	async upsert(bookmark) {
-		await db.bookmarks.mergeInsert('id')
-			.whenMatchedUpdateAll()
-			.whenNotMatchedInsertAll()
-			.execute([bookmark]);
+		await _.retry(async () => {
+			await db.bookmarks.mergeInsert('id')
+				.whenMatchedUpdateAll()
+				.whenNotMatchedInsertAll()
+				.execute([bookmark]);
+		}, {
+			module: 'store',
+			maxAttempts: 5,
+			delay: 2000,
+		});
 
 		db.optimize();
 	},
@@ -38,17 +45,18 @@ const store = {
 		await db.bookmarks.delete(sql`id = ${id}`);
 	},
 
-	async getRecent({ columns, limit = 100, sortBy = 'updated_at' } = {}) {
-		const recentThreshold = Date.now() - config['database.recentThresholdDays'] * 24 * 60 * 60 * 1000;
+	async getRecent({ columns, limit = 100, sortBy = 'updated_at',
+		recentThresholdDays = config['database.recentThresholdDays'] } = {}) {
+
+		const recentThreshold = Date.now() - recentThresholdDays * 24 * 60 * 60 * 1000;
 		let builder = db.bookmarks.query();
 		if (columns)
 			builder = builder.select(columns);
-		return populate(
-			(await builder
-				.where(`${sortBy === 'rating' ? 'created_at' : sortBy} > ${recentThreshold}`)
-				.toArray())
-				.sort((a, b) => b[sortBy] - a[sortBy])
-				.slice(0, limit));
+
+		const results = await builder
+			.where(`${sortBy === 'rating' ? 'created_at' : sortBy} > ${recentThreshold}`)
+			.toArray();
+		return populate(this._sort(results, sortBy, limit));
 	},
 
 	async getTags() {
@@ -71,7 +79,7 @@ const store = {
 
 	async search({
 		columns, tags = [], query = '', fields = [],
-		rating, sortBy = 'updated_at', limit = 200,
+		rating, sortBy = 'updated_at', limit = 300,
 	}) {
 
 		const { conditions, ftsQuery, patterns } = this._buildSearchQuery({
@@ -92,9 +100,8 @@ const store = {
 		if (ftsQuery)
 			builder = builder.fullTextSearch(ftsQuery);
 
-		// 誤ヒットも想定し多めに結果を取得する
-		// (未指定の場合 結果件数は大幅に切り詰められる)
-		let results = await builder.limit(limit * 5).toArray();
+		// limit未指定の場合 結果件数は大幅に切り詰められる
+		let results = await builder.limit(100 * 10000).toArray();
 		if (patterns) {
 			// クエリワードやフレーズが含まれているもののみを抽出する
 			// (FTSで高速に広く取得し RegExpで絞り込む)
@@ -103,10 +110,13 @@ const store = {
 					fields.some(f => p.test(r[f]))));
 		}
 
-		return populate(
-			results
-				.sort((a, b) => b[sortBy] - a[sortBy])
-				.slice(0, limit));
+		return populate(this._sort(results, sortBy, limit));
+	},
+
+	_sort(results, sortBy, limit) {
+		return results
+			.sort((a, b) => (b[sortBy] - a[sortBy]) || (b.updated_at - a.updated_at))
+			.slice(0, limit);
 	},
 
 	_buildSearchQuery({ tags = [], query = '', fields = [], rating }) {
@@ -138,8 +148,9 @@ const store = {
 			}
 
 			if (longTokens.length > 0) {
+				// MultiMatchQueryでは正確な検索ができなかった
 				ftsQuery = new BooleanQuery(
-					// NOTE: fuzziness was avoided because it could cause exact matches to fail.
+					// NOTE: fuzziness was avoided because it could cause exact matches to fail.(v0.27)
 					longTokens.map(token => {
 						return [Occur.Must, new BooleanQuery(
 							fields.map(field => [Occur.Should, new MatchQuery(token, field)]),

@@ -27,6 +27,16 @@ class TagInput {
 				this.enter();
 		});
 
+		// 入力中はドロップダウンがマウスを無視するように
+		const resetInputtingState = debounce(() => {
+			tagify.DOM.dropdown.classList.remove('is-inputting');
+		}, 500);
+
+		tagify.on('input', () => {
+			tagify.DOM.dropdown.classList.add('is-inputting');
+			resetInputtingState();
+		});
+
 		// タグをクリックして削除する
 		tagify.on('click', e => {
 			tagify.removeTags(e.detail.tag);
@@ -60,8 +70,14 @@ class TagInput {
 			new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 	}
 
-	setTags(tags) {
-		this.tagify.addTags(tags);
+	setTags(...args) {
+		this.tagify.removeAllTags();
+
+		// 重複タグを取り除き適切なレートを決定する
+		// (別ウィンドウ切り離し時のデータ混合を修正する)
+		const { tags, rating } = Nooklog.separateRating(
+			[].concat(...args.filter(v => v)));
+		this.tagify.addTags([...new Set([].concat(rating || [], tags))]);
 	}
 
 	getTags() {
@@ -77,5 +93,3 @@ class TagInput {
 		return this;
 	}
 }
-
-window.TagInput = TagInput;

@@ -1,5 +1,5 @@
-import crypto from 'crypto';
 import { processHtml } from './librarian.js';
+import db from './database.js';
 import store from './store.js';
 import config from './config.js';
 import _ from './util.js';
@@ -9,12 +9,12 @@ const logger = baseLogger.child({ module: 'nooklog' });
 
 let tagCache = new Set();
 
+const USER_MARK = '\u200B';
 const DEFAULT_COLUMNS = [
 	'id', 'url', 'title', 'memo',
 	'tags', 'rating',
 	'updated_at', 'created_at',
 ];
-
 const DETAIL_COLUMNS = [
 	...DEFAULT_COLUMNS, 'markdown',
 ];
@@ -68,49 +68,27 @@ const nooklog = {
 		});
 	},
 
-	async upsert({ id, url, title, memo, rating, tags, html }) {
+	async upsert({ id, url, title, memo, rating, tags, html, markdown }) {
 		let bookmark = id ?
 			await store.findById(id) :
 			await store.findByUrl(url);
 
 		const oldTags = bookmark?.tags || [];
 		const isNew = !bookmark;
-		const now = Date.now();
 
-		// 新規作成時の初期化
-		if (isNew) {
-			if (!url)
-				throw new Error('URL is required for new pages');
+		if (isNew)
+			bookmark = db.createBookmark();
+		else
+			bookmark.updated_at = Date.now();
 
-			bookmark = {
-				id: crypto.randomUUID(),
-				url: '',
-				title: '',
-				memo: '',
-				rating: 0,
-				keywords: [],
-				keywords_full: [],
-				tags: [],
-				summary: '',
-				created_at: now,
-			};
-		} else if (!memo && !rating && !tags) {
-			return {
-				isNew: isNew,
-				bookmark: bookmark,
-			};
-		}
-		bookmark.updated_at = now;
+		if (html && !bookmark.markdown.endsWith(USER_MARK))
+			Object.assign(bookmark, processHtml(url, title, html));
+		else
+			bookmark.markdown = markdown || '';
 
-		if (html) {
-			const parsed = processHtml(url, title, html);
-			bookmark.title = parsed.title;
-			if (isNew)
-				bookmark.keywords = parsed.keywords || [];
-
-			bookmark.html = parsed.cleanHtml;
-			bookmark.markdown = parsed.markdown;
-		}
+		// HTMLを切り捨てる
+		if (!config['database.saveHTML'])
+			bookmark.html = '';
 
 		// データベースに保存または更新
 		_.merge(bookmark, { url, title, memo, rating, tags });
@@ -118,10 +96,7 @@ const nooklog = {
 
 		this._syncTagCache(oldTags, bookmark.tags);
 
-		return {
-			isNew: isNew,
-			bookmark: bookmark,
-		};
+		return bookmark;
 	},
 
 	async _syncTagCache(oldTags, newTags) {
@@ -135,4 +110,5 @@ const nooklog = {
 	},
 };
 
+await nooklog.initialize();
 export default nooklog;

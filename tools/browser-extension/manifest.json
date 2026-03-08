@@ -49,7 +49,7 @@
 				"content/content.js",
 				"content/frame.html",
 				"content/frame.js",
-				"content/messaging.js"
+				"content/bridge.js"
 			],
 			"matches": [
 				"<all_urls>"

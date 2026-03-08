@@ -1,32 +1,32 @@
 /* ---- Tagify ---- */
 .tagify {
-	--tags-border-color: var(--color-2);
-	--tags-focus-border-color: var(--color-2);
-	--tags-hover-border-color: var(--color-2);
+	--tags-border-color: var(--ink-2);
+	--tags-focus-border-color: var(--ink-2);
+	--tags-hover-border-color: var(--ink-2);
 
-	--tag-bg: var(--color-5);
-	--tag-text-color: var(--color-0);
-	--tag-hover: oklch(from var(--color-5) calc(l * var(--hover-off)) c h);
+	--tag-bg: var(--ink-5);
+	--tag-text-color: var(--ink-0);
+	--tag-hover: oklch(from var(--ink-5) calc(l * var(--hover-off)) c h);
 	--tag-border-radius: var(--radius-m);
 	--tag-pad: var(--space-2s);
 
 	--tag-invalid-bg: var(--color-error);
 
-	--placeholder-color: var(--color-3);
-	--placeholder-color-focus: var(--color-2);
+	--placeholder-color: var(--ink-3);
+	--placeholder-color-focus: var(--ink-2);
 
 	&, *, *::before, *::after  {
 		transition: none !important;
 		animation: none !important;
 	}
 
-	gap: var(--space-s);
-	padding: var(--space-2s) var(--space-s);
+	gap: var(--space-2s);
+	padding: var(--space-2s);
 	border-radius: var(--radius-m);
 
 	.tagify__input{
-		min-height: calc(1.5lh - 1px);
-		padding: var(--space-2s) 0;
+		min-height: calc(1lh - 1px);
+		padding: 0;
 		margin: 0;
 		line-height: var(--line-height-m);
 	}
@@ -35,8 +35,8 @@
 		margin: 0;
 		cursor: pointer;
 
-		&>div {
-			padding: var(--space-2s);
+		> div {
+			padding: 0 var(--space-2s);
 			font-weight: bold;
 			line-height: var(--line-height-m);
 		}
@@ -47,7 +47,7 @@
 		}
 
 		&:active:not([readonly]) div::before {
-			--tag-bg: var(--color-3);
+			--tag-bg: var(--ink-3);
 		}
 
 		&.tagify--notAllowed:not(.tagify__tag--editable) div>span {
@@ -62,13 +62,14 @@
 }
 
 .tagify__dropdown {
-	--tagify-dd-color-primary: var(--color-3);
-	--tagify-dd-text-color: var(--color-5);
-	--tagify-dd-bg-color: var(--color-0);
+	--tagify-dd-color-primary: var(--ink-3);
+	--tagify-dd-text-color: var(--ink-5);
+	--tagify-dd-bg-color: var(--ink-0);
 
 	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
-
-	/* pointer-events: none; */
+	&.is-inputting {
+		pointer-events: none;
+	}
 
 	&, *, *::before, *::after  {
 		transition: none !important;
@@ -85,8 +86,8 @@
 		}
 
 		&.tagify__dropdown__item--active {
-			color: var(--color-0) !important;
-			background: var(--color-5) !important;
+			color: var(--ink-0) !important;
+			background: var(--ink-5) !important;
 		}
 	}
 }

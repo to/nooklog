@@ -1,52 +1,35 @@
 @charset "UTF-8";
 
-@layer {
-	body {
-		gap: calc(var(--space-s) * 0.8);
+:root{
+	--_fluid-space : (100vh - 380px) * 0.01;
+	--space-s : clamp(var(--space-2s), var(--space-2s) + var(--_fluid-space), var(--space-S));
+	--font-size-s : clamp(var(--font-size-2s), var(--font-size-2s) + var(--_fluid-space), var(--font-size-S));
+}
 
-		/* 狭い外周は目の錯覚で数値以上に狭く見える */
-		padding: calc(var(--space-s) +
-		clamp(var(--space-s) / 4,
-		2px + (100vw - 380px) * (8 - 2) / (460 - 380),
-		var(--space-s)));
-	}
+body {
+	gap: var(--space-s);
+	padding: calc(var(--space-s) * 2);
+}
 
-	input,
-	textarea {
-		padding: var(--space-2s);
-	}
-
-	form {
-		gap: var(--space-2s);
-	}
-
-	.frame header {
-		display: flex;
-		gap: var(--space-s);
-
-		* {
-			line-height: 1;
-		}
-
-		.icon{
-			font-weight: bold;
-		}
+.UpdateForm {
+	.markdown {
+		--space-l : clamp(var(--space-2s), var(--space-2s) + var(--_fluid-space), var(--space-L));
+		--space-m : clamp(var(--space-2s), var(--space-2s) + var(--_fluid-space), var(--space-M));
+		--font-size-l : clamp(var(--font-size-2s), var(--font-size-2s) + var(--_fluid-space), var(--font-size-L));
+		--font-size-m : clamp(var(--font-size-2s), var(--font-size-2s) + var(--_fluid-space), var(--font-size-M));
 	}
 }
 
-/* ---- Tagify ---- */
-.tagify {
-	gap: var(--space-2s);
-	padding: var(--space-2s);
+.frame {
+	.UpdateForm {
+		header {
+			display: flex;
+			gap: var(--space-s);
 
-	.tagify__input{
-		min-height: calc(1lh - 1px);
-		padding: 0;
-	}
-
-	.tagify__tag {
-		&>div {
-			padding: 0 var(--space-2s);
+			.icon{
+				font-size: var(--font-size-m);
+				font-weight: bold;
+			}
 		}
 	}
 }

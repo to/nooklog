@@ -12,10 +12,7 @@ iframe.src = src;
 
 document.body.appendChild(iframe);
 
-window.addEventListener('nooklog:receive', ({ detail: msg }) => {
-	if (msg.event === 'detach')
-		openWindow(src);
-});
+bridge.on('UpdateForm:detach', () => openWindow(src));
 
 // ブラウザに許可される最小値に近いサイズ
 async function openWindow(url) {

@@ -1,79 +1,98 @@
-window.Nooklog = {
-	apiBase: window.location.origin + '/api',
+const Nooklog = {
+	net: new Network(window.location.origin + '/api'),
 
-	async getConfig() {
-		const values = await this._getJSON(`${this.apiBase}/config`);
+	async load() {
+		const values = await this._get('config', {});
 		this._saveConfig(values);
-		return config;
+		hub.emit('Nooklog:load', values);
 	},
 
 	async saveConfig(values) {
 		this._saveConfig(values);
-		await this._postJSON(`${this.apiBase}/config`, values);
+		await this._post('config', values);
 	},
 
 	_saveConfig(values) {
 		Object.assign(config, values);
 		localStorage.config = JSON.stringify(config);
-		this._dispatch('command', { event: 'config', config });
+		bridge.emit('Nooklog:config', { config });
+	},
+
+	async getBookmark(id) {
+		return await this._get(`bookmarks/${id}`, null);
+	},
+
+	async findByUrl(url) {
+		return await this._get(`bookmarks?${new URLSearchParams({ url })}`, null);
+	},
+
+	async resolve({ id, url } = {}) {
+		return id ? await this.getBookmark(id) :
+			url ? await this.findByUrl(url) : null;
+	},
+
+	async getBookmarks({ sortBy } = {}) {
+		return await this._get(`bookmarks?${new URLSearchParams({
+			sortBy,
+			limit: config['database.searchLimit'],
+			recentThresholdDays: config['database.recentThresholdDays'],
+		})}`, []);
+	},
+
+	async search({ tags, query, fields, sortBy }) {
+		return await this._get(`search?${new URLSearchParams({
+			query, fields, sortBy,
+			limit: config['database.searchLimit'],
+			...this.separateRating(tags),
+		})}`, []);
+	},
+
+	async updateBookmark(bookmark) {
+		const path = bookmark.id ? `bookmarks/${bookmark.id}` : 'bookmarks';
+		const data = {
+			...bookmark,
+			...(bookmark.tags ? this.separateRating(bookmark.tags, bookmark.rating) : {}),
+		};
+		return await this._post(path, data, null);
+	},
+
+	async deleteBookmark(id) {
+		return await this.net.delete(`bookmarks/${id}`);
 	},
 
 	async getTags() {
-		const tags = await this._getJSON(`${this.apiBase}/tags`);
+		const tags = await this._get('tags', []);
 		return config['client.ratingInputMode'] !== 'stars'
 			? ['5', '4', '3', '2', '1', '0'].concat(tags)
 			: tags;
 	},
 
-	async getBookmark(id) {
-		return this._populate(await this._getJSON(`${this.apiBase}/bookmarks/${id}`));
+	async generateMarkdown({ url, title, html }) {
+		return await this.net.post('markdown', { url, title, html }, {});
 	},
 
-	async findByUrl(url) {
-		const bookmark = await this._getJSON(`${this.apiBase}/bookmarks?${new URLSearchParams({ url })}`);
-		return bookmark && this._populate(bookmark);
+	async _get(path, def) {
+		return this._populate(await this.net.get(path, def));
 	},
 
-	async getBookmarks({ sortBy } = {}) {
-		const bookmarks = await this._getJSON(`${this.apiBase}/bookmarks?${new URLSearchParams({ sortBy })}`);
-		return bookmarks.map(this._populate);
-	},
-
-	async search({ tags, query, fields, sortBy }) {
-		const bookmarks = await this._getJSON(`${this.apiBase}/search?${new URLSearchParams({
-			query, fields, sortBy,
-			...this._separateRating(tags),
-		})}`);
-		return bookmarks.map(this._populate);
-	},
-
-	async updateBookmark(bookmark) {
-		const url = bookmark.id ?
-			`${this.apiBase}/bookmarks/${bookmark.id}` :
-			`${this.apiBase}/bookmarks`;
-
-		const res = await this._postJSON(url, {
-			...bookmark,
-			...(bookmark.tags ? this._separateRating(bookmark.tags, bookmark.rating) : {}),
-		});
-
-		if (!res.ok)
-			throw new Error('Update failed');
-	},
-
-	async deleteBookmark(id) {
-		const res = await fetch(`${this.apiBase}/bookmarks/${id}`, { method: 'DELETE' });
-		if (!res.ok)
-			throw new Error('Delete failed');
+	async _post(path, data, def) {
+		return this._populate(await this.net.post(path, data, def));
 	},
 
 	_populate(r) {
+		if (!r)
+			return r;
+
+		if (Array.isArray(r))
+			return r.map(i => this._populate(i));
+
 		r.created_at = new Date(r.created_at);
 		r.updated_at = new Date(r.updated_at);
 		return r;
 	},
 
-	_separateRating(tags, rating = 0) {
+	separateRating(tags, rating = 0) {
+		// タグとレートで最も高いものをレートとする
 		tags = tags.filter(t => {
 			if (!/^\d$/.test(t))
 				return true;
@@ -81,25 +100,6 @@ window.Nooklog = {
 		});
 		return { tags, rating };
 	},
-
-	async _postJSON(url, data) {
-		return await fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(data),
-		});
-	},
-
-	async _getJSON(url) {
-		const res = await fetch(url);
-		if (!res.ok)
-			throw new Error(`GET failed: ${res.status} ${url}`);
-		return await res.json();
-	},
-
-	_dispatch(type, msg = {}) {
-		window.dispatchEvent(new CustomEvent(`nooklog:${type}`, { detail: msg }));
-	},
 };
 
-await Nooklog.getConfig();
+Nooklog.load();

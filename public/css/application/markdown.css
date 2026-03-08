@@ -1,0 +1,189 @@
+@charset "UTF-8";
+
+.markdown {
+	font-size: var(--font-size-m);
+	color: var(--ink-5);
+	word-break: break-all;
+	overflow-wrap: break-word;
+
+	h1, h2, h3, h4, h5, h6 {
+		margin-top: var(--space-l);
+		margin-bottom: var(--space-m);
+		font-weight: bold;
+		color: var(--ink-6);
+	}
+
+	h1 {
+		padding-bottom: 0.3em;
+		font-size: var(--font-size-l);
+		border-bottom: 2px solid var(--ink-2);
+	}
+
+	h2 {
+		padding-bottom: 0.3em;
+		font-size: var(--font-size-m);
+		border-bottom: 2px solid var(--ink-2);
+	}
+
+	h3 {
+		font-size: calc(var(--font-size-m) * 0.95);
+	}
+
+	h4 {
+		font-size: calc(var(--font-size-m) * 0.9);
+	}
+
+	p {
+		margin-top: 0;
+		margin-bottom: var(--space-m);
+	}
+
+	ul, ol {
+		padding-left: var(--space-m);
+		margin-top: 0;
+		margin-bottom: var(--space-m);
+	}
+
+	li {
+		margin-bottom: var(--space-s);
+	}
+
+	blockquote {
+		padding: 0 var(--space-m);
+		margin: 0 0 var(--space-m) 0;
+		color: var(--ink-4);
+		border-left: 0.25em solid var(--ink-1);
+
+		> :last-child {
+			margin-bottom: 0;
+		}
+	}
+
+	code {
+		padding: 0.2em 0.4em;
+		margin: 0;
+		font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+		background-color: var(--ink-1);
+		border-radius: var(--radius-m);
+	}
+
+	kbd {
+		padding: var(--space-2s) var(--space-s);
+		font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+		font-size: var(--font-size-2s);
+		vertical-align: middle;
+		color: var(--ink-4);
+		background-color: var(--ink-1);
+		border: 1px solid var(--ink-2);
+		border-radius: var(--radius-m);
+		box-shadow: 0 1px 0 var(--ink-2);
+	}
+
+	pre {
+		padding: var(--space-s);
+		margin-bottom: var(--space-m);
+		overflow: auto;
+		background-color: var(--ink-1);
+		border-radius: var(--radius-m);
+
+		code {
+			padding: 0;
+			margin: 0;
+			word-break: normal;
+			white-space: pre;
+			background-color: transparent;
+		}
+	}
+
+	hr {
+		height: 1px;
+		padding: 0;
+		margin: var(--space-m) 0;
+		background-color: var(--ink-2);
+		border: 0;
+	}
+
+	table {
+		display: block;
+		width: 100%;
+		margin-bottom: var(--space-m);
+		overflow: auto;
+
+		th, td {
+			padding: 6px 13px;
+			border: 1px solid var(--ink-2);
+		}
+
+		th {
+			font-weight: bold;
+		}
+
+		tr:nth-child(2n) {
+			background-color: var(--ink-1);
+		}
+	}
+
+	.table-frontmatter {
+		display: table;
+		width: 100%;
+		margin-bottom: var(--space-l);
+		overflow: hidden; /* 角丸のクリッピング */
+		table-layout: fixed ;
+		border-spacing: 0;
+		border-collapse: separate; /* 角丸を綺麗に */
+		border: 1px solid var(--ink-2);
+		border-radius: var(--radius-m);
+
+		th, td {
+			padding: var(--space-s) var(--space-m);
+			text-align: left;
+			word-break: break-word;
+			overflow-wrap: anywhere;
+			border: none;
+			border-bottom: 1px solid var(--ink-2);
+		}
+
+		tr:last-child > * {
+			border-bottom: none;
+		}
+
+		th {
+			width: 9.4em;
+			color: var(--ink-4);
+			white-space: nowrap;
+			background-color: var(--ink-1);
+		}
+
+		td {
+			background-color: var(--ink-0);
+		}
+	}
+
+	img {
+		box-sizing: content-box;
+		max-width: 100%;
+	}
+
+	img:not([src]),
+	img[src=""] {
+		display: none;
+	}
+
+	.broken-image-label {
+		display: inline-flex;
+		gap: var(--space-2s);
+		align-items: center;
+		padding: var(--space-2s) var(--space-s);
+		margin-bottom: var(--space-m);
+		font-size: var(--font-size-2s);
+		vertical-align: middle;
+		color: var(--ink-4);
+		user-select: none;
+		background-color: var(--ink-1);
+		border-radius: var(--radius-m);
+
+		.icon {
+			font-size: 1.2em;
+		}
+	}
+}

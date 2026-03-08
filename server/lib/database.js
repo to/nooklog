@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import path from 'path';
 import lancedb, { Index } from '@lancedb/lancedb';
 import * as arrow from 'apache-arrow';
@@ -63,6 +64,25 @@ class Database {
 				new arrow.Field('value', new arrow.Utf8()),
 			]));
 		}
+	}
+
+	createBookmark() {
+		const now = Date.now();
+		return {
+			id: crypto.randomUUID(),
+			url: '',
+			title: '',
+			memo: '',
+			rating: 0,
+			keywords: [],
+			keywords_full: [],
+			tags: [],
+			summary: '',
+			html: '',
+			markdown: '',
+			created_at: now,
+			updated_at: now,
+		};
 	}
 
 	async getMeta(id) {
@@ -178,10 +198,14 @@ export function populate(results) {
 	const arrayColumns = Object.keys(results[0])
 		.filter(key => results[0][key]?.toArray);
 
-	for (const row of results) {
+	results = results.map(r => {
+		// 特殊な形式をクローンして解除する
+		// (JSON.stringifyなど あらゆる局面で予想外のエラーが起きる)
+		const row = { ...r };
 		for (const col of arrayColumns)
 			row[col] = row[col].toArray();
-	}
+		return row;
+	});
 	return results;
 }
 

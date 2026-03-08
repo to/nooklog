@@ -68,7 +68,7 @@ async function openUpdatePage(tab) {
 		await chrome.scripting.executeScript({
 			target: { tabId: tab.id },
 			files: [
-				'content/messaging.js',
+				'content/bridge.js',
 				'content/content.js',
 			],
 		});
@@ -145,7 +145,7 @@ async function registerMessagingBridge() {
 		await chrome.scripting.registerContentScripts([{
 			id: scriptId,
 			matches: [targetMatch],
-			js: ['content/messaging.js'],
+			js: ['content/bridge.js'],
 			runAt: 'document_start',
 			allFrames: true,
 		}]);

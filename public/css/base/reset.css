@@ -1,0 +1,60 @@
+@charset "UTF-8";
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	line-height: var(--line-height-m);
+	text-size-adjust: 100%;
+}
+
+a {
+	color: unset;
+	text-decoration: none;
+	text-underline-offset: 0.2em;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+hr{
+	margin: 0;
+}
+
+input,
+textarea,
+button {
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	background: transparent;
+	border: none;
+}
+
+button {
+	cursor: pointer;
+}
+
+textarea {
+	display: block;
+	width: 100%;
+	resize: vertical;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+td {
+	height: 1px; /* 高さを生成する */
+}
+
+:root {
+	scrollbar-color: var(--ink-3) var(--ink-1);
+	scrollbar-width: thin;
+}

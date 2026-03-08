@@ -1,5 +1,7 @@
 import { Readability, isProbablyReaderable } from '@mozilla/readability';
 import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
+import normalizeUrl from 'normalize-url';
 import { JSDOM } from 'jsdom';
 import baseLogger from './logger.js';
 
@@ -25,12 +27,15 @@ const JUNK_REGEX_TAG =
 const JUNK_REGEX_OPEN =
 	new RegExp(`<(${JUNK_TAGS.join('|')})\\b[^>]*>`, 'gi');
 
-const turndownService = new TurndownService({
+const turndown = new TurndownService({
 	headingStyle: 'atx',
 	codeBlockStyle: 'fenced',
 	hr: '---',
 	bulletListMarker: '-',
-}).addRule('smartLink', {
+});
+turndown.use(gfm);
+turndown.keep(['kbd', 'sup', 'sub']);
+turndown.addRule('smartLink', {
 	filter: 'a',
 	replacement: function (content, node) {
 		const href = node.getAttribute('href');
@@ -43,7 +48,7 @@ const turndownService = new TurndownService({
 		// 改行を持たないシンプルなリンクはそのまま
 		const trimmed = content.trim();
 		if (!/\n/.test(trimmed))
-			return `[${content}]${link}`;
+			return `[${trimmed}]${link}`;
 
 		// 改行を含む巨大なリンクの場合、行ごとにリンクを再配分する
 		const lines = content.split('\n');
@@ -70,31 +75,51 @@ const turndownService = new TurndownService({
 });
 
 export function processHtml(url, title, html) {
+	const cleanUrl = normalizeUrl(url, {
+		stripHash: true,
+	});
+
 	let cleanHtml = html
 		.replace(JUNK_REGEX_TAG, '')
 		.replace(JUNK_REGEX_OPEN, '')
 		.replace(/<!--[\s\S]*?-->/g, '');
 
-	const document = (new JSDOM(cleanHtml, { url })).window.document;
+	const document = (new JSDOM(cleanHtml, { url: cleanUrl })).window.document;
+
+	document.querySelectorAll('a').forEach(el => {
+		try {
+			el.setAttribute('href', normalizeUrl(el.href, { stripHash: true }));
+		} catch (e) {
+			el.removeAttribute('href');
+		}
+	});
+	document.querySelectorAll('img').forEach(el => el.setAttribute('src', el.src));
+
 	normalizeProgramPre(document);
 
 	const page = {
+		url: cleanUrl,
 		readerable: isProbablyReaderable(document),
 		description: document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || '',
 	};
+
+	if (!page.readerable) {
+		['header', 'footer', 'nav', 'aside'].forEach(tag => {
+			document.querySelectorAll(tag).forEach(el => el.remove());
+		});
+	}
 
 	const article = (new Readability(document)).parse();
 	if (article) {
 		page.title = article.title;
 		page.siteName = article.siteName;
-		page.content = turndownService.turndown(article.content);
+		page.content = turndown.turndown(article.content);
 	} else {
 		page.title = document.title;
 		try {
-			// body全体をMarkdownに変換してみる(空文字列であることが多い)
-			page.content = turndownService.turndown(document.body.innerHTML);
+			// body全体をMarkdownに変換してみる
+			page.content = turndown.turndown(document.body.innerHTML);
 		} catch (e) {
-			logger.warn({ error: e }, 'turndown fallback triggered');
 			page.content = document.body.textContent || '';
 		}
 	}
@@ -103,7 +128,7 @@ export function processHtml(url, title, html) {
 	page.title = title || page.title || '';
 	return {
 		title: page.title,
-		cleanHtml: cleanHtml,
+		html: cleanHtml,
 		markdown: generateMarkdown(page),
 	};
 }
@@ -113,7 +138,8 @@ function generateMarkdown(page) {
 	const frontmatter = [
 		'---',
 		page.title && `title: "${page.title.replace(/"/g, '\\"')}"`,
-		page.siteName && `siteName: "${page.siteName.replace(/"/g, '\\"')}"`,
+		page.siteName && `site: "${page.siteName.replace(/"/g, '\\"')}"`,
+		page.url && `url: "${page.url}"`,
 		page.readerable && `readerable: ${page.readerable}`,
 		page.description && `description: "${page.description.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
 		'---',

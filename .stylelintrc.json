@@ -8,6 +8,8 @@
 		"@stylistic/stylelint-plugin"
 	],
 	"rules": {
+		"declaration-block-no-redundant-longhand-properties": null,
+		"keyframes-name-pattern": null,
 		"@stylistic/indentation": "tab",
 		"@stylistic/declaration-colon-space-after": "always-single-line",
 		"@stylistic/declaration-block-trailing-semicolon": "always",
@@ -27,8 +29,9 @@
 			true,
 			{
 				"importFrom": [
-					"public/css/token.css",
-					"public/css/theme.css"
+					"public/css/base/color.css",
+					"public/css/base/gray.css",
+					"public/css/base/theme.css"
 				]
 			}
 		]
