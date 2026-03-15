@@ -17,8 +17,8 @@
 					<label><input type="radio" name="client.theme" value="system"> System</label>
 					<label><input type="radio" name="client.theme" value="light"> Light</label>
 					<label><input type="radio" name="client.theme" value="dark"> Dark</label>
-					<label><input type="radio" name="client.theme" value="light-gray"> Light Gray</label>
-					<label><input type="radio" name="client.theme" value="dark-gray"> Dark Gray</label>
+					<label><input type="radio" name="client.theme" value="light-gray"> Gray(Light)</label>
+					<label><input type="radio" name="client.theme" value="dark-gray"> Gray(Dark)</label>
 				</div>
 			</div>
 
@@ -116,16 +116,6 @@
 				</label>
 				<span class="description">Automatically select when tag candidates are narrowed down (active only in Smart
 					mode)</span>
-			</div>
-
-			<div>
-				<label>Normalize Full Width</label>
-				<label class="toggle">
-					<input type="checkbox" name="client.normalizeFullWidth">
-					<span></span>
-				</label>
-				<span class="description">Convert full-width characters (e.g., parentheses, slashes) to half-width on
-					save</span>
 			</div>
 
 			<h2>Extension</h2>
@@ -238,6 +228,62 @@
 				<label>Max Small Fragments</label>
 				<input type="number" name="database.optimization.maxSmallFragments">
 				<span class="description">Maximum fragment fragmentation threshold for optimization (default: 100)</span>
+			</div>
+			<hr>
+
+			<h2>Tools</h2>
+
+			<div>
+				<label>Import</label>
+				<div class="flex items-center gap-m">
+					<select class="folder-tag">
+						<option value="true">Folders as Tags</option>
+						<option value="false">Ignore Folders</option>
+					</select>
+					<button type="button" class="import">Import</button>
+				</div>
+				<span class="description">Import from Bookmark HTML (Chrome/Firefox/Hatena), Pinboard, Session Buddy, or Tab
+					Session Manager.</span>
+			</div>
+
+			<div>
+				<label>Export Bookmarks</label>
+				<div class="container flex items-center gap-m">
+					<select class="export-range">
+						<option value="all">All</option>
+						<option value="search">Search</option>
+					</select>
+					<select class="export-format">
+						<option value="json">JSON</option>
+						<option value="html">HTML</option>
+					</select>
+					<button type="button" class="export-bookmarks">Export</button>
+				</div>
+				<span class="description">"Search" follows the current search filters.<br />HTML format does not include
+					document content.</span>
+			</div>
+
+			<div>
+				<label>Export Documents</label>
+				<div class="container flex items-center gap-m">
+					<select class="export-range">
+						<option value="search">Search</option>
+						<option value="all">All</option>
+					</select>
+					<select class="export-meta">
+						<option value="plain">Plain</option>
+						<option value="full">+ Metadata</option>
+					</select>
+					<select class="export-structure">
+						<option value="flat">Flat</option>
+						<option value="folders">Folders</option>
+					</select>
+					<button type="button" class="export-documents">Export</button>
+				</div>
+				<span class="description">Export bookmarked content as Markdown(.md) files.<br />"Search" follows the current
+					search
+					filters.</span>
+				<span class="description"></span>
 			</div>
 		</div>
 

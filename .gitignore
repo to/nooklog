@@ -12,4 +12,5 @@ data/
 work/
 public/work/
 dist/
+.geminiignore
 nooklog.config.json

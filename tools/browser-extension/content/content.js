@@ -20,8 +20,8 @@
 		top: pos === 'top-right' ? '4px' : 'auto',
 		bottom: pos === 'top-right' ? 'auto' : '4px',
 		right: '4px',
-		width: '300px',
-		height: '380px',
+		width: '320px',
+		height: '320px',
 		border: 'none',
 		zIndex: '2147483647',
 		borderRadius: '5px',
@@ -67,18 +67,17 @@
 	});
 })();
 
-const JUNK_TAGS = [
-	'script', 'style', 'iframe', 'link',
-	'video', 'audio', 'svg', 'noscript',
-	'canvas', 'template', 'object', 'embed',
-	'form', 'input', 'button', 'select', 'textarea',
-	'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
-];
 function cleanHtml() {
 	const clone = document.documentElement.cloneNode(true);
 
 	// 不要な要素を削除
-	clone.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
+	clone.querySelectorAll([
+		'script', 'style', 'iframe', 'link',
+		'video', 'audio', 'svg', 'noscript',
+		'canvas', 'template', 'object', 'embed',
+		'form', 'input', 'button', 'select', 'textarea',
+		'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
+	].join(',')).forEach(el => el.remove());
 
 	// HTMLコメントを削除
 	const walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);

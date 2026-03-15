@@ -4,10 +4,11 @@ class Network {
 	}
 
 	async post(path, data, def) {
+		const isRaw = data instanceof Blob || data instanceof FormData;
 		return await this._fetchJSON(`${this.baseUrl}/${path}`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(data),
+			headers: isRaw ? {} : { 'Content-Type': 'application/json' },
+			body: isRaw ? data : JSON.stringify(data),
 		}, 'POST failed', def);
 	}
 

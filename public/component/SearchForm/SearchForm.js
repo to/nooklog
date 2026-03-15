@@ -4,24 +4,32 @@ class SearchForm extends Component {
 			form: this.$('form'),
 			query: this.$('input[name=query]'),
 			loading: this.$('.loading'),
-			tags: this.$('input[name=tags]'),
+			tags: this.$('nl-tag-input'),
+			fields: this.$$('input[name=field]'),
+			sortBy: this.$$('input[name=sortBy]'),
+			count: this.$('.count'),
 		};
-		this.tagInput = new TagInput(this.els.tags);
 
 		this.els.query.focus();
 
 		const ps = getSearchParams();
 		this.els.query.value = ps.query || '';
+
 		this._search();
 	}
 
 	bindEvents() {
 		hub.on('ResultTable:selectTag', tag => {
-			this.tagInput.tagify.addTags([tag]);
+			this.els.tags.tagify.addTags([tag]);
+		});
+		hub.on('ConfigDialog:import', () => {
+			this.els.tags.refresh();
+			this.clear();
+			this._search();
 		});
 
-		this.tagInput.on('add', () => this._search());
-		this.tagInput.on('remove', () => this._search());
+		this.els.tags.on('add', () => this._search());
+		this.els.tags.on('remove', () => this._search());
 
 		$.on(this.els.form, 'keydown', e => {
 			if (e.target.tagName !== 'INPUT')
@@ -50,7 +58,7 @@ class SearchForm extends Component {
 					e.target.checked = true;
 					return;
 				}
-				if (!this.tagInput.getTags().length && !this.els.query.value)
+				if (!this.els.tags.getTags().length && !this.els.query.value)
 					return;
 			}
 
@@ -60,26 +68,47 @@ class SearchForm extends Component {
 		});
 	}
 
+	clear() {
+		this.els.query.value = '';
+		this.els.tags.tagify.removeAllTags();
+		this.els.fields.forEach(el => el.checked = true);
+		const created = this.els.sortBy.find(el => el.value === 'created_at');
+		if (created)
+			created.checked = true;
+		this.els.count.textContent = '';
+	}
+
+	getQuery() {
+		const tags = this.els.tags.getTags();
+		const query = this.els.query.value;
+		return (tags.length || query) ? {
+			tags,
+			query,
+			fields: this.els.fields.filter(el => el.checked).map(el => el.value),
+			sortBy: this.els.sortBy.find(el => el.checked)?.value,
+		} : {};
+	}
+
 	async _search() {
+		$.hide(this.els.count);
 		$.show(this.els.loading);
 
-		const tags = this.tagInput?.getTags();
-		const query = this.els.query.value;
-
-		const results = (tags.length || query)
-			? await Nooklog.search({
-				tags,
-				query,
-				fields: [...this.$$('input[name=field]:checked')].map(el => el.value),
-				sortBy: this.$('input[name="sortBy"]:checked')?.value,
+		const query = this.getQuery();
+		const results = isEmpty(query)
+			? await Nooklog.getBookmarks({
+				sortBy: this.els.sortBy.find(el => el.checked)?.value,
 			})
-			: await Nooklog.getBookmarks({
-				sortBy: this.$('input[name="sortBy"]:checked')?.value,
-			});
+			: await Nooklog.search(query);
+		results.query = query;
 
-		hub.emit('SearchForm:search', results);
+		this.els.count.innerHTML = '<span class="icon">bookmark</span>' +
+			(results.bookmarks.length !== results.count ?
+				`${results.bookmarks.length} / ${results.count}` : results.count);
 
 		$.hide(this.els.loading);
+		$.show(this.els.count);
+
+		hub.emit('SearchForm:search', results);
 	}
 }
 

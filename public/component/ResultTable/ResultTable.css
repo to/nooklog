@@ -47,6 +47,7 @@
 
 		.RatingInput {
 			flex-flow: row-reverse;
+			--RatingInput_color-inactive: transparent;
 
 			&[data-rating="4"]{
 				opacity: 0.9;

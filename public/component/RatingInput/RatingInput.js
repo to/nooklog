@@ -15,6 +15,7 @@ class RatingInput extends Component {
 
 			const rating = +button.dataset.rating;
 			el.value = (+el.dataset.rating === rating) ? 0 : rating;
+			el.classList.remove('is-over');
 			el.dispatchEvent(new Event('change', { bubbles: true }));
 		});
 

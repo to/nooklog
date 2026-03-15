@@ -2,10 +2,14 @@
 	display: flex;
 	width: fit-content;
 
+	--RatingInput_color-active: var(--ink-5);
+	--RatingInput_color-hover: var(--ink-4);
+	--RatingInput_color-inactive: var(--ink-2);
+
 	.icon {
 		margin-right: -1px;
 		font-family: 'Material Symbols Filled';
-		color: var(--ink-2);
+		color: var(--RatingInput_color-inactive);
 		user-select: none;
 	}
 
@@ -15,19 +19,19 @@
 		&[data-rating="3"] button:nth-child(-n+3),
 		&[data-rating="4"] button:nth-child(-n+4),
 		&[data-rating="5"] button:nth-child(-n+5) {
-			color: var(--ink-5);
+			color: var(--RatingInput_color-active);
 		}
 
 		button:hover {
-			color: var(--ink-2);
+			color: var(--RatingInput_color-inactive);
 		}
 	}
 
 	&.is-over button {
-		color: var(--ink-4);
+		color: var(--RatingInput_color-hover);
 	}
 
 	&.is-over button:hover ~ button {
-		color: var(--ink-2);
+		color: var(--RatingInput_color-inactive);
 	}
 }

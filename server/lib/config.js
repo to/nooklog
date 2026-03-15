@@ -19,7 +19,7 @@ let config = {
 	'client.tagMatchMode': 'smart', // 'smart'（飛び石）, 'contains'（部分一致）, 'starts-with'（前方一致）
 	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both'
 	'client.autoCompleteTags': true, // 充分に絞られたら自動確定するかどうか
-	'client.normalizeFullWidth': true, // 全角の（）や／を半角に自動変換するか
+	'client.normalizeFullWidth': false, // 全角の（）や／を半角に自動変換するか
 	'extension.serverAddress': 'http://localhost:5050',
 	'extension.selectionDelimiter': '/',
 	'extension.autoAppendSelection': true,

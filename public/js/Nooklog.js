@@ -23,7 +23,7 @@ const Nooklog = {
 	},
 
 	async findByUrl(url) {
-		return await this._get(`bookmarks?${new URLSearchParams({ url })}`, null);
+		return await this._get(`bookmarks?${qs({ url })}`, null);
 	},
 
 	async resolve({ id, url } = {}) {
@@ -32,19 +32,19 @@ const Nooklog = {
 	},
 
 	async getBookmarks({ sortBy } = {}) {
-		return await this._get(`bookmarks?${new URLSearchParams({
+		return await this._get(`bookmarks?${qs({
 			sortBy,
 			limit: config['database.searchLimit'],
 			recentThresholdDays: config['database.recentThresholdDays'],
-		})}`, []);
+		})}`, { count: 0, bookmarks: [] });
 	},
 
 	async search({ tags, query, fields, sortBy }) {
-		return await this._get(`search?${new URLSearchParams({
+		return await this._get(`search?${qs({
 			query, fields, sortBy,
 			limit: config['database.searchLimit'],
 			...this.separateRating(tags),
-		})}`, []);
+		})}`, { count: 0, bookmarks: [] });
 	},
 
 	async updateBookmark(bookmark) {
@@ -63,12 +63,20 @@ const Nooklog = {
 	async getTags() {
 		const tags = await this._get('tags', []);
 		return config['client.ratingInputMode'] !== 'stars'
-			? ['5', '4', '3', '2', '1', '0'].concat(tags)
+			? tags.concat(['5', '4', '3', '2', '1', '0'])
 			: tags;
 	},
 
 	async generateMarkdown({ url, title, html }) {
 		return await this.net.post('markdown', { url, title, html }, {});
+	},
+
+	async importBookmarks(file, options = {}) {
+		return await this.net.post(`import/bookmarks?${qs(options)}`, file);
+	},
+
+	async exportBookmarks(options = {}) {
+		return await this.net.get(`export/bookmarks?${qs(options)}`);
 	},
 
 	async _get(path, def) {
@@ -85,6 +93,11 @@ const Nooklog = {
 
 		if (Array.isArray(r))
 			return r.map(i => this._populate(i));
+
+		if (r.bookmarks) {
+			r.bookmarks = this._populate(r.bookmarks);
+			return r;
+		}
 
 		r.created_at = new Date(r.created_at);
 		r.updated_at = new Date(r.updated_at);

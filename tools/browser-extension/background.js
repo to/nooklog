@@ -94,24 +94,28 @@ async function checkUrl(tab) {
 
 	// 同一URLへの連続チェックを抑制する
 	const now = Date.now();
-	const last = checkedUrls.get(url) || 0;
-	if (now - last < 20 * 1000)
-		return;
-
-	checkedUrls.set(url, now);
+	let cache = checkedUrls.get(url);
+	if (!cache || now - cache.time >= 20 * 1000) {
+		try {
+			// ブックマーク済みかチェックする
+			const res = await fetch(
+				`${config['extension.serverAddress']}/api/bookmarks?url=${encodeURIComponent(url)}`);
+			cache = { time: now, data: await res.json() };
+			checkedUrls.set(url, cache);
+		} catch {
+			return;
+		}
+	}
 
 	try {
-		// ブックマーク済みかチェックする
-		const res = await fetch(
-			`${config['extension.serverAddress']}/api/bookmarks?url=${encodeURIComponent(url)}`);
-		const data = await res.json();
-		await chrome.action.setBadgeText({
+		const tint = config['client.tint'] || 'grass';
+		const icon = cache.data ? `image/tint/${tint}_32.png` : 'image/tint/gray_32.png';
+		await chrome.action.setIcon({
 			tabId: tab.id,
-			text: data ? ' ' : '',
-		});
-		await chrome.action.setBadgeBackgroundColor({
-			tabId: tab.id,
-			color: '#82c91e',
+			path: {
+				16: icon,
+				32: icon,
+			},
 		});
 	} catch {
 	}

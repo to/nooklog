@@ -14,9 +14,11 @@
 	}
 
 	h1 {
-		padding-bottom: 0.3em;
+		padding: 0.4em 0.6em;
 		font-size: var(--font-size-l);
-		border-bottom: 2px solid var(--ink-2);
+		background-color: var(--ink-1);
+		border-left: var(--space-2s) solid var(--color-1);
+		border-radius: 0 var(--radius-m) var(--radius-m) 0;
 	}
 
 	h2 {

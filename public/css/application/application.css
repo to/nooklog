@@ -56,20 +56,50 @@ select {
 	}
 }
 
-/* Chrome/Safari/Edge/Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
+	/* Chrome/Safari/Edge/Opera */
 	margin: 0;
 	appearance: none;
 }
 
-/* Firefox */
+
 input[type='number'] {
+	/* Firefox */
 	appearance: textfield;
 }
 
-select {
+select,
+::picker(select) {
+	appearance: base-select;
+}
+
+::picker(select) {
+	position: relative;
+	background: var(--ink-0);
+	border: 1px solid var(--ink-2);
+	border-radius: var(--radius-m);
+}
+
+select{
+	width: fit-content;
 	cursor: pointer;
+
+	option::checkmark {
+		display: none;
+	}
+
+	option:checked {
+		color: var(--ink-0);
+		background-color: var(--ink-3);
+	}
+
+	option:hover,
+	option:focus-visible {
+		color: var(--ink-0);
+		outline: none;
+		background-color: var(--ink-5);
+	}
 }
 
 textarea {

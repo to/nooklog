@@ -11,8 +11,8 @@ const app = {
 		return this[key] ?? def;
 	},
 
-	notify(message, type = 'info') {
-		return new Toast(message, type);
+	notify(message, type = 'info', ms) {
+		return new Toast(message, type, ms);
 	},
 
 	error(e) {
@@ -27,26 +27,18 @@ const app = {
 			const content = match[1];
 			markdown = markdown.slice(match[0].length);
 
-			const labels = {
-				title: 'Title',
-				site: 'Site',
-				url: 'URL',
-				readerable: 'Readable',
-				description: 'Description',
-			};
-
-			const rows = content.split('\n').map(line => {
+			const meta = {};
+			content.split('\n').forEach(line => {
 				const parts = line.match(/^([^:]+):\s*(.*)$/);
-				if (!parts)
-					return '';
-				const key = parts[1].trim();
-				const value = parts[2].trim().replace(/^["'](.*)["']$/, '$1');
-				return `<tr><th>${sanitize(labels[key] || key)}</th>
-				<td>${sanitize(value)}</td></tr>`;
-			}).join('');
+				if (parts)
+					meta[parts[1].trim()] = parts[2].trim().replace(/^["'](.*)["']$/, '$1');
+			});
 
-			if (rows)
-				frontmatterHtml = `<table class="table-frontmatter">${rows}</table>`;
+			if (meta.title) {
+				const text = meta.site ? `${meta.title} - ${meta.site}` : meta.title;
+				const inner = meta.url ? `<a href="${sanitize(meta.url)}" target="_blank">${sanitize(text)}</a>` : sanitize(text);
+				frontmatterHtml = `<h1>${inner}</h1>`;
+			}
 		}
 
 		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(markdown))}</div>`;
@@ -103,13 +95,16 @@ const updateTint = () => {
 	const root = document.documentElement;
 	const tint = config['client.tint'];
 	const theme = config['client.theme'];
-	const ink = theme.endsWith('-gray') ? 'gray' : matchingGrays[tint];
+	const ink = matchingGrays[tint];
 	const steps = {
 		'dark-gray': [6, 7, 8, 8, 9, 11, 12],
 		'light-gray': [5, 6, 8, 9, 9, 11, 12],
 	}[theme] || [2, 3, 6, 8, 9, 11, 12];
 	steps.forEach((step, i) => {
-		root.style.setProperty(`--ink-${i}`, `var(--${ink}-${step})`);
+		root.style.setProperty(`--ink-${i}`,
+			theme.endsWith('-gray') ?
+				`hsl(from var(--${ink}-${step}) h calc(s * 0.5) l)` :
+				`var(--${ink}-${step})`);
 	});
 	root.style.setProperty('--color-1', `var(--${tint}-11)`);
 };

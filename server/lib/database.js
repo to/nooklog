@@ -154,11 +154,10 @@ class Database {
 		}
 	}
 
-	async optimize() {
-		// 断片化した小ファイルが閾値を超えたら最適化する
+	async optimize(force) {
 		const stats = await this.bookmarks.stats();
 		const fragments = stats.fragmentStats.numSmallFragments;
-		if (fragments < config['database.optimization.maxSmallFragments'])
+		if (!force && fragments < config['database.optimization.maxSmallFragments'])
 			return;
 
 		await _.bench(async () => {
@@ -166,7 +165,7 @@ class Database {
 				cleanupOlderThan: new Date(
 					Date.now() - config['database.optimization.versionRetentionDays'] * 24 * 60 * 60 * 1000),
 			});
-		}, `database.optimize: bookmarks(fragments: ${fragments})`);
+		}, `database.optimize: bookmarks(fragments: ${fragments}${force ? ' [FORCE]' : ''})`);
 	}
 }
 

@@ -1,9 +1,9 @@
 class ResultTable extends Component {
 	bindEvents() {
 		hub.on('SearchForm:search', results => {
-			this._render(results);
+			this._render(results.bookmarks);
 
-			if (results.length) {
+			if (results.bookmarks.length) {
 				if (app.get('ResultTable.select', false))
 					this._select(this.$('.tr'));
 			}
@@ -27,6 +27,9 @@ class ResultTable extends Component {
 		});
 
 		$.on(this, 'click', e => {
+			if (window.getSelection().toString())
+				return;
+
 			const row = e.target.closest('.tr');
 
 			const button = e.target.closest('button');

@@ -9,10 +9,12 @@ class Toast extends Component {
 	constructor(message, type = 'info', ms = 2500) {
 		super();
 		this.classList.add(type);
-
+		this.setAttribute('popover', 'manual');
 		this.innerHTML = `<span class="icon">${TOAST_ICONS[type]}</span>
 			<span>${sanitize(message)}</span>`;
+
 		document.body.appendChild(this);
+		this.showPopover();
 
 		if (type === 'error')
 			this.addEventListener('click', () => this.remove());

@@ -1,0 +1,195 @@
+﻿diff --git a/public/component/ConfigDialog/ConfigDialog.js b/public/component/ConfigDialog/ConfigDialog.js
+index 3b92c0f..afb12a2 100644
+--- a/public/component/ConfigDialog/ConfigDialog.js
++++ b/public/component/ConfigDialog/ConfigDialog.js
+@@ -6,7 +6,6 @@ class ConfigDialog extends Component {
+ 			open: this.$('button.open'),
+ 			close: this.$('button.close'),
+ 			import: this.$('button.import'),
+-			export: this.$('button.export'),
+ 		};
+ 		this.results = null;
+ 	}
+@@ -90,8 +89,9 @@ class ConfigDialog extends Component {
+ 			input.click();
+ 		});
+ 
+-		$.on(this.els.export, 'click', async () => {
+-			const range = this.$('.export-range').value;
++		$.on(this.$('button.export-bookmarks'), 'click', async e => {
++			const container = e.target.closest('div');
++			const range = container.querySelector('.export-range').value;
+ 			const format = this.$('.export-format').value;
+ 
+ 			let options = { format };
+@@ -101,6 +101,23 @@ class ConfigDialog extends Component {
+ 			window.location.href = `${Nooklog.net.baseUrl}/export/bookmarks?${qs(options)}`;
+ 			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
+ 		});
++
++		$.on(this.$('button.export-documents'), 'click', async e => {
++			const container = e.target.closest('div.flex-col');
++			const range = container.querySelector('.export-range').value;
++			const options = {
++				format: 'markdown',
++				markdownType: this.$('.export-markdown-type').value,
++				markdownFrontmatter: this.$('.export-markdown-frontmatter').value,
++				filenameFormat: this.$('.export-markdown-filename').value,
++			};
++
++			if (range === 'search')
++				Object.assign(options, this.results?.query);
++
++			window.location.href = `${Nooklog.net.baseUrl}/export/bookmarks?${qs(options)}`;
++			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
++		});
+ 	}
+ 
+ 	_getValue(el) {
+diff --git a/public/css/application/application.css b/public/css/application/application.css
+index cc5000f..c5105d4 100644
+--- a/public/css/application/application.css
++++ b/public/css/application/application.css
+@@ -82,6 +82,7 @@ select,
+ }
+ 
+ select{
++	width: fit-content;
+ 	cursor: pointer;
+ 
+ 	option::checkmark {
+diff --git a/server/lib/nooklog.js b/server/lib/nooklog.js
+index 5c1c220..c682411 100644
+--- a/server/lib/nooklog.js
++++ b/server/lib/nooklog.js
+@@ -4,6 +4,7 @@ import store from './store.js';
+ import config from './config.js';
+ import _ from './util.js';
+ import baseLogger from './logger.js';
++import archiver from 'archiver';
+ 
+ const logger = baseLogger.child({ module: 'nooklog' });
+ 
+@@ -177,6 +178,99 @@ const nooklog = {
+ 		return lines.join('\n');
+ 	},
+ 
++	async exportMarkdown(options = {}, res, req) {
++		const { bookmarks } = await store.search({
++			columns: DETAIL_COLUMNS,
++			...options,
++			limit: store.UNLIMITED,
++		});
++
++		const archive = archiver('zip', {
++			zlib: { level: 6 },
++		});
++
++		res.setTimeout(0); // 繧ｿ繧､繝繧｢繧ｦ繝医ｒ辟｡蜉ｹ蛹・+
++		req?.on('close', () => archive.abort());
++
++		archive.pipe(res);
++
++		const filenameFormat = options.filenameFormat || 'date_title';
++		const usedNames = new Set();
++
++		for (const b of bookmarks) {
++			const dateStr = new Date(b.created_at || Date.now()).toISOString().replace(/[:T-]/g, '').slice(0, 14); // YYYYMMDDHHmmss
++			let host = '';
++			try {
++				host = new URL(b.url).hostname;
++			} catch (_) { }
++
++			let title = b.title || b.url || 'untitled';
++
++			const sanitize = s => s.replace(/[\/\\?%*:|"<>]/g, '-').replace(/\.+$/, '');
++			title = sanitize(title);
++			host = sanitize(host);
++
++			// 繝代せ髟ｷ蛻ｶ髯舌↓驟肴・縺鈴←蠎ｦ縺ｫ蛻・ｊ隧ｰ繧√ｋ (蜈ｨ隗呈枚蟄励ｂ閠・・縺怜ｰ代＠遏ｭ繧√↓)
++			title = title.slice(0, 80);
++
++			let filename = '';
++			if (filenameFormat === 'host_title')
++				filename = `${host}_${title}`;
++			else if (filenameFormat === 'date_title')
++				filename = `${dateStr}_${title}`;
++			else if (filenameFormat === 'host_date_title')
++				filename = `${host}_${dateStr}_${title}`;
++			else if (filenameFormat === 'date_host_title')
++				filename = `${dateStr}_${host}_${title}`;
++
++			filename = filename.replace(/^_+|_+$/g, ''); // 蜈磯ｭ縺ｨ譛ｫ蟆ｾ縺ｮ繧｢繝ｳ繝繝ｼ繧ｹ繧ｳ繧｢繧貞炎髯､
++			filename = `${filename || 'bookmark'}.md`;
++
++			// 陲ｫ繧雁屓驕ｿ
++			let uniqueName = filename;
++			let counter = 1;
++			while (usedNames.has(uniqueName)) {
++				const extIndex = filename.lastIndexOf('.');
++				const name = filename.slice(0, extIndex);
++				const ext = filename.slice(extIndex);
++				uniqueName = `${name}_${counter}${ext}`;
++				counter++;
++			}
++			usedNames.add(uniqueName);
++
++			// Markdown蜃ｺ蜉・+			// TOFIX:
++			let content = b.markdown || `[${b.title}](${b.url})\n`;
++
++			// TOFIX: 谺｡蝗樔ｻ･髯阪・繧ｻ繝・す繝ｧ繝ｳ縺ｧ菫ｮ豁｣
++			// if (options.markdownFrontmatter === 'include') {
++			// 	const meta = [
++			// 		'---',
++			// 		`url: ${b.url}`,
++			// 		`title: "${(b.title || '').replace(/"/g, '\\"')}"`,
++			// 		`tags: ${(b.tags || []).join(', ')}`,
++			// 		`rating: ${b.rating || 0}`,
++			// 		`date: ${new Date(b.created_at || Date.now()).toISOString()}`,
++			// 		'---',
++			// 		'',
++			// 		'',
++			// 	];
++			// 	content = meta.join('\n') + content;
++			// }
++
++			archive.append(content, { name: uniqueName });
++		}
++
++		await archive.finalize();
++
++		// 繧ｹ繝医Μ繝ｼ繝縺悟ｮ悟・縺ｫ繧ｯ繝ｩ繧､繧｢繝ｳ繝医↓騾√ｊ蜃ｺ縺輔ｌ繧九・繧貞ｾ・▽
++		if (res.writableFinished)
++			return;
++
++		await new Promise(resolve => res.on('finish', resolve));
++	},
++
+ 	isEdited(markdown) {
+ 		return markdown && markdown.endsWith(USER_MARK);
+ 	},
+diff --git a/server/server.js b/server/server.js
+index 75c6084..7abaec1 100644
+--- a/server/server.js
++++ b/server/server.js
+@@ -149,6 +149,10 @@ app.get('/api/export/bookmarks', handle(async (req, res, ps) => {
+ 		res.setHeader('Content-Disposition', 'attachment; filename="nooklog-bookmarks.html"');
+ 		res.type('text/html');
+ 		res.send(await nooklog.exportHTML(ps));
++	} else if (ps.format === 'markdown') {
++		res.setHeader('Content-Disposition', 'attachment; filename="nooklog-markdown.zip"');
++		res.type('application/zip');
++		await nooklog.exportMarkdown(ps, res, req);
+ 	} else {
+ 		res.status(400).json({ error: 'Format not supported yet' });
+ 	}
+@@ -193,6 +197,9 @@ const paramsSchema = z.object({
+ 	columns: arraySchema,
+ 	folderTag: z.preprocess(v => v === 'true' || v === true, z.boolean()),
+ 	format: z.string(),
++	markdownType: z.string(),
++	markdownFrontmatter: z.string(),
++	filenameFormat: z.string(),
+ }).partial();
+ 
+ function handle(handler, errorMessage) {

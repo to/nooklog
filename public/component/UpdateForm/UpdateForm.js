@@ -14,15 +14,12 @@ class UpdateForm extends Component {
 			rating: this.$('nl-rating'),
 			memo: this.$('[name=memo]'),
 			markdown: this.$('[name=markdown]'),
-			tags: this.$('input[name=tags]'),
+			tags: this.$('nl-tag-input'),
 			html: this.$('[name=html]'),
 			preview: this.$('div.preview'),
 			modes: this.$$('[name=mode]'),
 			submit: this.$('button[type=submit]'),
 		};
-
-		this.tagInput = new TagInput(this.els.tags);
-		this.tagInput.focus();
 
 		this.resizeHandle = new ResizeHandle(this.els.memo, {
 			min: 48,
@@ -32,7 +29,6 @@ class UpdateForm extends Component {
 
 		this.bookmark = {};
 		this.closeOnSave = true;
-
 		this.mode = app.get('UpdateForm.mode', 'memo');
 		this.isMini = null;
 
@@ -46,6 +42,7 @@ class UpdateForm extends Component {
 	ready() {
 		this.els.rating.toggle(
 			config['client.ratingInputMode'] !== 'tags');
+		this.els.tags.focus();
 	}
 
 	bindEvents() {
@@ -168,7 +165,7 @@ class UpdateForm extends Component {
 		['id', 'url', 'title', 'rating', 'memo', 'markdown', 'html'].forEach(k => {
 			this.els[k].value = '';
 		});
-		this.tagInput.setTags([]);
+		this.els.tags.setTags([]);
 		this.bookmark = {};
 	}
 
@@ -179,18 +176,17 @@ class UpdateForm extends Component {
 
 		// ユーザ編集データ > 現在データ > 旧データ の優先順位で上書きする
 		// (idがあるもの = 既存データ)
-		if (bookmark.markdown && this.els.markdown.value) {
-			if (this.isEdited(this.els.markdown.value) ||
-				(bookmark.id && !this.isEdited(bookmark.markdown)))
-				delete bookmark.markdown;
+		if (bookmark.markdown) {
+			if (!this.els.markdown.value || this.isEdited(bookmark.markdown) || !bookmark.id)
+				this.els.markdown.value = bookmark.markdown;
 		}
 
-		['id', 'url', 'title', 'rating', 'memo', 'markdown', 'html'].forEach(k => {
+		['id', 'url', 'title', 'rating', 'memo', 'html'].forEach(k => {
 			if (bookmark[k] != null)
 				this.els[k].value = bookmark[k];
 		});
 		if (bookmark.tags || bookmark.rating) {
-			this.tagInput.setTags(
+			this.els.tags.setTags(
 				(config['client.ratingInputMode'] === 'tags') && bookmark.rating,
 				bookmark.tags);
 		}
@@ -210,7 +206,7 @@ class UpdateForm extends Component {
 				? this._normalizeText(this.els.memo.value)
 				: this.els.memo.value,
 			rating: this.els.rating.value,
-			tags: this.tagInput.getTags(),
+			tags: this.els.tags.getTags(),
 			markdown: this.els.markdown.value,
 			html: this.els.html.value,
 		};
@@ -275,7 +271,7 @@ class UpdateForm extends Component {
 	}
 
 	isEdited(markdown) {
-		return markdown.endsWith(UpdateForm.USER_MARK);
+		return markdown && markdown.endsWith(UpdateForm.USER_MARK) && (markdown.length > 1);
 	}
 
 	_normalizeText(text) {

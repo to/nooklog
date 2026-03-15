@@ -11,6 +11,7 @@ $.observeResize = (el, fn) => {
 		requestAnimationFrame(() => fn(entries[0]))).observe(el);
 };
 
+const qs = obj => new URLSearchParams(obj).toString();
 const getSearchParams = () => Object.fromEntries(new URLSearchParams(location.search));
 
 const _escapeEl = document.createElement('div');
@@ -56,3 +57,5 @@ const throttleAndDebounce = (f, ms = 100) => {
 		}
 	};
 };
+
+const isEmpty = obj => !obj || Object.keys(obj).length === 0;

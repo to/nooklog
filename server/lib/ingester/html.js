@@ -3,7 +3,7 @@ import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import normalizeUrl from 'normalize-url';
 import { JSDOM } from 'jsdom';
-import baseLogger from './logger.js';
+import baseLogger from '../logger.js';
 
 const logger = baseLogger.child({ module: 'librarian' });
 
@@ -35,6 +35,44 @@ const turndown = new TurndownService({
 });
 turndown.use(gfm);
 turndown.keep(['kbd', 'sup', 'sub']);
+
+// 横方向テーブルをMarkdownのテーブル形式（ダミーヘッダ付き）に変換するフォールバック
+turndown.addRule('fallbackTable', {
+	filter: node => node.nodeName === 'TABLE' && isHorizontalTable(node),
+	replacement: (content, node) => {
+		const maxCols = Math.max(0, ...Array.from(node.rows, r => r.cells.length));
+		const header = '|' + ' |'.repeat(maxCols);
+		const sep = '|' + '---|'.repeat(maxCols);
+		return `\n\n${header}\n${sep}\n${content.trim()}\n\n`;
+	},
+});
+turndown.addRule('fallbackTbody', {
+	filter: node => ['TBODY', 'THEAD', 'TFOOT'].includes(node.nodeName) && isHorizontalTable(node),
+	replacement: content => content,
+});
+turndown.addRule('fallbackTr', {
+	filter: node => node.nodeName === 'TR' && isHorizontalTable(node),
+	replacement: content => `| ${content.trim().replace(/\n+/g, ' ')} |\n`,
+});
+turndown.addRule('fallbackThTd', {
+	filter: node => ['TH', 'TD'].includes(node.nodeName) && isHorizontalTable(node),
+	replacement: (content, node) => {
+		const txt = content.trim().replace(/\n+/g, ' ');
+		const formatted = node.nodeName === 'TH' ? `**${txt}**` : txt;
+		return node.nextElementSibling ? `${formatted} | ` : formatted;
+	},
+});
+
+// GFMプラグインの対象外となるテーブル（主にWikipediaのInfoboxなど）を判定
+function isHorizontalTable(node) {
+	const table = node.closest('table');
+	if (!table || table.rows.length === 0)
+		return true;
+	// 最初の行のセルの中に1つでも 'TH' 以外があれば横方向テーブル（GFMテーブルではない）とみなす
+	return Array.from(table.rows[0].cells).some(c => c.nodeName !== 'TH');
+}
+
+// リンクの中に含まれる複数の要素を分割する
 turndown.addRule('smartLink', {
 	filter: 'a',
 	replacement: function (content, node) {
@@ -74,7 +112,7 @@ turndown.addRule('smartLink', {
 	},
 });
 
-export function processHtml(url, title, html) {
+export function process(url, title, html) {
 	const cleanUrl = normalizeUrl(url, {
 		stripHash: true,
 	});
@@ -94,6 +132,15 @@ export function processHtml(url, title, html) {
 		}
 	});
 	document.querySelectorAll('img').forEach(el => el.setAttribute('src', el.src));
+
+	// 抽出時に欠落しやすい、またはテーブル内のMarkdown変換規則(プラグイン)でおかしくなりやすいcaptionを、独立したパラグラフとして抽出する
+	document.querySelectorAll('table caption').forEach(caption => {
+		const table = caption.closest('table');
+		if (table?.parentNode)
+			table.insertAdjacentHTML('beforebegin', `<p><b>${caption.innerHTML}</b></p>`);
+
+		caption.remove();
+	});
 
 	normalizeProgramPre(document);
 

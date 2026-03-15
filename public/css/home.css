@@ -106,6 +106,16 @@ body {
 		padding: 0 var(--_page-margin);
 		margin-bottom: var(--space-s);
 	}
+
+	.count {
+		gap: calc(var(--space-2s) * 0.5);
+		font-size: var(--font-size-2s);
+		color: var(--ink-3);
+
+		.icon{
+			font-size: var(--font-size-2s);
+		}
+	}
 }
 
 .PreviewPanel {

@@ -9,6 +9,8 @@ import db, { sql, populate } from './database.js';
 const logger = baseLogger.child({ module: 'store' });
 
 const store = {
+	UNLIMITED: 100 * 10000,
+
 	async findByUrl(url, options) {
 		return this._find(sql`url = ${url}`, options);
 	},
@@ -26,19 +28,41 @@ const store = {
 		return populate(results)[0];
 	},
 
-	async upsert(bookmark) {
-		await _.retry(async () => {
-			await db.bookmarks.mergeInsert('id')
-				.whenMatchedUpdateAll()
-				.whenNotMatchedInsertAll()
-				.execute([bookmark]);
-		}, {
-			module: 'store',
-			maxAttempts: 5,
-			delay: 2000,
-		});
+	async save(input) {
+		const bookmarks = Array.isArray(input) ? input : [input];
+		const chunkSize = 1000;
+
+		for (let i = 0; i < bookmarks.length; i += chunkSize) {
+			const chunk = bookmarks.slice(i, i + chunkSize);
+			await _.retry(async () => {
+				await db.bookmarks.mergeInsert('id')
+					.whenMatchedUpdateAll()
+					.whenNotMatchedInsertAll()
+					.execute(chunk);
+			}, {
+				module: 'store',
+				maxAttempts: 5,
+				delay: 2000,
+			});
+		}
 
 		db.optimize();
+	},
+
+	async import(bookmarks) {
+		let rows = await db.bookmarks.query().select(['url']).toArray();
+		rows = new Set(rows.map(r => r.url));
+
+		bookmarks = bookmarks
+			.filter(b => !rows.has(b.url))
+			.map(b => Object.assign(db.createBookmark(), b));
+
+		if (bookmarks.length > 0) {
+			await this.save(bookmarks);
+			await db.optimize(true);
+		}
+
+		return bookmarks.length;
 	},
 
 	async deleteById(id) {
@@ -48,15 +72,34 @@ const store = {
 	async getRecent({ columns, limit = 100, sortBy = 'updated_at',
 		recentThresholdDays = config['database.recentThresholdDays'] } = {}) {
 
-		const recentThreshold = Date.now() - recentThresholdDays * 24 * 60 * 60 * 1000;
-		let builder = db.bookmarks.query();
-		if (columns)
-			builder = builder.select(columns);
+		const filterColumn = sortBy === 'rating' ? 'created_at' : sortBy;
+		const thresholds = [recentThresholdDays, 30, 90, 365, 365 * 3, 365 * 10, 365 * 100];
+		let results = [];
 
-		const results = await builder
-			.where(`${sortBy === 'rating' ? 'created_at' : sortBy} > ${recentThreshold}`)
-			.toArray();
-		return populate(this._sort(results, sortBy, limit));
+		for (const days of thresholds) {
+			if (days < recentThresholdDays)
+				continue;
+
+			const recentThreshold = Date.now() - days * 24 * 60 * 60 * 1000;
+			let builder = db.bookmarks.query();
+			if (columns)
+				builder = builder.select(columns);
+
+			results = await builder
+				.where(`${filterColumn} > ${recentThreshold}`)
+				.limit(limit * 10)
+				.toArray();
+
+			if (results.length > 0)
+				break;
+		}
+
+		const totalCount = await db.bookmarks.countRows();
+		return {
+			totalCount,
+			count: totalCount,
+			bookmarks: populate(this._sort(results, sortBy, limit)),
+		};
 	},
 
 	async getTags() {
@@ -101,7 +144,7 @@ const store = {
 			builder = builder.fullTextSearch(ftsQuery);
 
 		// limit未指定の場合 結果件数は大幅に切り詰められる
-		let results = await builder.limit(100 * 10000).toArray();
+		let results = await builder.limit(this.UNLIMITED).toArray();
 		if (patterns) {
 			// クエリワードやフレーズが含まれているもののみを抽出する
 			// (FTSで高速に広く取得し RegExpで絞り込む)
@@ -110,7 +153,11 @@ const store = {
 					fields.some(f => p.test(r[f]))));
 		}
 
-		return populate(this._sort(results, sortBy, limit));
+		return {
+			count: results.length,
+			totalCount: await db.bookmarks.countRows(),
+			bookmarks: populate(this._sort(results, sortBy, limit)),
+		};
 	},
 
 	_sort(results, sortBy, limit) {

@@ -5,7 +5,9 @@ class ConfigDialog extends Component {
 			dialog: this.$('dialog'),
 			open: this.$('button.open'),
 			close: this.$('button.close'),
+			import: this.$('button.import'),
 		};
+		this.results = null;
 	}
 
 	async ready() {
@@ -27,6 +29,11 @@ class ConfigDialog extends Component {
 	}
 
 	bindEvents() {
+		hub.on('SearchForm:search', results => {
+			this.results = results;
+			this.$$('.export-range option[value="all"]').forEach(el => el.textContent = `All (${results.totalCount})`);
+			this.$$('.export-range option[value="search"]').forEach(el => el.textContent = `Search (${results.count})`);
+		});
 		$.on(this.els.open, 'click', () => this.els.dialog.showModal());
 		$.on(this.els.close, 'click', () => this.els.dialog.close());
 		$.on(this.els.form, 'input', e => {
@@ -52,6 +59,57 @@ class ConfigDialog extends Component {
 			e.preventDefault();
 			this._save();
 		});
+
+		$.on(this.els.import, 'click', () => {
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = '.html,.json';
+			input.onchange = async e => {
+				const file = e.target.files[0];
+
+				if (!file)
+					return;
+
+				const buttonText = this.els.import.textContent;
+				try {
+					this.els.import.disabled = true;
+					this.els.import.textContent = 'Importing...';
+
+					const folderTag = this.$('.folder-tag').value === 'true';
+					const { count } = await Nooklog.importBookmarks(file, { folderTag });
+
+					const message = count > 0 ?
+						`Successfully imported ${count} bookmarks! ✨` :
+						'All bookmarks are already up to date.';
+					app.notify(message, 'info', 5000);
+					hub.emit('ConfigDialog:import');
+				} catch (err) {
+					app.error(err);
+				} finally {
+					this.els.import.disabled = false;
+					this.els.import.textContent = buttonText;
+				}
+			};
+			input.click();
+		});
+
+		const download = (e, options) => {
+			const range = e.target.closest('.container').querySelector('.export-range').value;
+			const query = range === 'search' ? this.results?.query : {};
+
+			window.location.href = `${Nooklog.net.baseUrl}/export/bookmarks?${qs({ ...options, ...query })}`;
+			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
+		};
+
+		$.on(this.$('button.export-bookmarks'), 'click', e => download(e, {
+			exportFormat: this.$('.export-format').value,
+		}));
+
+		$.on(this.$('button.export-documents'), 'click', e => download(e, {
+			exportFormat: 'markdown',
+			exportMeta: this.$('.export-meta').value,
+			exportStructure: this.$('.export-structure').value,
+		}));
 	}
 
 	_getValue(el) {

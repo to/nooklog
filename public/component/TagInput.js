@@ -1,6 +1,10 @@
-class TagInput {
-	constructor(input) {
-		this.input = input;
+class TagInput extends Component {
+	initialize() {
+		this.innerHTML = `<input name="${this.getAttribute('name')}"
+			placeholder="${this.getAttribute('placeholder') || ''}" class="flex-1">`;
+		this.input = this.$('input');
+		this.style.display = 'contents';
+
 		this.maxWhitelist = 7;
 
 		const tagify = new Tagify(this.input, {
@@ -12,11 +16,11 @@ class TagInput {
 				searchKeys: ['value'],
 				fuzzySearch: config['client.tagMatchMode'] === 'contains',
 				highlightFirst: true,
+				maxItems: this.maxWhitelist,
 			},
 		});
 		this.tagify = tagify;
-
-		Nooklog.getTags().then(tags => tagify.whitelist = tags);
+		this.refresh();
 
 		// IMEをオフにする
 		tagify.DOM.input.setAttribute('inputmode', 'url');
@@ -41,16 +45,20 @@ class TagInput {
 		tagify.on('click', e => {
 			tagify.removeTags(e.detail.tag);
 		});
+	}
+
+	ready() {
+		this.tagify.settings.dropdown.fuzzySearch = config['client.tagMatchMode'] === 'contains';
 
 		if (config['client.tagMatchMode'] === 'smart') {
-			tagify.dropdown.filterListItems = value => {
+			this.tagify.dropdown.filterListItems = value => {
 				if (!value)
-					return tagify.whitelist;
+					return this.tagify.whitelist.slice(0, this.maxWhitelist);
 
 				const regex = new RegExp(
 					`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
 
-				const whitelist = tagify.whitelist
+				const whitelist = this.tagify.whitelist
 					.filter(t => regex.test(t))
 					.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
 					.slice(0, this.maxWhitelist);
@@ -63,6 +71,10 @@ class TagInput {
 				return whitelist;
 			};
 		}
+	}
+
+	refresh() {
+		Nooklog.getTags().then(tags => this.tagify.whitelist = tags);
 	}
 
 	enter() {
@@ -93,3 +105,5 @@ class TagInput {
 		return this;
 	}
 }
+
+customElements.define('nl-tag-input', TagInput);

@@ -34,7 +34,7 @@ html:has(dialog[open]) {
 		}
 
 		.grid {
-			grid-template-columns: max-content minmax(0, 28rem);
+			grid-template-columns: max-content minmax(0, 30rem);
 			gap: 0 var(--space-m);
 			padding: 0 var(--space-m) var(--space-m) var(--space-m);
 

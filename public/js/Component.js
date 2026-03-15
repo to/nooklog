@@ -26,7 +26,7 @@ class Component extends HTMLElement {
 	}
 
 	$$(sel) {
-		return this.querySelectorAll(sel);
+		return [...this.querySelectorAll(sel)];
 	}
 
 	show() {

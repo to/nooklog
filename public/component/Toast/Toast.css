@@ -1,18 +1,18 @@
 .Toast {
 	position: fixed;
-	bottom: var(--space-l);
-	left: var(--space-l);
-	z-index: 10000;
+	inset: auto auto var(--space-l) var(--space-l);
 	display: flex;
 	gap: var(--space-s);
 	align-items: center;
 	min-width: 240px;
 	max-width: 400px;
 	padding: var(--space-s) var(--space-m);
+	margin: 0;
 	font-weight: 500;
 	color: var(--ink-6);
-	pointer-events: auto;
+	white-space: pre-wrap;
 	background: var(--ink-0);
+	border: none;
 	border-radius: var(--radius-m);
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 10%), 0 0 0 1px var(--ink-2);
 	animation: Toast-in 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;

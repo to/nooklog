@@ -16,6 +16,7 @@ export const merge = (target = {}, source) => {
 	return target;
 };
 
+// 元のコードを変形させずに実行実行時間を計測する
 export const bench = async (task, label = 'bench') => {
 	const start = performance.now();
 	const result = typeof task === 'function' ?
@@ -45,9 +46,21 @@ export const retry = async (task, { maxAttempts = 3, delay = 500, module = 'retr
 	}
 };
 
+export const groupBy = (list, keyGetter) => {
+	const map = new Map();
+	for (const item of list) {
+		const key = keyGetter(item);
+		const group = map.get(key) || [];
+		group.push(item);
+		map.set(key, group);
+	}
+	return map;
+};
+
 export default {
 	merge,
 	bench,
 	parseNumber,
 	retry,
+	groupBy,
 };
