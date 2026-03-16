@@ -261,6 +261,7 @@ class UpdateForm extends Component {
 		this.bookmark = data;
 
 		hub.emit('UpdateForm:save', bookmark);
+		bridge.emit('UpdateForm:save', bookmark, true);
 		this.close();
 	}
 

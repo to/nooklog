@@ -26,6 +26,8 @@ class ConfigDialog extends Component {
 
 		if (getSearchParams().setting)
 			this.els.dialog.showModal();
+
+		bridge.emit('ConfigDialog:shortcuts', {}, true);
 	}
 
 	bindEvents() {
@@ -110,6 +112,16 @@ class ConfigDialog extends Component {
 			exportMeta: this.$('.export-meta').value,
 			exportStructure: this.$('.export-structure').value,
 		}));
+
+		$.on(this.$('.shortcut-key'), 'click', e => {
+			e.preventDefault();
+			bridge.emit('ConfigDialog:openShortcuts', {}, true);
+		});
+
+		bridge.on('Background:shortcuts', msg => {
+			const command = msg.shortcuts.find(c => c.name === 'open-update-page');
+			this.$('.shortcut-key').textContent = command?.shortcut || 'Not set';
+		});
 	}
 
 	_getValue(el) {

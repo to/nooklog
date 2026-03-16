@@ -53,6 +53,7 @@ html:has(dialog[open]) {
 				grid-template-columns: subgrid;
 
 				> label {
+					width: fit-content;
 					color: var(--ink-4);
 				}
 			}
@@ -106,5 +107,10 @@ html:has(dialog[open]) {
 			cursor: pointer;
 			border-radius: var(--radius-m);
 		}
+	}
+
+	.shortcut-key {
+		width: fit-content;
+		font-family: monospace;
 	}
 }

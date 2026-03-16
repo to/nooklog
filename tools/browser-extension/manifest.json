@@ -30,8 +30,8 @@
 		}
 	},
 	"icons": {
-		"16": "image/tint/grass_32.png",
-		"32": "image/tint/grass_32.png",
+		"16": "image/tint/gray_32.png",
+		"32": "image/tint/gray_32.png",
 		"48": "image/icon_48.png",
 		"128": "image/icon_128.png"
 	},

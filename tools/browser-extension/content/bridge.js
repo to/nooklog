@@ -1,4 +1,25 @@
-var sessionId = new URLSearchParams(window.location.search).get('sessionId');
+var isWorker = typeof window === 'undefined';
+if (isWorker) {
+	const listeners = {};
+	globalThis.window = {
+		addEventListener: (event, listener) => {
+			listeners[event] ??= [];
+			listeners[event].push({
+				listener,
+			});
+		},
+		dispatchEvent: e => {
+			listeners[e.type]?.forEach(l => {
+				l.listener(e);
+			});
+		},
+	};
+}
+
+var SESSION_GLOBAL = 'session:global:';
+var sessionId = isWorker ?
+	SESSION_GLOBAL :
+	(new URLSearchParams(window.location.search).get('sessionId') || SESSION_GLOBAL);
 var bridge = {
 	on: (event, listner, useSession) => {
 		window.addEventListener(`Nooklog:${event}`, e => {
@@ -15,13 +36,14 @@ var bridge = {
 		window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail: msg }));
 	},
 };
+globalThis.bridge = bridge;
 
 (() => {
 	// 二重実行を抑制する
-	if (window.nooklogBridgeLoaded)
+	if (globalThis.nooklogBridgeLoaded)
 		return;
 
-	window.nooklogBridgeLoaded = true;
+	globalThis.nooklogBridgeLoaded = true;
 
 	bridge.on('Content:initialize', msg => sessionId = msg.sessionId);
 
@@ -63,7 +85,11 @@ var bridge = {
 			return;
 
 		for (const [key, { newValue }] of Object.entries(changes)) {
-			if (newValue && key.startsWith(sessionId + 'message:')) {
+			if (!newValue || !key.includes(':message:'))
+				continue;
+
+			if (sessionId == SESSION_GLOBAL || key.startsWith(SESSION_GLOBAL) ||
+				key.startsWith(sessionId + 'message:')) {
 				const { event, ...msg } = newValue;
 				bridge.emit(event, msg);
 				chrome.storage.local.remove(key);

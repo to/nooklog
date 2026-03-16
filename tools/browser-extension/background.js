@@ -6,6 +6,20 @@ chrome.storage.local.get('config').then(r => {
 	registerMessagingBridge();
 });
 
+import './content/bridge.js';
+
+bridge.on('ConfigDialog:shortcuts', async msg => {
+	const commands = await chrome.commands.getAll();
+	bridge.emit('Background:shortcuts', {
+		shortcuts: commands,
+		sessionId: msg.sessionId,
+	}, true);
+});
+
+bridge.on('ConfigDialog:openShortcuts', () => {
+	chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+});
+
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 	if (reason === 'install') {
 		// 設定のデフォルト値を保存する
@@ -84,6 +98,16 @@ async function openSearchPage(query) {
 	});
 }
 
+bridge.on('UpdateForm:save', async bookmark => {
+	checkedUrls.delete(bookmark.url);
+
+	const tabs = await chrome.tabs.query({});
+	for (const tab of tabs) {
+		if (tab.url === bookmark.url)
+			setIcon(tab.id, true);
+	}
+});
+
 const checkedUrls = new Map();
 
 async function checkUrl(tab) {
@@ -107,11 +131,15 @@ async function checkUrl(tab) {
 		}
 	}
 
+	setIcon(tab.id, !!cache.data);
+}
+
+async function setIcon(tabId, isBookmarked) {
 	try {
 		const tint = config['client.tint'] || 'grass';
-		const icon = cache.data ? `image/tint/${tint}_32.png` : 'image/tint/gray_32.png';
+		const icon = isBookmarked ? `image/tint/${tint}_32.png` : 'image/tint/gray_32.png';
 		await chrome.action.setIcon({
-			tabId: tab.id,
+			tabId: tabId,
 			path: {
 				16: icon,
 				32: icon,
