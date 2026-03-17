@@ -34,8 +34,7 @@ const Nooklog = {
 	async getBookmarks({ sortBy } = {}) {
 		return await this._get(`bookmarks?${qs({
 			sortBy,
-			limit: config['database.searchLimit'],
-			recentThresholdDays: config['database.recentThresholdDays'],
+			limit: 100, // トップページとして暫定的に表示する件数(最近のもの)
 		})}`, { count: 0, bookmarks: [] });
 	},
 

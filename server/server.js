@@ -23,7 +23,7 @@ const app = express();
 
 // アプリケーションよりも先に記述する
 app.set('json spaces', '\t');
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '500mb' }));
 
 app.use(express.static(path.join(__dirname, '../public'), {
 	index: 'home.html',
@@ -133,7 +133,7 @@ app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
 	res.json(await nooklog.upsert(ps));
 }));
 
-app.post('/api/import/bookmarks', express.text({ type: '*/*', limit: '100mb' }), handle(async (req, res, ps) => {
+app.post('/api/import/bookmarks', express.text({ type: '*/*', limit: '500mb' }), handle(async (req, res, ps) => {
 	res.json(await nooklog.importBookmarks(req.body, ps));
 }));
 
@@ -194,7 +194,6 @@ const paramsSchema = z.object({
 	fields: arraySchema,
 	sortBy: z.string(),
 	limit: z.coerce.number(),
-	recentThresholdDays: z.coerce.number(),
 	columns: arraySchema,
 	folderTag: z.preprocess(v => v === 'true' || v === true, z.boolean()),
 	exportFormat: z.string(),
@@ -229,7 +228,15 @@ function handle(handler, errorMessage) {
 		res.json = body => res._json.call(res, body === undefined ? null : body);
 
 		const body = (req.body && typeof req.body === 'object') ? req.body : {};
-		const ps = paramsSchema.parse({ ...req.query, ...body, ...req.params });
+		const rawPs = { ...req.query, ...body, ...req.params };
+
+		// 空文字や NaN の入力を適切に処理する
+		for (const key in rawPs) {
+			if (rawPs[key] === '' || rawPs[key] === 'NaN')
+				delete rawPs[key];
+		}
+
+		const ps = paramsSchema.parse(rawPs);
 		try {
 			await handler(req, res, ps);
 		} catch (error) {

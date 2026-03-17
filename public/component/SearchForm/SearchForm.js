@@ -51,17 +51,6 @@ class SearchForm extends Component {
 		});
 
 		$.on(this.els.form, 'change', e => {
-			// 全てのチェックは外れないように
-			if (e.target.name === 'field') {
-				const checked = this.$$('input[name="field"]:checked');
-				if (checked.length === 0) {
-					e.target.checked = true;
-					return;
-				}
-				if (!this.els.tags.getTags().length && !this.els.query.value)
-					return;
-			}
-
 			// 条件が空で検索対象を変更した場合、検索をスキップする
 			if (e.target.name === 'sortBy' || e.target.name === 'field')
 				this._search();
@@ -71,7 +60,7 @@ class SearchForm extends Component {
 	clear() {
 		this.els.query.value = '';
 		this.els.tags.tagify.removeAllTags();
-		this.els.fields.forEach(el => el.checked = true);
+		this.els.fields.forEach(el => el.checked = el.value !== 'markdown');
 		const created = this.els.sortBy.find(el => el.value === 'created_at');
 		if (created)
 			created.checked = true;
