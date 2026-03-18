@@ -38,10 +38,10 @@
 		}
 	},
 	"dependencies": {
+		"@libsql/client": "^0.17.0",
 		"@mozilla/readability": "^0.5.0",
 		"ai": "^6.0.23",
 		"archiver": "^7.0.1",
-		"better-sqlite3": "^12.6.2",
 		"cors": "^2.8.5",
 		"dotenv": "^16.6.1",
 		"express": "^4.21.2",

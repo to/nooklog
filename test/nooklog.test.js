@@ -6,6 +6,7 @@ const USER_MARK = '\u200B';
 
 mock.module('../server/lib/database.js', {
 	defaultExport: {
+		initialize: async () => { },
 		createBookmark: () => ({
 			id: 'new-id',
 			url: '',

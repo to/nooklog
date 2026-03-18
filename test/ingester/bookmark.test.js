@@ -48,13 +48,13 @@ test('ingester/bookmark.js - process', async t => {
 		`;
 		
 		// オプションあり
-		const resultsWithTags = process(html, { useDirectoryAsTag: true });
+		const resultsWithTags = process(html, { folderTag: true });
 		// 親フォルダが tags に含まれる（順序は実装依存だが、ここでは Sub Folder, Top Folder の順で入るはず）
 		assert.ok(resultsWithTags[0].tags.includes('sub-folder'));
 		assert.ok(resultsWithTags[0].tags.includes('top-folder'));
 
 		// オプションなし
-		const resultsWithoutTags = process(html, { useDirectoryAsTag: false });
+		const resultsWithoutTags = process(html, { folderTag: false });
 		assert.strictEqual(resultsWithoutTags[0].tags.length, 0);
 	});
 
@@ -69,7 +69,7 @@ test('ingester/bookmark.js - process', async t => {
 				</DL>
 			</DL>
 		`;
-		const results = process(html, { useDirectoryAsTag: true });
+		const results = process(html, { folderTag: true });
 
 		const github = results.find(r => r.title === 'GitHub');
 		assert.deepStrictEqual(github.tags.sort(), ['dev', 'development', 'git']);

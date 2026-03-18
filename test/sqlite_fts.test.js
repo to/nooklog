@@ -10,9 +10,13 @@ test('SQLite FTS Uni-gram Search Verification', async t => {
 	const { default: db } = await import('../server/lib/database.js');
 	const { default: store } = await import('../server/lib/store.js');
 
+	// 初期化待機
+	// (nooklog.js 以外のテストでは手動で呼ぶ必要がある)
+	await db.initialize();
+
 	// クリーンアップ
-	db.prepare('DELETE FROM bookmark').run();
-	db.prepare('DELETE FROM bookmark_fts').run();
+	await db.client.execute('DELETE FROM bookmark');
+	await db.client.execute('DELETE FROM bookmark_fts');
 
 	const testData = [
 		{
@@ -47,57 +51,58 @@ test('SQLite FTS Uni-gram Search Verification', async t => {
 		},
 	];
 
-	await t.test('Save data', () => {
-		store.save(testData);
-		const count = db.getTotalCount();
-		const ftsCount = db.prepare('SELECT count(*) as count FROM bookmark_fts').get().count;
+	await t.test('Save data', async () => {
+		await store.save(testData);
+		const count = await db.getTotalCount();
+		const rsFts = await db.client.execute('SELECT count(*) as count FROM bookmark_fts');
+		const ftsCount = rsFts.rows[0].count;
+		
 		console.log(`Bookmark count: ${count}, FTS count: ${ftsCount}`);
 
-		const ftsRows = db.prepare('SELECT rowid, * FROM bookmark_fts').all();
-		console.log('FTS rows:', ftsRows);
+		const ftsRowsRs = await db.client.execute('SELECT rowid, * FROM bookmark_fts');
+		console.log('FTS rows:', ftsRowsRs.rows);
 
 		assert.strictEqual(count, 3);
 		assert.strictEqual(ftsCount, 3);
 	});
 
-	await t.test('Uni-gram Search: "検索" (Search)', () => {
-		const result = store.search({ query: '検索' });
+	await t.test('Uni-gram Search: "検索" (Search)', async () => {
+		const result = await store.search({ query: '検索' });
 		assert.strictEqual(result.bookmarks.length, 1);
 		assert.strictEqual(result.bookmarks[0].title, 'Google検索');
 	});
 
-	await t.test('Uni-gram Search: "コード" (Code)', () => {
-		const result = store.search({ query: 'コード' });
+	await t.test('Uni-gram Search: "コード" (Code)', async () => {
+		const result = await store.search({ query: 'コード' });
 		assert.strictEqual(result.bookmarks.length, 1);
 		assert.strictEqual(result.bookmarks[0].memo, 'コード管理システム');
 	});
 
-	await t.test('Uni-gram Search: "GitHub" (English)', () => {
-		const result = store.search({ query: 'GitHub' });
+	await t.test('Uni-gram Search: "GitHub" (English)', async () => {
+		const result = await store.search({ query: 'GitHub' });
 		assert.strictEqual(result.bookmarks.length, 1);
 		assert.strictEqual(result.bookmarks[0].title, 'GitHub: Let\'s build from here');
 	});
 
-	await t.test('Tag Search: "IT"', () => {
-		const result = store.search({ tags: ['IT'] });
+	await t.test('Tag Search: "IT"', async () => {
+		const result = await store.search({ tags: ['IT'] });
 		assert.strictEqual(result.bookmarks.length, 2);
 	});
 
-	await t.test('Tag Search AND: "IT" AND "Dev"', () => {
-		const result = store.search({ tags: ['IT', 'Dev'] });
+	await t.test('Tag Search AND: "IT" AND "Dev"', async () => {
+		const result = await store.search({ tags: ['IT', 'Dev'] });
 		assert.strictEqual(result.bookmarks.length, 1);
 		assert.strictEqual(result.bookmarks[0].id, '2');
 	});
 
-	await t.test('URL Search: "wiki"', () => {
-		// URL専用の segment_url を介して検索されることを期待
-		const result = store.search({ query: 'wiki' });
+	await t.test('URL Search: "wiki"', async () => {
+		const result = await store.search({ query: 'wiki' });
 		assert.ok(result.bookmarks.length >= 1);
 		assert.ok(result.bookmarks.some(b => b.url.includes('wiki')));
 	});
 
-	await t.test('Rating Filter: >= 5', () => {
-		const result = store.search({ rating: 5 });
+	await t.test('Rating Filter: >= 5', async () => {
+		const result = await store.search({ rating: 5 });
 		assert.strictEqual(result.bookmarks.length, 2);
 	});
 });

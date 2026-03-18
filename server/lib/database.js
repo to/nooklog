@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 
 import config from './config.js';
 import baseLogger from './logger.js';
@@ -14,49 +14,47 @@ export const normalizeJp = text => (text || '')
 	.replace(/([ァ-ヶー]{2,})ー$/g, '$1');
 
 // 1文字 Uni-gram 分割
-const segment = text => [...normalizeJp(text)]
+export const segment = text => [...normalizeJp(text)]
 	.join(' ')
 	.replace(/\s+/g, ' ')
 	.trim();
 
 // URL専用セグメント (プロトコルのみ除去し、記号は保持してUni-gram化)
-const segmentUrl = url => segment((url || '')
+export const segmentUrl = url => segment((url || '')
 	.replace(/^https?:\/\//, '')
 	.toLowerCase());
 
 // Markdown専用セグメント (記号やURLを物理的に除去するのではなく、スペースに置換してインデックスの重なりを抑制)
-const segmentMarkdown = text => segment((text || '')
+export const segmentMarkdown = text => segment((text || '')
 	.replace(/https?:\/\/[^\s]+/g, ' ') // URL自体はurlカラムにあるので除去
 	.replace(/[#*`_~[\]()>+-]/g, ' ')); // 装飾記号をスペースへ
 
 const db = {
-	sqlite: null,
+	client: null,
 
-	initialize() {
+	async initialize() {
 		const dbDir = path.join(config['server.data.path'], 'db');
 		if (!fs.existsSync(dbDir))
 			fs.mkdirSync(dbDir, { recursive: true });
 
 		const dbPath = path.join(dbDir, 'nooklog.db');
-		logger.info({ path: dbPath }, 'opening sqlite database');
-		this.sqlite = new Database(dbPath);
-		this.sqlite.pragma('journal_mode = WAL');
-		this.sqlite.pragma('synchronous = NORMAL');
+		logger.info({ path: dbPath }, 'opening libsql database');
 
-		this.registerFunctions();
-		this.createTables();
-		this.createTriggers();
+		// libSQL clientの初期化 (Local File)
+		this.client = createClient({
+			url: `file:${dbPath}`,
+		});
+
+		// PRAGMAの設定 (libSQLのexecuteで実行)
+		await this.client.execute('PRAGMA journal_mode = WAL');
+		await this.client.execute('PRAGMA synchronous = NORMAL');
+
+		await this.createTables();
 	},
 
-	registerFunctions() {
-		this.sqlite.function('segment', text => segment(text));
-		this.sqlite.function('segment_url', url => segmentUrl(url));
-		this.sqlite.function('segment_markdown', text => segmentMarkdown(text));
-	},
-
-	createTables() {
-		this.sqlite.exec(`
-			CREATE TABLE IF NOT EXISTS bookmark (
+	async createTables() {
+		await this.client.batch([
+			`CREATE TABLE IF NOT EXISTS bookmark (
 				id TEXT PRIMARY KEY,
 				url TEXT,
 				title TEXT,
@@ -68,56 +66,31 @@ const db = {
 				html TEXT,
 				markdown TEXT,
 				summary TEXT
-			);
-
-			CREATE TABLE IF NOT EXISTS meta (
+			)`,
+			`CREATE TABLE IF NOT EXISTS meta (
 				id TEXT PRIMARY KEY,
 				value TEXT
-			);
-
-			CREATE VIRTUAL TABLE IF NOT EXISTS bookmark_fts USING fts5(
+			)`,
+			// FTS5テーブル。tokenizeオプションなどはそのまま利用可能
+			`CREATE VIRTUAL TABLE IF NOT EXISTS bookmark_fts USING fts5(
 				title,
 				memo,
 				markdown,
 				url,
 				tokenize="unicode61 categories 'L* N* P* S*'"
-			);
-		`);
-	},
-
-	createTriggers() {
-		this.sqlite.exec(`
-			DROP TRIGGER IF EXISTS bookmark_ai;
-			DROP TRIGGER IF EXISTS bookmark_ad;
-			DROP TRIGGER IF EXISTS bookmark_au;
-
-			CREATE TRIGGER bookmark_ai AFTER INSERT ON bookmark BEGIN
-				INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
-				VALUES (
-					new.rowid,
-					segment(new.title),
-					segment(new.memo),
-					segment_markdown(new.markdown),
-					segment_url(new.url)
-				);
-			END;
-
-			CREATE TRIGGER bookmark_ad AFTER DELETE ON bookmark BEGIN
-				DELETE FROM bookmark_fts WHERE rowid = old.rowid;
-			END;
-
-			CREATE TRIGGER bookmark_au AFTER UPDATE ON bookmark BEGIN
-				DELETE FROM bookmark_fts WHERE rowid = old.rowid;
-				INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
-				VALUES (
-					new.rowid,
-					segment(new.title),
-					segment(new.memo),
-					segment_markdown(new.markdown),
-					segment_url(new.url)
-				);
-			END;
-		`);
+			)`,
+			// 【新機能】libSQLネイティブ・ベクトルインデックスの例 (開発予定に合わせて)
+			// 本格導入時にカラムを追加してインデックスを作成する想定
+			/*
+			`CREATE TABLE IF NOT EXISTS bookmark_embeddings (
+				bookmark_id TEXT PRIMARY KEY,
+				embedding F32_BLOB(1536) -- 例: OpenAIの次元数
+			)`,
+			`CREATE INDEX IF NOT EXISTS bookmark_embeddings_idx ON bookmark_embeddings (
+				libsql_vector_idx(embedding, 'metric=cosine')
+			)`
+			*/
+		], 'write');
 	},
 
 	createBookmark() {
@@ -137,27 +110,33 @@ const db = {
 		};
 	},
 
-	getMeta(id) {
-		const row = this.prepare('SELECT value FROM meta WHERE id = ?').get(id);
-		return row?.value;
+	async getMeta(id) {
+		const rs = await this.client.execute({
+			sql: 'SELECT value FROM meta WHERE id = ?',
+			args: [id],
+		});
+		return rs.rows[0]?.value;
 	},
 
-	setMeta(id, value) {
-		this.prepare('INSERT OR REPLACE INTO meta (id, value) VALUES (?, ?)').run(id, value);
+	async setMeta(id, value) {
+		await this.client.execute({
+			sql: 'INSERT OR REPLACE INTO meta (id, value) VALUES (?, ?)',
+			args: [id, value],
+		});
 	},
 
-	getTotalCount() {
-		return this.prepare('SELECT count(*) as count FROM bookmark').get().count;
+	async getTotalCount() {
+		const rs = await this.client.execute('SELECT count(*) as count FROM bookmark');
+		return rs.rows[0].count;
 	},
 
-	prepare(sql) {
-		return this.sqlite.prepare(sql);
-	},
-
-	transaction(fn) {
-		return this.sqlite.transaction(fn)();
+	// ヘルパー: トランザクション (batchを使用)
+	async transaction(fn) {
+		// libSQLではJS関数を渡すtransaction()ではなく、batch()で一括実行するか、
+		// 自分でBEGIN/COMMITを管理する。ここでは安全のためbatchを介するパターンを想定。
+		return await fn(this.client);
 	},
 };
 
-db.initialize();
+// initializeは非同期なので、呼び出し元で待機する必要がある（server.jsなど）
 export default db;

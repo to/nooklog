@@ -52,6 +52,11 @@ class SearchForm extends Component {
 
 		$.on(this.els.form, 'change', e => {
 			// 条件が空で検索対象を変更した場合、検索をスキップする
+			if (e.target.name === 'field') {
+				if (isEmpty(this.getQuery()))
+					return;
+			}
+
 			if (e.target.name === 'sortBy' || e.target.name === 'field')
 				this._search();
 		});

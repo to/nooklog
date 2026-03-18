@@ -22,7 +22,12 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
-		(await store.getTags()).forEach(t => tagCache.add(t));
+		// データベースの初期化をここで行う
+		await db.initialize();
+
+		// タグキャッシュの構築
+		const tags = await store.getTags();
+		tags.forEach(t => tagCache.add(t));
 		logger.info({ count: tagCache.size }, 'tags loaded');
 	},
 
@@ -34,7 +39,7 @@ const nooklog = {
 		config.save(values);
 	},
 
-	getTags() {
+	async getTags() {
 		return Array.from(tagCache)
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	},
@@ -59,7 +64,7 @@ const nooklog = {
 		await store.deleteById(id);
 
 		if (bookmark)
-			this._syncTagCache(bookmark.tags, []);
+			await this._syncTagCache(bookmark.tags, []);
 	},
 
 	async search(options = {}) {
@@ -105,7 +110,7 @@ const nooklog = {
 		_.merge(bookmark, { url, title, memo, rating, tags });
 		await store.save(bookmark);
 
-		this._syncTagCache(oldTags, bookmark.tags);
+		await this._syncTagCache(oldTags, bookmark.tags);
 
 		return bookmark;
 	},
@@ -125,7 +130,8 @@ const nooklog = {
 		const count = await store.import(bookmarks);
 
 		// タグキャッシュを更新する
-		(await store.getTags()).forEach(t => tagCache.add(t));
+		const tags = await store.getTags();
+		tags.forEach(t => tagCache.add(t));
 
 		return { count };
 	},
@@ -255,5 +261,6 @@ const nooklog = {
 	},
 };
 
+// initializeは非同期だがトップレベルawaitで解決する
 await nooklog.initialize();
 export default nooklog;
