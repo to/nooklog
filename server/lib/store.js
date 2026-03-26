@@ -81,7 +81,7 @@ const store = {
 		for (const b of bookmarks) {
 			const data = { ...db.createBookmark(), ...b };
 
-			// 既存のベクトルを削除 (DELETEとINSERTを分けるため個別実行)
+			// 既存のベクトルを削除
 			await db.client.execute({
 				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [data.id],
@@ -108,10 +108,7 @@ const store = {
 				continue;
 
 			// ベクトル化 (タイトルと本文をセットで渡す)
-			const vectors = await bench(
-				() => sentence.embedDocument(targets.map(t => ({ title: t.title, text: t.text }))),
-				`embedded document chunks: ${targets.length}`,
-			);
+			const vectors = await sentence.embedDocument(targets);
 			const vectorBatch = targets.map((t, i) => ({
 				sql: `
 					INSERT INTO bookmark_vector (

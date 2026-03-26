@@ -264,7 +264,7 @@ header {
 }
 
 .error {
-	color: var(--color-error);
+	color: var(--color-error) !important;
 }
 
 /* ---- Icon(Material Symbols) ---- */

@@ -15,7 +15,7 @@ export default [
 		},
 		rules: {
 			'quotes': ['error', 'single'],
-			'indent': ['error', 'tab'],
+			'indent': ['error', 'tab', { 'ignoredNodes': ['TemplateLiteral *'] }],
 			'semi': ['error', 'always'],
 			'comma-dangle': ['error', 'always-multiline'],
 			'no-unused-vars': 'off', // 自由に使いたい

@@ -87,6 +87,10 @@ html:has(dialog[open]) {
 			color: var(--ink-4);
 			overflow-wrap: anywhere;
 		}
+
+		.value {
+			font-weight: bold;
+		}
 	}
 
 	.radio-flat label:has(input[name="client.tint"]) {

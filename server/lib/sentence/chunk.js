@@ -210,6 +210,8 @@ const slice = (tree, test) => {
 		}
 	});
 	flush();
+
+	// 分割されなかった場合 キャッシュを活かすため元のノードを返す
 	return chunks.length === 1 ? [tree] : chunks;
 };
 

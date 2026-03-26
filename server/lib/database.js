@@ -70,7 +70,7 @@ const db = {
 	},
 
 	async initializeVectorTable() {
-		const currentModel = config['server.sentence.vectorModel'];
+		const currentModel = sentence.vector.model;
 		const activeModel = await this.getMeta('vector_model');
 		if (activeModel !== currentModel) {
 			log.info({

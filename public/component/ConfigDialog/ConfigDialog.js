@@ -28,6 +28,7 @@ class ConfigDialog extends Component {
 			this.els.dialog.showModal();
 
 		bridge.emit('ConfigDialog:shortcuts', {}, true);
+		this._updateVisibility();
 	}
 
 	bindEvents() {
@@ -53,6 +54,9 @@ class ConfigDialog extends Component {
 				Nooklog.saveConfig({ 'client.tint': e.target.value });
 				updateTint();
 			}
+
+			if (name === 'sentence.provider')
+				this._updateVisibility();
 
 			const isDirty = this._getValue(e.target) != config[name];
 			$.toggle(e.target.closest('.grid > div')?.querySelector('.error'), isDirty);
@@ -139,9 +143,14 @@ class ConfigDialog extends Component {
 		}
 
 		await Nooklog.saveConfig(config);
-
+ 
 		this.els.dialog.close();
 	}
-}
 
+	_updateVisibility() {
+		const provider = this.$('input[name="sentence.provider"]:checked')?.value;
+		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider === provider));
+	}
+}
+ 
 customElements.define('nl-config-dialog', ConfigDialog);

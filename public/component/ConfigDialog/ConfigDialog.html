@@ -95,7 +95,7 @@
 					<label><input type="radio" name="client.ratingInputMode" value="tags"> Tags</label>
 					<label><input type="radio" name="client.ratingInputMode" value="both"> Both</label>
 				</div>
-				<span class="description">Tags: Input ratings by selecting numeric tags</span>
+				<span class="description"><span class="value">Tags: </span>Input ratings by selecting numeric tags</span>
 			</div>
 
 			<div>
@@ -105,7 +105,8 @@
 					<label><input type="radio" name="client.tagMatchMode" value="contains"> Contains</label>
 					<label><input type="radio" name="client.tagMatchMode" value="starts-with"> Starts-with</label>
 				</div>
-				<span class="description">Smart: Search with subsequence matching (e.g., "js" matches "javascript")</span>
+				<span class="description"><span class="value">Smart: </span>Search with subsequence matching (e.g., "js" matches
+					"javascript")</span>
 			</div>
 
 			<div>
@@ -176,6 +177,105 @@
 				<span class="description error none">Requires server restart. Changing the path will point to a different
 					data
 					location.</span>
+			</div>
+
+			<h2>Embedding</h2>
+
+			<div>
+				<label>Provider</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="sentence.provider" value="llama"> Llama</label>
+					<label><input type="radio" name="sentence.provider" value="transformers"> Transformers</label>
+					<label><input type="radio" name="sentence.provider" value="openai"> OpenAI</label>
+				</div>
+				<span class="description error none">Requires server restart. All current vectors will be LOST and
+					re-initialized!</span>
+			</div>
+
+			<div>
+				<label>Device</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="sentence.device" value="auto"> Auto</label>
+					<label><input type="radio" name="sentence.device" value="cpu"> CPU</label>
+					<label><input type="radio" name="sentence.device" value="gpu"> GPU</label>
+				</div>
+				<span class="description">Select the device for calculation (Auto is recommended).</span>
+			</div>
+
+			<div data-provider="llama">
+				<label>Llama Model</label>
+				<input type="text" name="sentence.llama.model" placeholder="hf:ggml-org/...">
+				<span class="description">HuggingFace URI or local path to GGUF model.</span>
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and
+					re-initialized!</span>
+			</div>
+
+			<div data-provider="transformers">
+				<label>Transformers Model</label>
+				<input type="text" name="sentence.transformers.model" placeholder="onnx-community/...">
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and
+					re-initialized!</span>
+			</div>
+			<div data-provider="transformers">
+				<label>Transformers DType</label>
+				<input type="text" name="sentence.transformers.dtype" placeholder="q8">
+			</div>
+
+			<div data-provider="openai">
+				<label>OpenAI Model</label>
+				<input type="text" name="sentence.openai.model" placeholder="embeddinggemma">
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and
+					re-initialized!</span>
+			</div>
+			<div data-provider="openai">
+				<label>OpenAI URL</label>
+				<input type="text" name="sentence.openai.url" placeholder="http://localhost:11434/v1/embeddings">
+			</div>
+			<div data-provider="openai">
+				<label>OpenAI API Key</label>
+				<input type="password" name="sentence.openai.apiKey" placeholder="sk-...">
+			</div>
+
+			<div>
+				<label>Cache Path</label>
+				<input type="text" name="sentence.cachePath">
+				<span class="description">Directory to store downloaded models.</span>
+			</div>
+
+			<div>
+				<label>Query Prefix</label>
+				<input type="text" name="sentence.queryPrefix" placeholder="Default">
+				<span class="description">Empty to use preset defaults based on model name:</span>
+				<span class="description"><span class="value">gemma: </span>
+					<code>task: search result | query: </code></span>
+				<span class="description"><span class="value">arctic:
+					</span><code>Represent this sentence for searching relevant passages: </code></span>
+				<span class="description"><span class="value">qwen3: </span>
+					<code>Instruct: Retrieve relevant documents for the given query Query: </code></span>
+				<span class="description">
+					<span class="value">multilingual-e5: </span><code>query: </code> /
+					<span class="value">ruri: </span><code>検索クエリ: </code>
+				</span>
+			</div>
+
+			<div>
+				<label>Document Title Prefix</label>
+				<input type="text" name="sentence.documentTitlePrefix" placeholder="Default">
+				<span class="description">Empty to use preset defaults.</span>
+				<span class="description">
+					<span class="value">gemma: </span><code>title: </code> /
+					<span class="value">multilingual-e5: </span><code>passage: </code> /
+					<span class="value">ruri: </span><code>検索クエリ: </code>
+				</span>
+			</div>
+
+			<div>
+				<label>Document Text Prefix</label>
+				<input type="text" name="sentence.documentTextPrefix" placeholder="Default">
+				<span class="description">Separator between title and text (default: <code>\n</code>).</span>
+				<span class="description">
+					<span class="value">gemma: </span><code>text: </code>
+				</span>
 			</div>
 
 			<h2>Database</h2>

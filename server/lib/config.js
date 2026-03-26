@@ -27,15 +27,18 @@ let config = {
 	'extension.focusMemoOnSelection': false,
 	'server.port': 5050,
 	'server.data.path': path.join(os.homedir(), '.nooklog', 'data'),
-	'server.sentence.provider': 'llama', // 'llama', 'transformers', 'openai'
-	'server.sentence.vectorModel': 'onnx-community/embeddinggemma-300m-ONNX',
-	'server.sentence.dtype': 'q8',
-	'server.sentence.url': 'http://localhost:11434/v1/embeddings',
-	'server.sentence.apiKey': '',
-	'server.sentence.device': 'auto',
-	'server.sentence.cachePath': path.join(os.homedir(), '.nooklog', 'data', '.cache'),
-	'server.sentence.queryPrefix': null, // nullならプリセットを使用
-	'server.sentence.documentPrefix': null, // nullならプリセットを使用
+	'sentence.provider': 'llama', // 'llama', 'transformers', 'openai'
+	'sentence.device': 'auto',
+	'sentence.cachePath': path.join(os.homedir(), '.nooklog', 'data', '.cache'),
+	'sentence.queryPrefix': '', // 空文字ならプリセットを使用
+	'sentence.documentTitlePrefix': '', // 空文字ならプリセットを使用
+	'sentence.documentTextPrefix': '', // 空文字ならプリセットを使用
+	'sentence.llama.model': 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
+	'sentence.transformers.model': 'onnx-community/embeddinggemma-300m-ONNX',
+	'sentence.transformers.dtype': 'q8',
+	'sentence.openai.model': 'embeddinggemma',
+	'sentence.openai.url': 'http://localhost:11434/v1/embeddings',
+	'sentence.openai.apiKey': '',
 	'database.searchLimit': 300,
 	'database.saveHTML': false,
 };

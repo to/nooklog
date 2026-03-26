@@ -8,36 +8,32 @@ const log = baseLog.child({ module: 'vector' });
 const PRESET_MAP = {
 	'gemma': {
 		queryPrefix: 'task: search result | query: ',
-		documentPrefix: (title, text) => `title: ${title || 'none'} | text: ${text || ''}`,
+		documentTitlePrefix: 'title: ',
+		documentTextPrefix: 'text: ',
 	},
-	'bge-m3': {
-		queryPrefix: '',
-		documentPrefix: '',
-	},
-	'arctic-embed': {
+	'arctic': {
 		queryPrefix: 'Represent this sentence for searching relevant passages: ',
-		documentPrefix: '',
 	},
-	'Qwen3': {
+	'qwen3': {
 		queryPrefix: 'Instruct: Retrieve relevant documents for the given query\nQuery: ',
-		documentPrefix: '',
 	},
 	'multilingual-e5': {
 		queryPrefix: 'query: ',
-		documentPrefix: 'passage: ',
+		documentTitlePrefix: 'passage: ',
 	},
-	'ruri-v3': {
+	'ruri-v': {
 		queryPrefix: '検索クエリ: ',
-		documentPrefix: '検索文書: ',
+		documentTitlePrefix: '検索文書: ',
 	},
 };
 
 // モデルに適したプリフィックスを設定し埋め込みを実行する
-function wrapWithPrefix(idOrUri, options, execute) {
-	const key = Object.keys(PRESET_MAP).find(key => idOrUri.includes(key));
-	const presets = PRESET_MAP[key] || { queryPrefix: '', documentPrefix: '' };
-	const queryPrefix = options.queryPrefix ?? presets.queryPrefix;
-	const documentPrefix = options.documentPrefix ?? presets.documentPrefix;
+function wrapWithPrefix(model, options, execute) {
+	const key = Object.keys(PRESET_MAP).find(key => new RegExp(key, 'i').test(model));
+	const presets = PRESET_MAP[key];
+	const queryPrefix = options.queryPrefix || presets?.queryPrefix || '';
+	const titlePrefix = options.documentTitlePrefix || presets?.documentTitlePrefix || '';
+	const textPrefix = options.documentTextPrefix || presets?.documentTextPrefix || '';
 
 	const embed = async inputs => {
 		const isArray = Array.isArray(inputs);
@@ -66,11 +62,12 @@ function wrapWithPrefix(idOrUri, options, execute) {
 	return {
 		embedQuery: query => embed(queryPrefix + query, 'query'),
 		embedDocument: documents => embed([].concat(documents).map(d => {
-			const title = typeof d === 'object' ? (d.title || '') : '';
-			const text = typeof d === 'object' ? (d.text || '') : d;
-			return typeof documentPrefix === 'function'
-				? documentPrefix(title, text)
-				: documentPrefix + title + '\n' + text;
+			const title = d.title;
+			const text = typeof d === 'object' ? d.text : d;
+			return [
+				title && (titlePrefix + title),
+				text && (textPrefix + text),
+			].filter(Boolean).join('\n');
 		})),
 	};
 }
@@ -87,7 +84,7 @@ export const providers = {
 		const { pipeline, env } = await import('@huggingface/transformers');
 
 		// Transformers.js 設定
-		env.cacheDir = config['server.sentence.cachePath'];
+		env.cacheDir = config['sentence.cachePath'];
 		env.logLevel = 'error'; //  Transformers.js ログ(ダウンロード状況/キャッシュ確認)
 		env.backends.onnx.logLevel = 'error'; // ONNX Runtime ログ
 
@@ -150,7 +147,7 @@ export const providers = {
 		const modelPath = await (
 			await createModelDownloader({
 				modelUri: model,
-				dirPath: config['server.sentence.cachePath'],
+				dirPath: config['sentence.cachePath'],
 			})).download();
 		const llamaModel = await llama.loadModel({ modelPath });
 
@@ -203,18 +200,16 @@ export const providers = {
 };
 
 // 指定されたプロバイダーで初期化
-const initializer = (providers[config['server.sentence.provider']]
-	|| providers.llama
-	|| providers.transformers).bind(providers);
-
-const engine = await initializer({
-	model: config['server.sentence.vectorModel'],
-	dtype: config['server.sentence.dtype'],
-	endpoint: config['server.sentence.url'],
-	apiKey: config['server.sentence.apiKey'],
-	device: config['server.sentence.device'] === 'auto' ? undefined : config['server.sentence.device'],
-	queryPrefix: config['server.sentence.queryPrefix'],
-	documentPrefix: config['server.sentence.documentPrefix'],
+const provider = config['sentence.provider'] || 'llama';
+const engine = await providers[provider].call(providers, {
+	model: config[`sentence.${provider}.model`],
+	dtype: config[`sentence.${provider}.dtype`],
+	endpoint: config[`sentence.${provider}.url`],
+	apiKey: config[`sentence.${provider}.apiKey`],
+	device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
+	queryPrefix: config['sentence.queryPrefix'],
+	documentTitlePrefix: config['sentence.documentTitlePrefix'],
+	documentTextPrefix: config['sentence.documentTextPrefix'],
 });
 
 export const embedQuery = engine.embedQuery;
@@ -236,7 +231,7 @@ log.info({ near: near.toFixed(4), far: far.toFixed(4), threshold: threshold.toFi
 
 const [sample] = await engine.embedDocument([{ title: '', text: ' ' }]);
 export const vector = {
-	initializer,
+	model: config[`sentence.${provider}.model`],
 	dimension: sample.length,
 	threshold,
 };

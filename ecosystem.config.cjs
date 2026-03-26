@@ -22,6 +22,6 @@ module.exports = {
 			NODE_ENV: 'development',
 		},
 		// メモリ使用量が一定を超えたら再起動（念のため）
-		max_memory_restart: '1G',
+		max_memory_restart: '4G',
 	}],
 };
