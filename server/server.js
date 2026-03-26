@@ -10,11 +10,11 @@ import AssetCache from 'express-asset-file-cache-middleware';
 
 import config from './lib/config.js';
 import nooklog from './lib/nooklog.js';
-import ingester from './lib/ingester/index.js';
-import baseLogger from './lib/logger.js';
+import ingest from './lib/ingest/index.js';
+import baseLog from './lib/log.js';
 import archiver from 'archiver';
 
-const logger = baseLogger.child({ module: 'server' });
+const log = baseLog.child({ module: 'server' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -34,7 +34,7 @@ app.use(express.static(path.join(__dirname, '../public'), {
 }));
 
 app.use((req, res, next) => {
-	logger.trace({ method: req.method, url: req.url }, 'request received');
+	log.trace({ method: req.method, url: req.url }, 'request received');
 
 	// iframeの中でセキュリティを厳しくし開きやすくする
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -102,7 +102,7 @@ app.get('/component/:component/:name.html.js', async (req, res) => {
 
 // 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
 process.on('unhandledRejection', (reason, promise) => {
-	logger.error({ error: reason, promise }, 'unhandled rejection');
+	log.error({ error: reason, promise }, 'unhandled rejection');
 });
 
 /* ---- Nooklog ---- */
@@ -162,7 +162,7 @@ app.get('/api/export/bookmarks', handle(async (req, res, ps) => {
 app.get('/api/alive', (req, res) => res.json({ alive: true }));
 
 app.post('/api/markdown', handle(async (req, res, ps) => {
-	const { html, title, ...rest } = ingester.html.process(ps.url, ps.title, ps.html);
+	const { html, title, ...rest } = ingest.html.process(ps.url, ps.title, ps.html);
 	res.json(rest);
 }));
 
@@ -176,7 +176,7 @@ app.post('/api/config', handle(async (req, res) => {
 }));
 
 app.listen(config['server.port'], async () => {
-	logger.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
+	log.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
 });
 
 const arraySchema = z.array(z.string())
@@ -191,6 +191,7 @@ const paramsSchema = z.object({
 	rating: z.coerce.number(),
 	tags: arraySchema,
 	query: z.string(),
+	mode: z.string(),
 	fields: arraySchema,
 	sortBy: z.string(),
 	limit: z.coerce.number(),
@@ -240,7 +241,7 @@ function handle(handler, errorMessage) {
 		try {
 			await handler(req, res, ps);
 		} catch (error) {
-			logger.error({ error, method: req.method, url: req.url }, errorMessage || 'request failed');
+			log.error({ error, method: req.method, url: req.url }, errorMessage || 'request failed');
 			res.status(500).json({ error: error.message });
 		}
 	};

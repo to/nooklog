@@ -3,8 +3,8 @@ import assert from 'node:assert';
 import config from '../server/lib/config.js';
 
 test('SQLite FTS Uni-gram Search Verification', async t => {
-	// テスト用に隔離された R: ドライブ（RAMディスク）を使用するように設定を上書き
-	config['server.data.path'] = 'R:/nooklog-test';
+	// テスト用にメモリDBを使用するように設定を上書き
+	config['server.data.path'] = ':memory:';
 
 	// 設定上書き後に動的インポートすることで、initialize() に反映させる
 	const { default: db } = await import('../server/lib/database.js');
@@ -56,12 +56,6 @@ test('SQLite FTS Uni-gram Search Verification', async t => {
 		const count = await db.getTotalCount();
 		const rsFts = await db.client.execute('SELECT count(*) as count FROM bookmark_fts');
 		const ftsCount = rsFts.rows[0].count;
-		
-		console.log(`Bookmark count: ${count}, FTS count: ${ftsCount}`);
-
-		const ftsRowsRs = await db.client.execute('SELECT rowid, * FROM bookmark_fts');
-		console.log('FTS rows:', ftsRowsRs.rows);
-
 		assert.strictEqual(count, 3);
 		assert.strictEqual(ftsCount, 3);
 	});

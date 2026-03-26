@@ -106,10 +106,12 @@ class ResultTable extends Component {
 						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${sanitize(r.title)}</a>
 					</div>
 					<div class="memo">${sanitize(r.memo || '')}</div>
+					${r.chunk && r.chunkField == 'markdown' ? `<div class="chunk">${sanitize(r.chunk.replace(/\n\n+/g, '\n'))}</div>` : ''}
 					<div class="flex justify-end items-end gap-s mt-auto">
 						<div class="tags flex flex-wrap gap-s">
 							${(r.tags || []).map(t => `<button class="tag flat">${t}</button>`).join('')}
 						</div>
+						${r.score !== undefined ? `<span class="dates">${r.score.toFixed(2)}</span>` : ''}
 						<span class="dates">${updatedAt}</span>
 						<button class="delete flat icon">delete</button>
 					</div>

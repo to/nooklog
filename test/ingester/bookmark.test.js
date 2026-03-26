@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { process } from '../../server/lib/ingester/bookmark.js';
+import { process } from '../../server/lib/ingest/bookmark.js';
 
-test('ingester/bookmark.js - process', async t => {
+test('ingest/bookmark.js - process', async t => {
 
 	await t.test('基本的なブックマークが正しくパースされること（日付は数値タイムスタンプ）', () => {
 		const html = `
@@ -46,7 +46,7 @@ test('ingester/bookmark.js - process', async t => {
 				</DL><p>
 			</DL>
 		`;
-		
+
 		// オプションあり
 		const resultsWithTags = process(html, { folderTag: true });
 		// 親フォルダが tags に含まれる（順序は実装依存だが、ここでは Sub Folder, Top Folder の順で入るはず）

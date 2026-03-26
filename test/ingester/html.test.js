@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { process } from '../../server/lib/ingester/html.js';
+import { process } from '../../server/lib/ingest/html.js';
 
-test('ingester/html.js - process', async t => {
+test('ingest/html.js - process', async t => {
 
 	await t.test('横方向テーブル (th td td) が Markdown のフォールバック形式に変換されること', () => {
 		const html = `

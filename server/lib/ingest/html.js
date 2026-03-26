@@ -2,10 +2,10 @@ import { Readability, isProbablyReaderable } from '@mozilla/readability';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import normalizeUrl from 'normalize-url';
-import { JSDOM } from 'jsdom';
-import baseLogger from '../logger.js';
+import { parseHTML } from 'linkedom';
+import baseLog from '../log.js';
 
-const logger = baseLogger.child({ module: 'librarian' });
+const log = baseLog.child({ module: 'librarian' });
 
 const PROGRAM_KEYWORDS = [
 	'function', 'const', 'let', 'var', 'return', 'import', 'export',
@@ -113,27 +113,28 @@ turndown.addRule('smartLink', {
 });
 
 export function process(url, title, html) {
-	const cleanUrl = normalizeUrl(url, {
-		stripHash: true,
-	});
+	try {
+		url = normalizeUrl(url, { stripHash: true });
+	} catch (e) {
+		url = url ? url.split('#')[0] : '';
+	}
 
-	let cleanHtml = html
+	html = html
 		.replace(JUNK_REGEX_TAG, '')
 		.replace(JUNK_REGEX_OPEN, '')
 		.replace(/<!--[\s\S]*?-->/g, '');
-
-	const document = (new JSDOM(cleanHtml, { url: cleanUrl })).window.document;
+	const { document } = parseHTML(html);
 
 	document.querySelectorAll('a').forEach(el => {
-		try {
-			el.setAttribute('href', normalizeUrl(el.href, { stripHash: true }));
-		} catch (e) {
-			el.removeAttribute('href');
-		}
+		const href = el.getAttribute('href');
+		if (href)
+			el.setAttribute('href', normalizeUrl(new URL(href, url).href));
 	});
-	document.querySelectorAll('img').forEach(el => el.setAttribute('src', el.src));
-
-	// 抽出時に欠落しやすい、またはテーブル内のMarkdown変換規則(プラグイン)でおかしくなりやすいcaptionを、独立したパラグラフとして抽出する
+	document.querySelectorAll('img').forEach(el => {
+		const src = el.getAttribute('src');
+		if (src)
+			el.setAttribute('src', new URL(src, url).href);
+	});
 	document.querySelectorAll('table caption').forEach(caption => {
 		const table = caption.closest('table');
 		if (table?.parentNode)
@@ -145,12 +146,11 @@ export function process(url, title, html) {
 	normalizeProgramPre(document);
 
 	const page = {
-		url: cleanUrl,
-		readerable: isProbablyReaderable(document),
+		url,
 		description: document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || '',
 	};
 
-	if (!page.readerable) {
+	if (!isProbablyReaderable(document)) {
 		['header', 'footer', 'nav', 'aside'].forEach(tag => {
 			document.querySelectorAll(tag).forEach(el => el.remove());
 		});
@@ -175,7 +175,7 @@ export function process(url, title, html) {
 	page.title = title || page.title || '';
 	return {
 		title: page.title,
-		html: cleanHtml,
+		html: html,
 		markdown: generateMarkdown(page),
 	};
 }
@@ -187,7 +187,6 @@ function generateMarkdown(page) {
 		page.title && `title: "${page.title.replace(/"/g, '\\"')}"`,
 		page.siteName && `site: "${page.siteName.replace(/"/g, '\\"')}"`,
 		page.url && `url: "${page.url}"`,
-		page.readerable && `readerable: ${page.readerable}`,
 		page.description && `description: "${page.description.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
 		'---',
 	].filter(Boolean).join('\n');

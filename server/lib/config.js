@@ -4,9 +4,9 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 import _ from './util.js';
-import baseLogger from './logger.js';
+import baseLog from './log.js';
 
-const logger = baseLogger.child({ module: 'config' });
+const log = baseLog.child({ module: 'config' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, '../../nooklog.config.json');
@@ -27,6 +27,15 @@ let config = {
 	'extension.focusMemoOnSelection': false,
 	'server.port': 5050,
 	'server.data.path': path.join(os.homedir(), '.nooklog', 'data'),
+	'server.sentence.provider': 'llama', // 'llama', 'transformers', 'openai'
+	'server.sentence.vectorModel': 'onnx-community/embeddinggemma-300m-ONNX',
+	'server.sentence.dtype': 'q8',
+	'server.sentence.url': 'http://localhost:11434/v1/embeddings',
+	'server.sentence.apiKey': '',
+	'server.sentence.device': 'auto',
+	'server.sentence.cachePath': path.join(os.homedir(), '.nooklog', 'data', '.cache'),
+	'server.sentence.queryPrefix': null, // nullならプリセットを使用
+	'server.sentence.documentPrefix': null, // nullならプリセットを使用
 	'database.searchLimit': 300,
 	'database.saveHTML': false,
 };

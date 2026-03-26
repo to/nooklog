@@ -4,58 +4,43 @@ import fs from 'fs';
 import { createClient } from '@libsql/client';
 
 import config from './config.js';
-import baseLogger from './logger.js';
+import baseLog from './log.js';
+import sentence from './sentence/index.js';
 
-const logger = baseLogger.child({ module: 'database' });
-
-// 日本語表記揺れの正規化
-export const normalizeJp = text => (text || '')
-	.normalize('NFKC')
-	.replace(/([ァ-ヶー]{2,})ー$/g, '$1');
-
-// 1文字 Uni-gram 分割
-export const segment = text => [...normalizeJp(text)]
-	.join(' ')
-	.replace(/\s+/g, ' ')
-	.trim();
-
-// URL専用セグメント (プロトコルのみ除去し、記号は保持してUni-gram化)
-export const segmentUrl = url => segment((url || '')
-	.replace(/^https?:\/\//, '')
-	.toLowerCase());
-
-// Markdown専用セグメント (記号やURLを物理的に除去するのではなく、スペースに置換してインデックスの重なりを抑制)
-export const segmentMarkdown = text => segment((text || '')
-	.replace(/https?:\/\/[^\s]+/g, ' ') // URL自体はurlカラムにあるので除去
-	.replace(/[#*`_~[\]()>+-]/g, ' ')); // 装飾記号をスペースへ
+const log = baseLog.child({ module: 'database' });
 
 const db = {
 	client: null,
 
 	async initialize() {
-		const dbDir = path.join(config['server.data.path'], 'db');
-		if (!fs.existsSync(dbDir))
-			fs.mkdirSync(dbDir, { recursive: true });
+		let dbUrl = config['server.data.path'];
+		if (dbUrl !== ':memory:') {
+			const dbDir = path.join(config['server.data.path'], 'db');
+			if (!fs.existsSync(dbDir))
+				fs.mkdirSync(dbDir, { recursive: true });
 
-		const dbPath = path.join(dbDir, 'nooklog.db');
-		logger.info({ path: dbPath }, 'opening libsql database');
+			dbUrl = `file:${path.join(dbDir, 'nooklog.db')}`;
+		}
+		log.info({ path: dbUrl }, 'opening libsql database');
 
-		// libSQL clientの初期化 (Local File)
 		this.client = createClient({
-			url: `file:${dbPath}`,
+			url: dbUrl,
 		});
 
-		// PRAGMAの設定 (libSQLのexecuteで実行)
+		// 高速な検索と並列読み書きを可能にするパフォーマンス設定 (WALモード)
 		await this.client.execute('PRAGMA journal_mode = WAL');
 		await this.client.execute('PRAGMA synchronous = NORMAL');
+		await this.client.execute('PRAGMA foreign_keys = ON');
 
 		await this.createTables();
+		await this.initializeVectorTable();
 	},
 
 	async createTables() {
 		await this.client.batch([
 			`CREATE TABLE IF NOT EXISTS bookmark (
-				id TEXT PRIMARY KEY,
+				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+				id TEXT UNIQUE NOT NULL,
 				url TEXT,
 				title TEXT,
 				memo TEXT,
@@ -71,7 +56,6 @@ const db = {
 				id TEXT PRIMARY KEY,
 				value TEXT
 			)`,
-			// FTS5テーブル。tokenizeオプションなどはそのまま利用可能
 			`CREATE VIRTUAL TABLE IF NOT EXISTS bookmark_fts USING fts5(
 				title,
 				memo,
@@ -79,18 +63,39 @@ const db = {
 				url,
 				tokenize="unicode61 categories 'L* N* P* S*'"
 			)`,
-			// 【新機能】libSQLネイティブ・ベクトルインデックスの例 (開発予定に合わせて)
-			// 本格導入時にカラムを追加してインデックスを作成する想定
-			/*
-			`CREATE TABLE IF NOT EXISTS bookmark_embeddings (
-				bookmark_id TEXT PRIMARY KEY,
-				embedding F32_BLOB(1536) -- 例: OpenAIの次元数
-			)`,
-			`CREATE INDEX IF NOT EXISTS bookmark_embeddings_idx ON bookmark_embeddings (
-				libsql_vector_idx(embedding, 'metric=cosine')
-			)`
-			*/
+			'CREATE INDEX IF NOT EXISTS bookmark_updated_at_idx ON bookmark (updated_at DESC)',
+			'CREATE INDEX IF NOT EXISTS bookmark_created_at_idx ON bookmark (created_at DESC)',
+			'CREATE INDEX IF NOT EXISTS bookmark_rating_idx ON bookmark (rating)',
 		], 'write');
+	},
+
+	async initializeVectorTable() {
+		const currentModel = config['server.sentence.vectorModel'];
+		const activeModel = await this.getMeta('vector_model');
+		if (activeModel !== currentModel) {
+			log.info({
+				from: activeModel || 'none',
+				to: currentModel,
+				dimension: sentence.vector.dimension,
+			}, 'model changed, re-initializing vector table');
+
+			await this.client.batch([
+				'DROP TABLE IF EXISTS bookmark_vector',
+				`CREATE TABLE bookmark_vector (
+					id INTEGER PRIMARY KEY,
+					bookmark_id INTEGER,
+					chunk_index INTEGER,
+					field TEXT,
+					content TEXT,
+					position INTEGER,
+					vector F32_BLOB(${sentence.vector.dimension}),
+					FOREIGN KEY (bookmark_id) REFERENCES bookmark(row_id) ON DELETE CASCADE
+				)`,
+				'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
+			], 'write');
+
+			await this.setMeta('vector_model', currentModel);
+		}
 	},
 
 	createBookmark() {

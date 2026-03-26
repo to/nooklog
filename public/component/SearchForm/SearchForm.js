@@ -6,6 +6,7 @@ class SearchForm extends Component {
 			loading: this.$('.loading'),
 			tags: this.$('nl-tag-input'),
 			fields: this.$$('input[name=field]'),
+			mode: this.$$('input[name=mode]'),
 			sortBy: this.$$('input[name=sortBy]'),
 			count: this.$('.count'),
 		};
@@ -57,7 +58,7 @@ class SearchForm extends Component {
 					return;
 			}
 
-			if (e.target.name === 'sortBy' || e.target.name === 'field')
+			if (e.target.name === 'sortBy' || e.target.name === 'field' || e.target.name === 'mode')
 				this._search();
 		});
 	}
@@ -66,18 +67,26 @@ class SearchForm extends Component {
 		this.els.query.value = '';
 		this.els.tags.tagify.removeAllTags();
 		this.els.fields.forEach(el => el.checked = el.value !== 'markdown');
-		const created = this.els.sortBy.find(el => el.value === 'created_at');
-		if (created)
-			created.checked = true;
+		const fts = this.els.mode.find(el => el.value === 'fts');
+		if (fts)
+			fts.checked = true;
+
+		const relevance = this.els.sortBy.find(el => el.value === 'relevance');
+		if (relevance)
+			relevance.checked = true;
 		this.els.count.textContent = '';
 	}
 
 	getQuery() {
 		const tags = this.els.tags.getTags();
 		const query = this.els.query.value;
+
+		const modes = this.els.mode.filter(el => el.checked).map(el => el.value);
+		const mode = (modes.length === 2 || modes.length === 0) ? 'hybrid' : modes[0];
 		return (tags.length || query) ? {
 			tags,
 			query,
+			mode,
 			fields: this.els.fields.filter(el => el.checked).map(el => el.value),
 			sortBy: this.els.sortBy.find(el => el.checked)?.value,
 		} : {};

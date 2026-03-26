@@ -1,6 +1,6 @@
-import baseLogger from './logger.js';
+import baseLog from './log.js';
 
-const logger = baseLogger.child({ module: 'util' });
+const log = baseLog.child({ module: 'util' });
 
 export const merge = (target = {}, source) => {
 	for (const key of Object.keys(source)) {
@@ -23,16 +23,18 @@ export const bench = async (task, label = 'bench') => {
 		await task() :
 		await task;
 	const duration = performance.now() - start;
-	logger.debug({ label, duration: duration.toFixed(2) }, 'benchmark finished');
+	log.debug({ label, duration: duration.toFixed(2) }, 'benchmark finished');
 	return result;
 };
+
+export const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export const parseNumber = val => {
 	const n = parseInt(val);
 	return isNaN(n) ? undefined : n;
 };
 
-export const retry = async (task, { maxAttempts = 3, delay = 500, module = 'retry' } = {}) => {
+export const retry = async (task, { maxAttempts = 3, delay = 500, module = 'retry', onRetry } = {}) => {
 	for (let i = 0; i < maxAttempts; i++) {
 		try {
 			return await task();
@@ -40,7 +42,10 @@ export const retry = async (task, { maxAttempts = 3, delay = 500, module = 'retr
 			if (i === maxAttempts - 1)
 				throw e;
 
-			logger.warn({ module, attempt: i + 1, error: e.message }, 'task failed, retrying...');
+			log.warn({ module, attempt: i + 1, error: e.message }, 'task failed, retrying...');
+			if (onRetry)
+				await onRetry(e, i + 1);
+
 			await new Promise(r => setTimeout(r, delay * (2 ** i)));
 		}
 	}
@@ -62,5 +67,6 @@ export default {
 	bench,
 	parseNumber,
 	retry,
+	wait,
 	groupBy,
 };

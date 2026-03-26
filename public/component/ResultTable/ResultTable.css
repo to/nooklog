@@ -100,6 +100,18 @@
 		white-space: pre-wrap;
 	}
 
+	.chunk {
+		padding: var(--space-s);
+		margin: var(--space-s) 0;
+		font-size: var(--font-size-s);
+		line-height: var(--line-height-m);
+		color: var(--ink-5);
+		overflow-wrap: anywhere;
+		white-space: pre-wrap;
+		background-color: var(--ink-1);
+		border-radius: var(--radius-s);
+	}
+
 	.tag {
 		font-size: var(--font-size-2s);
 		font-weight: bold;

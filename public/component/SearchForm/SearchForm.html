@@ -1,6 +1,10 @@
 <form class="flex flex-col search-form w-full">
 	<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
 		<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
+		<div class="select-flat col-2">
+			<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
+			<label><input type="checkbox" name="mode" value="vector">Similar</label>
+		</div>
 		<input type="text" name="query" placeholder="Query" class="row-2">
 		<div class="select-flat col-2 row-2">
 			<label><input type="checkbox" name="field" value="url" checked>URL</label>
@@ -16,7 +20,8 @@
 		<span class="count flex items-center none"></span>
 		<span class="icon loading animate-spin none">progress_activity</span>
 		<div class="radio-flat ml-auto">
-			<label> <input type="radio" name="sortBy" value="created_at" checked>Created</label>
+			<label> <input type="radio" name="sortBy" value="relevance" checked>Relevance</label>
+			<label> <input type="radio" name="sortBy" value="created_at">Created</label>
 			<label> <input type="radio" name="sortBy" value="updated_at">Updated</label>
 			<label> <input type="radio" name="sortBy" value="rating">Rating</label>
 		</div>

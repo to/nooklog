@@ -1,12 +1,11 @@
-import ingester from './ingester/index.js';
+import ingest from './ingest/index.js';
 import db from './database.js';
 import store from './store.js';
 import config from './config.js';
 import _ from './util.js';
-import baseLogger from './logger.js';
-import archiver from 'archiver';
+import baseLog from './log.js';
 
-const logger = baseLogger.child({ module: 'nooklog' });
+const log = baseLog.child({ module: 'nooklog' });
 
 let tagCache = new Set();
 
@@ -28,7 +27,7 @@ const nooklog = {
 		// タグキャッシュの構築
 		const tags = await store.getTags();
 		tags.forEach(t => tagCache.add(t));
-		logger.info({ count: tagCache.size }, 'tags loaded');
+		log.info({ count: tagCache.size }, 'tags loaded');
 	},
 
 	getConfig() {
@@ -91,7 +90,7 @@ const nooklog = {
 			bookmark.markdown = markdown || '';
 
 		if (html) {
-			const processed = ingester.html.process(url, title, html);
+			const processed = ingest.html.process(url, title, html);
 			bookmark.html = processed.html;
 			if (!this.isEdited(bookmark.markdown))
 				bookmark.markdown = processed.markdown;
@@ -126,7 +125,7 @@ const nooklog = {
 	},
 
 	async importBookmarks(content, options = {}) {
-		const bookmarks = ingester.bookmark.process(content, options);
+		const bookmarks = ingest.bookmark.process(content, options);
 		const count = await store.import(bookmarks);
 
 		// タグキャッシュを更新する

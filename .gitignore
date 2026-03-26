@@ -9,8 +9,8 @@ node_modules/
 logs/
 *.log
 data/
-work/
 public/work/
 dist/
+work/
 .geminiignore
 nooklog.config.json

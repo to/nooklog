@@ -1,13 +1,11 @@
-import { segment, segmentUrl, segmentMarkdown, normalizeJp } from './database.js';
+import sentence from './sentence/index.js';
 import db from './database.js';
-import config from './config.js';
-import baseLogger from './logger.js';
+import baseLog from './log.js';
+import { bench } from './util.js';
 
-const logger = baseLogger.child({ module: 'store' });
+const log = baseLog.child({ module: 'store' });
 
 const store = {
-	UNLIMITED: 100 * 10000,
-
 	async findByUrl(url, { columns = ['*'] } = {}) {
 		const rs = await db.client.execute({
 			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE url = ?`,
@@ -24,22 +22,19 @@ const store = {
 		return this._parse(rs.rows[0]);
 	},
 
-	async save(input) {
-		const bookmarks = Array.isArray(input) ? input : [input];
+	async save(bookmarks) {
+		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
-		// libSQLではバッチ(Transaction相当)を使用
 		const batch = [];
-
 		for (const b of bookmarks) {
 			const data = {
 				...db.createBookmark(),
 				...b,
 			};
 
-			// IDに基づき重複判定が必要なため、一度FTSから削除を試みる
-			// (トリガーがないため手動管理。rowidの整合性を保つためのパターン)
+			// IDに基づき重複判定が必要なため、一度関連データを全て削除する (rowidの整合性を保つため)
 			batch.push({
-				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT rowid FROM bookmark WHERE id = ?)',
+				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [data.id],
 			});
 
@@ -49,8 +44,7 @@ const store = {
 						id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary
 					) VALUES (
 						?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-					)
-				`,
+					)`,
 				args: [
 					data.id, data.url, data.title, data.memo, data.rating,
 					JSON.stringify(data.tags || []),
@@ -62,22 +56,74 @@ const store = {
 			batch.push({
 				sql: `
 					INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
-					VALUES (
-						(SELECT rowid FROM bookmark WHERE id = ?),
-						?, ?, ?, ?
-					)
-				`,
+					VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?)`,
 				args: [
 					data.id,
-					segment(data.title),
-					segment(data.memo),
-					segmentMarkdown(data.markdown),
-					segmentUrl(data.url),
+					sentence.segment(data.title),
+					sentence.segment(data.memo),
+					sentence.segmentMarkdown(data.markdown),
+					sentence.segmentUrl(data.url),
 				],
 			});
 		}
 
 		await db.client.batch(batch, 'write');
+
+		// ベクトルインデックスを更新
+		// await this.embed(bookmarks).catch(err => {
+		// 	log.error(err, 'failed to index vectors in background');
+		// });
+	},
+
+	async embed(bookmarks) {
+		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
+
+		for (const b of bookmarks) {
+			const data = { ...db.createBookmark(), ...b };
+
+			// 既存のベクトルを削除 (DELETEとINSERTを分けるため個別実行)
+			await db.client.execute({
+				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
+				args: [data.id],
+			});
+
+			const memoChunks = sentence.split(data.memo);
+			const targets = [
+				{ field: 'title', title: data.title, position: 0 },
+				{ field: 'memo', text: data.memo, position: 0 },
+				...(memoChunks.length > 1 ? memoChunks.map(c => ({
+					field: 'memo',
+					text: c.text,
+					position: c.position,
+				})) : []),
+				...sentence.chunkMarkdown(data.markdown).map(c => ({
+					field: 'markdown',
+					title: c.titles.join(' > '),
+					text: c.text,
+					position: c.position.offset,
+				})),
+			].filter(t => t.text?.trim() || t.title?.trim());
+
+			if (targets.length === 0)
+				continue;
+
+			// ベクトル化 (タイトルと本文をセットで渡す)
+			const vectors = await bench(
+				() => sentence.embedDocument(targets.map(t => ({ title: t.title, text: t.text }))),
+				`embedded document chunks: ${targets.length}`,
+			);
+			const vectorBatch = targets.map((t, i) => ({
+				sql: `
+					INSERT INTO bookmark_vector (
+						bookmark_id, chunk_index, field, content, position, vector
+					) VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, vector32(?))`,
+				args: [
+					data.id, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
+					JSON.stringify(vectors[i]),
+				],
+			}));
+			await db.client.batch(vectorBatch, 'write');
+		}
 	},
 
 	async import(bookmarks) {
@@ -97,7 +143,11 @@ const store = {
 	async deleteById(id) {
 		await db.client.batch([
 			{
-				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT rowid FROM bookmark WHERE id = ?)',
+				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
+				args: [id],
+			},
+			{
+				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [id],
 			},
 			{
@@ -108,12 +158,12 @@ const store = {
 	},
 
 	async getRecent({ columns = ['*'], limit = 100, sortBy = 'updated_at' } = {}) {
+		const order = sortBy === 'relevance' ? 'updated_at' : sortBy;
 		const rs = await db.client.execute({
 			sql: `
 				SELECT ${columns.join(', ')} FROM bookmark
-				ORDER BY ${sortBy} DESC, updated_at DESC
-				LIMIT ?
-			`,
+				ORDER BY ${order} DESC, updated_at DESC
+				LIMIT ?`,
 			args: [limit],
 		});
 
@@ -128,8 +178,7 @@ const store = {
 	async getTags() {
 		const rs = await db.client.execute(`
 			SELECT DISTINCT value as tag FROM bookmark, json_each(tags)
-			ORDER BY tag
-		`);
+			ORDER BY tag`);
 		return rs.rows.map(r => r.tag);
 	},
 
@@ -137,14 +186,21 @@ const store = {
 		const rs = await db.client.execute({
 			sql: `
 				SELECT 1 FROM bookmark, json_each(tags)
-				WHERE value = ? LIMIT 1
-			`,
+				WHERE value = ? LIMIT 1`,
 			args: [tag],
 		});
 		return rs.rows.length > 0;
 	},
 
-	async search({
+	async search(ps) {
+		if (ps.mode === 'vector')
+			return await this.searchVector(ps);
+		if (ps.mode === 'hybrid')
+			return await this.searchHybrid(ps);
+		return await this.searchFTS(ps);
+	},
+
+	async searchFTS({
 		columns = ['*'], tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 300,
 	}) {
 		const { conditions, params, ftsSql } = this._buildSearchQuery({
@@ -154,9 +210,10 @@ const store = {
 
 		let searchParams = [];
 		let sql = ftsSql
-			? `SELECT ${select} FROM bookmark b
-				 WHERE b.rowid IN (SELECT rowid FROM bookmark_fts WHERE bookmark_fts MATCH ?)`
-			: `SELECT ${select} FROM bookmark`;
+			? `SELECT ${select}, f.rank as score FROM bookmark b
+			   JOIN bookmark_fts f ON f.rowid = b.row_id
+			   WHERE f.bookmark_fts MATCH ?`
+			: `SELECT ${select} FROM bookmark b`;
 
 		if (ftsSql)
 			searchParams.push(ftsSql);
@@ -165,20 +222,119 @@ const store = {
 			sql += (ftsSql ? ' AND ' : ' WHERE ') + conditions.join(' AND ');
 		searchParams.push(...params);
 
-		const orderBy = sortBy === 'updated_at'
-			? 'updated_at DESC'
-			: `${sortBy} DESC, updated_at DESC`;
+		let orderBy = 'updated_at DESC';
+		if (sortBy === 'relevance') {
+			if (ftsSql)
+				orderBy = 'f.rank';
+		} else if (sortBy !== 'updated_at') {
+			orderBy = `${sortBy} DESC, updated_at DESC`;
+		}
 		sql += ` ORDER BY ${orderBy} LIMIT ?`;
 		searchParams.push(limit);
 
-		logger.trace({ sql, searchParams }, 'executing search query');
+		log.trace({ sql, searchParams }, 'executing fts search query');
 
 		const rs = await db.client.execute({ sql, args: searchParams });
-		const totalCount = await db.getTotalCount();
 		return {
 			count: rs.rows.length,
-			totalCount,
+			totalCount: await db.getTotalCount(),
 			bookmarks: rs.rows.map(r => this._parse(r)),
+		};
+	},
+
+	async searchVector({
+		columns = ['*'], query = '', fields = [], limit = 50, sortBy = 'relevance',
+		tags = [], rating,
+	}) {
+		if (!query?.trim())
+			return { count: 0, totalCount: await db.getTotalCount(), bookmarks: [] };
+
+		const qVec = await sentence.embedQuery(query);
+		const select = columns.map(c => `b.${c}`).join(', ');
+
+		// インデックス(DiskANN)は不正確だったため5倍程度遅い全件走査(Brute Force)を使用する
+		const { conditions, params: condParams } = this._buildSearchQuery({ tags, rating });
+		const qVecJson = JSON.stringify(qVec);
+		let sql = `
+			SELECT ${select}, bv.content as chunk, bv.field as chunkField,
+			       MIN(vector_distance_cos(bv.vector, vector32(?))) as score
+			FROM bookmark_vector bv
+			JOIN bookmark b ON b.row_id = bv.bookmark_id`;
+
+		const args = [qVecJson];
+		const where = [];
+		if (fields.length > 0) {
+			where.push('bv.field IN (SELECT value FROM json_each(?))');
+			args.push(JSON.stringify(fields));
+		}
+		if (conditions.length > 0) {
+			where.push(...conditions);
+			args.push(...condParams);
+		}
+
+		if (where.length > 0)
+			sql += ' WHERE ' + where.join(' AND ');
+
+		sql += ' GROUP BY b.id';
+
+		if (sortBy === 'relevance')
+			sql += ' ORDER BY score';
+		else
+			sql += ` ORDER BY b.${sortBy} DESC, score`;
+
+		sql += ' LIMIT ?';
+		args.push(limit);
+
+		const rs = await db.client.execute({ sql, args });
+		return {
+			count: rs.rows.length,
+			totalCount: await db.getTotalCount(),
+			bookmarks: rs.rows.map(r => this._parse(r)),
+		};
+	},
+
+	async searchHybrid(ps) {
+		// 統合するために候補を多めに取得する
+		const { limit = 50, sortBy = 'relevance' } = ps;
+		const searchLimit = Math.floor(limit * 1.5);
+		const [fts, vec] = await Promise.all([
+			this.searchFTS({ ...ps, limit: searchLimit, sortBy: 'relevance' }),
+			this.searchVector({ ...ps, limit: searchLimit, sortBy: 'relevance' }),
+		]);
+
+		const k = 60;
+		const scores = new Map();
+		const bookmarksMap = new Map();
+
+		// RRF (Reciprocal Rank Fusion) Score
+		const addRRF = (bookmarks, weight = 1.0) => {
+			bookmarks.forEach((b, i) => {
+				const rank = i + 1;
+				const score = (1 / (k + rank)) * weight;
+				scores.set(b.id, (scores.get(b.id) || 0) + score);
+				if (!bookmarksMap.has(b.id))
+					bookmarksMap.set(b.id, b);
+			});
+		};
+		addRRF(fts.bookmarks, 1.0);
+		addRRF(vec.bookmarks, 0.5);
+
+		const sortedIds = [...scores.keys()].sort((a, b) => scores.get(b) - scores.get(a));
+		const bookmarks = sortedIds.slice(0, limit).map(id => bookmarksMap.get(id));
+		if (sortBy !== 'relevance') {
+			bookmarks.sort((a, b) => {
+				if (a[sortBy] < b[sortBy])
+					return 1;
+				if (a[sortBy] > b[sortBy])
+					return -1;
+				return 0;
+			});
+		}
+
+		return {
+			count: bookmarks.length,
+			totalCount: fts.totalCount,
+			bookmarks,
 		};
 	},
 
@@ -188,13 +344,13 @@ const store = {
 
 		if (tags.length > 0) {
 			for (const tag of tags) {
-				conditions.push('EXISTS (SELECT 1 FROM json_each(tags) WHERE value = ?)');
+				conditions.push('EXISTS (SELECT 1 FROM json_each(b.tags) WHERE value = ?)');
 				params.push(tag);
 			}
 		}
 
 		if (rating != null) {
-			conditions.push('rating >= ?');
+			conditions.push('b.rating >= ?');
 			params.push(rating);
 		}
 
@@ -209,7 +365,7 @@ const store = {
 			const columnSpec = fields.length > 0 ? `{ ${fields.join(' ')} } : ` : '';
 			const ftsTokens = tokens.map(token => {
 				// 1文字 Uni-gram をフレーズとして結合し、隣接マッチを実現(NEAR(len - 2)相当)
-				const phrase = [...normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
+				const phrase = [...sentence.normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
 				return `${columnSpec}"${phrase}"`;
 			});
 			ftsSql = ftsTokens.join(' AND ');
