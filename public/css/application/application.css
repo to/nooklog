@@ -41,6 +41,7 @@ textarea,
 select {
 	width: 100%;
 	padding: var(--space-s);
+	font-size: var(--font-size-s);
 	color: inherit;
 	outline: none;
 	background-color: var(--ink-0);

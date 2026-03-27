@@ -190,48 +190,52 @@ const store = {
 	},
 
 	async search(ps) {
-		if (ps.mode === 'vector')
-			return await this.searchVector(ps);
-		if (ps.mode === 'hybrid')
-			return await this.searchHybrid(ps);
+		// URL/タグ/レーティングだけの検索ではないか？
+		if (ps.query?.trim()) {
+			if (ps.mode === 'vector')
+				return await this.searchVector(ps);
+			if (ps.mode === 'hybrid')
+				return await this.searchHybrid(ps);
+		}
 		return await this.searchFTS(ps);
 	},
 
 	async searchFTS({
-		columns = ['*'], tags = [], query = '', fields = [], rating, sortBy = 'updated_at', limit = 300,
+		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, sortBy = 'updated_at', limit = 300,
 	}) {
-		const { conditions, params, ftsSql } = this._buildSearchQuery({
-			tags, query, fields, rating,
+		const {
+			conditions, params, ftsConditions, ftsParams,
+		} = this._buildSearchQuery({
+			tags, query, url, fields, rating,
 		});
-		const select = (ftsSql ? columns.map(c => `b.${c}`) : columns).join(', ');
 
-		let searchParams = [];
-		let sql = ftsSql
+		const hasFts = ftsConditions.length > 0;
+		const select = (hasFts ? columns.map(c => `b.${c}`) : columns).join(', ');
+
+		let sql = hasFts
 			? `SELECT ${select}, f.rank as score FROM bookmark b
-			   JOIN bookmark_fts f ON f.rowid = b.row_id
-			   WHERE f.bookmark_fts MATCH ?`
+			   JOIN bookmark_fts f ON f.rowid = b.row_id`
 			: `SELECT ${select} FROM bookmark b`;
 
-		if (ftsSql)
-			searchParams.push(ftsSql);
+		const allConditions = [...ftsConditions, ...conditions];
+		const allParams = [...ftsParams, ...params];
 
-		if (conditions.length > 0)
-			sql += (ftsSql ? ' AND ' : ' WHERE ') + conditions.join(' AND ');
-		searchParams.push(...params);
+		if (allConditions.length > 0)
+			sql += ' WHERE ' + allConditions.join(' AND ');
 
 		let orderBy = 'updated_at DESC';
 		if (sortBy === 'relevance') {
-			if (ftsSql)
+			if (hasFts)
 				orderBy = 'f.rank';
 		} else if (sortBy !== 'updated_at') {
 			orderBy = `${sortBy} DESC, updated_at DESC`;
 		}
 		sql += ` ORDER BY ${orderBy} LIMIT ?`;
-		searchParams.push(limit);
 
-		log.trace({ sql, searchParams }, 'executing fts search query');
+		const args = [...allParams, limit];
+		log.trace({ sql, args }, 'executing fts search query');
 
-		const rs = await db.client.execute({ sql, args: searchParams });
+		const rs = await db.client.execute({ sql, args });
 		return {
 			count: rs.rows.length,
 			totalCount: await db.getTotalCount(),
@@ -240,7 +244,7 @@ const store = {
 	},
 
 	async searchVector({
-		columns = ['*'], query = '', fields = [], limit = 50, sortBy = 'relevance',
+		columns = ['*'], query = '', url = '', fields = [], limit = 50, sortBy = 'relevance',
 		tags = [], rating,
 	}) {
 		if (!query?.trim())
@@ -250,7 +254,9 @@ const store = {
 		const select = columns.map(c => `b.${c}`).join(', ');
 
 		// インデックス(DiskANN)は不正確だったため5倍程度遅い全件走査(Brute Force)を使用する
-		const { conditions, params: condParams } = this._buildSearchQuery({ tags, rating });
+		const {
+			conditions, params, ftsConditions, ftsParams,
+		} = this._buildSearchQuery({ tags, rating, url });
 		const qVecJson = JSON.stringify(qVec);
 		let sql = `
 			SELECT ${select}, bv.content as chunk, bv.field as chunkField,
@@ -258,15 +264,20 @@ const store = {
 			FROM bookmark_vector bv
 			JOIN bookmark b ON b.row_id = bv.bookmark_id`;
 
+		if (ftsConditions.length > 0)
+			sql += ' JOIN bookmark_fts f ON f.rowid = b.row_id';
+
 		const args = [qVecJson];
-		const where = [];
+		const where = [...ftsConditions];
+		args.push(...ftsParams);
+
 		if (fields.length > 0) {
 			where.push('bv.field IN (SELECT value FROM json_each(?))');
 			args.push(JSON.stringify(fields));
 		}
 		if (conditions.length > 0) {
 			where.push(...conditions);
-			args.push(...condParams);
+			args.push(...params);
 		}
 
 		if (where.length > 0)
@@ -335,9 +346,13 @@ const store = {
 		};
 	},
 
-	_buildSearchQuery({ tags = [], query = '', fields = [], rating }) {
+	_buildSearchQuery({
+		tags = [], query = '', url = '', fields = [], rating,
+	}) {
 		const conditions = [];
 		const params = [];
+		const ftsConditions = [];
+		const ftsParams = [];
 
 		if (tags.length > 0) {
 			for (const tag of tags) {
@@ -351,24 +366,44 @@ const store = {
 			params.push(rating);
 		}
 
-		let ftsSql = null;
-		if (query?.trim()) {
-			// フレーズ（"..."）を考慮してトークン分割
-			const tokens = (query.match(/".+?"|[^\s"]+/g) || [])
-				.map(w => w.replace(/^"|"$/g, ''));
-
-			// FTS5のカラム指定形式を生成(指定があれば { col1 col2 } : の形式)
-			// (無指定の場合 全FTSカラムが対象となる)
-			const columnSpec = fields.length > 0 ? `{ ${fields.join(' ')} } : ` : '';
-			const ftsTokens = tokens.map(token => {
-				// 1文字 Uni-gram をフレーズとして結合し、隣接マッチを実現(NEAR(len - 2)相当)
-				const phrase = [...sentence.normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
-				return `${columnSpec}"${phrase}"`;
-			});
-			ftsSql = ftsTokens.join(' AND ');
+		const ftsUrl = this._buildFtsMatch(url, ['url']);
+		if (ftsUrl) {
+			ftsConditions.push(ftsUrl.condition);
+			ftsParams.push(ftsUrl.param);
 		}
 
-		return { conditions, params, ftsSql };
+		const fts = this._buildFtsMatch(query, fields);
+		if (fts) {
+			ftsConditions.push(fts.condition);
+			ftsParams.push(fts.param);
+		}
+
+		return {
+			conditions, params, ftsConditions, ftsParams,
+		};
+	},
+
+	_buildFtsMatch(query, fields = []) {
+		if (!query?.trim())
+			return null;
+
+		// フレーズ（"..."）を考慮してトークン分割
+		const tokens = (query.match(/".+?"|[^\s"]+/g) || [])
+			.map(w => w.replace(/^"|"$/g, ''));
+
+		// FTS5のカラム指定形式を生成(指定があれば { col1 col2 } : の形式)
+		// (無指定の場合 全FTSカラムが対象となる)
+		const columnSpec = fields.length > 0 ? `{ ${fields.join(' ')} } : ` : '';
+		const ftsTokens = tokens.map(token => {
+			// 1文字 Uni-gram をフレーズとして結合し、隣接マッチを実現(NEAR(len - 2)相当)
+			const phrase = [...sentence.normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
+			return `${columnSpec}"${phrase}"`;
+		});
+
+		return {
+			condition: 'f.bookmark_fts MATCH ?',
+			param: ftsTokens.join(' AND '),
+		};
 	},
 
 	_parse(row) {

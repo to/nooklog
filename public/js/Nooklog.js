@@ -38,9 +38,9 @@ const Nooklog = {
 		})}`, { count: 0, bookmarks: [] });
 	},
 
-	async search({ mode, tags, query, fields, sortBy }) {
+	async search({ mode, tags, query, url, fields, sortBy }) {
 		return await this._get(`search?${qs({
-			mode, query, fields, sortBy,
+			mode, query, url, fields, sortBy,
 			limit: config['database.searchLimit'],
 			...this.separateRating(tags),
 		})}`, { count: 0, bookmarks: [] });

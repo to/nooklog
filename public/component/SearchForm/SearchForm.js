@@ -3,6 +3,7 @@ class SearchForm extends Component {
 		this.els = {
 			form: this.$('form'),
 			query: this.$('input[name=query]'),
+			url: this.$('input[name=url]'),
 			loading: this.$('.loading'),
 			tags: this.$('nl-tag-input'),
 			fields: this.$$('input[name=field]'),
@@ -15,6 +16,7 @@ class SearchForm extends Component {
 
 		const ps = getSearchParams();
 		this.els.query.value = ps.query || '';
+		this.els.url.value = ps.url || '';
 
 		this._search();
 	}
@@ -65,6 +67,7 @@ class SearchForm extends Component {
 
 	clear() {
 		this.els.query.value = '';
+		this.els.url.value = '';
 		this.els.tags.tagify.removeAllTags();
 		this.els.fields.forEach(el => el.checked = el.value !== 'markdown');
 		const fts = this.els.mode.find(el => el.value === 'fts');
@@ -80,12 +83,14 @@ class SearchForm extends Component {
 	getQuery() {
 		const tags = this.els.tags.getTags();
 		const query = this.els.query.value;
-
+		const url = this.els.url.value;
 		const modes = this.els.mode.filter(el => el.checked).map(el => el.value);
 		const mode = (modes.length === 2 || modes.length === 0) ? 'hybrid' : modes[0];
-		return (tags.length || query) ? {
+
+		return (tags.length || query || url) ? {
 			tags,
 			query,
+			url,
 			mode,
 			fields: this.els.fields.filter(el => el.checked).map(el => el.value),
 			sortBy: this.els.sortBy.find(el => el.checked)?.value,

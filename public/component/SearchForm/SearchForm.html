@@ -1,13 +1,15 @@
 <form class="flex flex-col search-form w-full">
 	<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
-		<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
-		<div class="select-flat col-2">
+		<div class="flex gap-s">
+			<input type="text" name="url" placeholder="URL">
+			<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
+		</div>
+		<div class="select-flat">
 			<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
 			<label><input type="checkbox" name="mode" value="vector">Similar</label>
 		</div>
-		<input type="text" name="query" placeholder="Query" class="row-2">
-		<div class="select-flat col-2 row-2">
-			<label><input type="checkbox" name="field" value="url">URL</label>
+		<input type="text" name="query" placeholder="Query">
+		<div class="select-flat">
 			<label><input type="checkbox" name="field" value="title" checked>Title</label>
 			<label><input type="checkbox" name="field" value="memo" checked>Memo</label>
 			<label><input type="checkbox" name="field" value="markdown" checked>Content</label>

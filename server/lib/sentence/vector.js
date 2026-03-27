@@ -136,7 +136,7 @@ export const providers = {
 
 		const llama = await getLlama({
 			gpu: device,
-			build: 'autoAttempt',
+			// build: 'autoAttempt',
 			logLevel: LlamaLogLevel.error,
 			gpuOptions: { vmm: false },
 		});
