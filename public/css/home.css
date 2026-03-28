@@ -63,7 +63,7 @@ body {
 	}
 }
 
-@media (width > 1000px) {
+@media (aspect-ratio > 1 / 1.1) {
 	.area-sub {
 		aside {
 			height: auto !important; /* スクリプトで設定された値をクリアする */
@@ -71,7 +71,8 @@ body {
 	}
 }
 
-@media (width <= 1000px) {
+/* 少し縦長でレイアウトを変更する */
+@media (aspect-ratio <= 1 / 1.1) {
 	body {
 		flex-direction: column;
 	}
