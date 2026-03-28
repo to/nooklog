@@ -23,7 +23,7 @@ class ResultTable extends Component {
 				return;
 
 			const id = el.closest('.tr').dataset.id;
-			Nooklog.updateBookmark({ id, rating: el.value });
+			Nooklog.save({ id, rating: el.value });
 		});
 
 		$.on(this, 'click', e => {
@@ -81,7 +81,7 @@ class ResultTable extends Component {
 		row.classList.add('is-selected');
 
 		const id = row.dataset.id;
-		const bookmark = await Nooklog.getBookmark(id);
+		const bookmark = await Nooklog.find({ id });
 		app.set('ResultTable.select', true);
 		hub.emit('ResultTable:select', bookmark);
 	}
@@ -140,7 +140,7 @@ class ResultTable extends Component {
 		if (!confirm('Are you sure you want to delete this bookmark?'))
 			return;
 
-		if (await Nooklog.deleteBookmark(id))
+		if (await Nooklog.delete(id))
 			row.remove();
 	}
 

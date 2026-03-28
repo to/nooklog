@@ -62,7 +62,7 @@ class UpdateForm extends Component {
 		bridge.on('Bridge:restore:html', html => {
 			this.setBookmark(html);
 			this.fetch();
-			Nooklog.generateMarkdown(this.getBookmark())
+			Nooklog.getMarkdown(this.getBookmark())
 				.then(markdown => this.setBookmark(markdown));
 		});
 
@@ -156,7 +156,7 @@ class UpdateForm extends Component {
 	}
 
 	fetch() {
-		Nooklog.resolve(this.getBookmark())
+		Nooklog.find(this.getBookmark())
 			.then(b => this.setBookmark(b))
 			.catch(e => app.error(e));
 	}
@@ -250,7 +250,7 @@ class UpdateForm extends Component {
 		if (data.markdown !== this.bookmark.markdown)
 			data.markdown = this.setEdited(data.markdown);
 
-		const bookmark = await Nooklog.updateBookmark(data);
+		const bookmark = await Nooklog.save(data);
 		this.setSubmitting(false);
 
 		if (!bookmark)

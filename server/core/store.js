@@ -6,18 +6,13 @@ import { bench } from './util.js';
 const log = baseLog.child({ module: 'store' });
 
 const store = {
-	async findByUrl(url, { columns = ['*'] } = {}) {
-		const rs = await db.client.execute({
-			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE url = ?`,
-			args: [url],
-		});
-		return this._parse(rs.rows[0]);
-	},
+	async find({ id, url, columns = ['*'] } = {}) {
+		if (!id && !url)
+			return null;
 
-	async findById(id, { columns = ['*'] } = {}) {
 		const rs = await db.client.execute({
-			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE id = ?`,
-			args: [id],
+			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE ${id ? 'id' : 'url'} = ?`,
+			args: [id || url],
 		});
 		return this._parse(rs.rows[0]);
 	},
@@ -137,7 +132,7 @@ const store = {
 		return newBookmarks.length;
 	},
 
-	async deleteById(id) {
+	async delete(id) {
 		await db.client.batch([
 			{
 				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
@@ -152,24 +147,6 @@ const store = {
 				args: [id],
 			},
 		], 'write');
-	},
-
-	async getRecent({ columns = ['*'], limit = 100, sortBy = 'updated_at' } = {}) {
-		const order = sortBy === 'relevance' ? 'updated_at' : sortBy;
-		const rs = await db.client.execute({
-			sql: `
-				SELECT ${columns.join(', ')} FROM bookmark
-				ORDER BY ${order} DESC, updated_at DESC
-				LIMIT ?`,
-			args: [limit],
-		});
-
-		const totalCount = await db.getTotalCount();
-		return {
-			totalCount,
-			count: totalCount,
-			bookmarks: rs.rows.map(r => this._parse(r)),
-		};
 	},
 
 	async getTags() {
@@ -233,12 +210,11 @@ const store = {
 		sql += ` ORDER BY ${orderBy} LIMIT ?`;
 
 		const args = [...allParams, limit];
-		log.trace({ sql, args }, 'executing fts search query');
-
 		const rs = await db.client.execute({ sql, args });
+		const totalCount = await db.getTotalCount();
 		return {
-			count: rs.rows.length,
-			totalCount: await db.getTotalCount(),
+			count: allConditions.length > 0 ? rs.rows.length : totalCount,
+			totalCount,
 			bookmarks: rs.rows.map(r => this._parse(r)),
 		};
 	},

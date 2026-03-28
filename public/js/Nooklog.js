@@ -2,14 +2,14 @@ const Nooklog = {
 	net: new Network(window.location.origin + '/api'),
 
 	async load() {
-		const values = await this._get('config', {});
+		const values = await this._post('config/get', {});
 		this._saveConfig(values);
 		hub.emit('Nooklog:load', values);
 	},
 
 	async saveConfig(values) {
 		this._saveConfig(values);
-		await this._post('config', values);
+		await this._post('config/save', values);
 	},
 
 	_saveConfig(values) {
@@ -18,68 +18,44 @@ const Nooklog = {
 		bridge.emit('Nooklog:config', { config });
 	},
 
-	async getBookmark(id) {
-		return await this._get(`bookmarks/${id}`, null);
+	async find(ps) {
+		return await this._post('find', ps);
 	},
 
-	async findByUrl(url) {
-		return await this._get(`bookmarks?${qs({ url })}`, null);
-	},
-
-	async resolve({ id, url } = {}) {
-		return id ? await this.getBookmark(id) :
-			url ? await this.findByUrl(url) : null;
-	},
-
-	async getBookmarks({ sortBy } = {}) {
-		return await this._get(`bookmarks?${qs({
-			sortBy,
-			limit: 100, // トップページとして暫定的に表示する件数(最近のもの)
-		})}`, { count: 0, bookmarks: [] });
-	},
-
-	async search({ mode, tags, query, url, fields, sortBy }) {
-		return await this._get(`search?${qs({
-			mode, query, url, fields, sortBy,
+	async search(ps = {}) {
+		const data = {
 			limit: config['database.searchLimit'],
-			...this.separateRating(tags),
-		})}`, { count: 0, bookmarks: [] });
+			...ps,
+			...(ps.tags ? this.separateRating(ps.tags) : {}),
+		};
+		return await this._post('search', data, { count: 0, bookmarks: [] });
 	},
 
-	async updateBookmark(bookmark) {
-		const path = bookmark.id ? `bookmarks/${bookmark.id}` : 'bookmarks';
+	async save(bookmark) {
 		const data = {
 			...bookmark,
 			...(bookmark.tags ? this.separateRating(bookmark.tags, bookmark.rating) : {}),
 		};
-		return await this._post(path, data, null);
+		return await this._post('save', data, null);
 	},
 
-	async deleteBookmark(id) {
-		return await this.net.delete(`bookmarks/${id}`);
+	async delete(id) {
+		return await this.net.post('delete', { id });
 	},
 
 	async getTags() {
-		const tags = await this._get('tags', []);
+		const tags = await this._post('tags/get', []);
 		return config['client.ratingInputMode'] !== 'stars'
 			? tags.concat(['5', '4', '3', '2', '1', '0'])
 			: tags;
 	},
 
-	async generateMarkdown({ url, title, html }) {
-		return await this.net.post('markdown', { url, title, html }, {});
+	async getMarkdown({ url, title, html }) {
+		return await this.net.post('markdown/get', { url, title, html }, {});
 	},
 
-	async importBookmarks(file, options = {}) {
-		return await this.net.post(`import/bookmarks?${qs(options)}`, file);
-	},
-
-	async exportBookmarks(options = {}) {
-		return await this.net.get(`export/bookmarks?${qs(options)}`);
-	},
-
-	async _get(path, def) {
-		return this._populate(await this.net.get(path, def));
+	async import(file, options = {}) {
+		return await this.net.post(`import?${qs(options)}`, file);
 	},
 
 	async _post(path, data, def) {

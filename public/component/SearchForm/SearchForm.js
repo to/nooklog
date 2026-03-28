@@ -103,8 +103,9 @@ class SearchForm extends Component {
 
 		const query = this.getQuery();
 		const results = isEmpty(query)
-			? await Nooklog.getBookmarks({
+			? await Nooklog.search({
 				sortBy: this.els.sortBy.find(el => el.checked)?.value,
+				limit: 100,
 			})
 			: await Nooklog.search(query);
 		results.query = query;

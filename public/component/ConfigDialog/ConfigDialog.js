@@ -82,7 +82,7 @@ class ConfigDialog extends Component {
 					this.els.import.textContent = 'Importing...';
 
 					const folderTag = this.$('.folder-tag').value === 'true';
-					const { count } = await Nooklog.importBookmarks(file, { folderTag });
+					const { count } = await Nooklog.import(file, { folderTag });
 
 					const message = count > 0 ?
 						`Successfully imported ${count} bookmarks! ✨` :
@@ -103,7 +103,7 @@ class ConfigDialog extends Component {
 			const range = e.target.closest('.container').querySelector('.export-range').value;
 			const query = range === 'search' ? this.results?.query : {};
 
-			window.location.href = `${Nooklog.net.baseUrl}/export/bookmarks?${qs({ ...options, ...query })}`;
+			window.location.href = `${Nooklog.net.baseUrl}/export?${qs({ ...options, ...query })}`;
 			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
 		};
 
@@ -143,7 +143,7 @@ class ConfigDialog extends Component {
 		}
 
 		await Nooklog.saveConfig(config);
- 
+
 		this.els.dialog.close();
 	}
 
@@ -152,5 +152,5 @@ class ConfigDialog extends Component {
 		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider === provider));
 	}
 }
- 
+
 customElements.define('nl-config-dialog', ConfigDialog);

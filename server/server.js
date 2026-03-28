@@ -107,42 +107,35 @@ process.on('unhandledRejection', (reason, promise) => {
 
 /* ---- Nooklog ---- */
 
-app.get('/api/tags', handle(async (req, res, ps) => {
-	res.json(await nooklog.getTags());
-}));
-
-app.get('/api/search', handle(async (req, res, ps) => {
+app.post('/api/search', handle(async (req, res, ps) => {
 	res.json(await nooklog.search(ps));
 }));
 
-app.get('/api/bookmarks', handle(async (req, res, ps) => {
-	res.json(ps.url ?
-		await nooklog.findByUrl(ps.url) :
-		await nooklog.getRecent(ps));
+app.post('/api/find', handle(async (req, res, ps) => {
+	res.json(await nooklog.find(ps));
 }));
 
-app.get('/api/bookmarks/:id', handle(async (req, res, ps) => {
-	res.json(await nooklog.findById(ps.id));
-}));
-
-app.post('/api/bookmarks/:id?', handle(async (req, res, ps) => {
+app.post('/api/save', handle(async (req, res, ps) => {
 	// 新規作成の場合はURLが必須
 	if (!ps.id && !ps.url)
 		return res.status(400).json({ error: 'Missing id or url' });
 
-	res.json(await nooklog.upsert(ps));
+	res.json(await nooklog.save(ps));
 }));
 
-app.post('/api/import/bookmarks', express.text({ type: '*/*', limit: '500mb' }), handle(async (req, res, ps) => {
-	res.json(await nooklog.importBookmarks(req.body, ps));
-}));
+app.post('/api/delete', handle(async (req, res, ps) => {
+	if (!ps.id)
+		return res.status(400).json({ error: 'Missing id' });
 
-app.delete('/api/bookmarks/:id', handle(async (req, res, ps) => {
-	await nooklog.deleteById(ps.id);
+	await nooklog.delete(ps.id);
 	res.json({ success: true });
 }));
 
-app.get('/api/export/bookmarks', handle(async (req, res, ps) => {
+app.post('/api/import', express.text({ type: '*/*', limit: '500mb' }), handle(async (req, res, ps) => {
+	res.json(await nooklog.import(req.body, ps));
+}));
+
+app.get('/api/export', handle(async (req, res, ps) => {
 	const date = new Intl.DateTimeFormat('sv-SE').format(new Date());
 	if (ps.exportFormat === 'json') {
 		res.setHeader('Content-Disposition', `attachment; filename="nooklog-bookmarks-${date}.json"`);
@@ -159,18 +152,22 @@ app.get('/api/export/bookmarks', handle(async (req, res, ps) => {
 	}
 }));
 
-app.get('/api/alive', (req, res) => res.json({ alive: true }));
+app.post('/api/alive', (req, res) => res.json({ alive: true }));
 
-app.post('/api/markdown', handle(async (req, res, ps) => {
+app.post('/api/tags/get', handle(async (req, res, ps) => {
+	res.json(await nooklog.getTags());
+}));
+
+app.post('/api/markdown/get', handle(async (req, res, ps) => {
 	const { html, title, ...rest } = ingest.html.process(ps.url, ps.title, ps.html);
 	res.json(rest);
 }));
 
-app.get('/api/config', handle(async (req, res) => {
+app.post('/api/config/get', handle(async (req, res) => {
 	res.json(nooklog.getConfig());
 }));
 
-app.post('/api/config', handle(async (req, res) => {
+app.post('/api/config/save', handle(async (req, res) => {
 	nooklog.saveConfig(req.body);
 	res.json({ success: true });
 }));

@@ -43,24 +43,13 @@ const nooklog = {
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	},
 
-	async getRecent(options = {}) {
-		return await store.getRecent({
-			columns: DEFAULT_COLUMNS,
-			...options,
-		});
+	async find(ps) {
+		return await store.find({ ...ps, columns: DETAIL_COLUMNS });
 	},
 
-	async findById(id) {
-		return await store.findById(id, { columns: DETAIL_COLUMNS });
-	},
-
-	async findByUrl(url) {
-		return await store.findByUrl(url, { columns: DETAIL_COLUMNS });
-	},
-
-	async deleteById(id) {
-		const bookmark = await store.findById(id);
-		await store.deleteById(id);
+	async delete(id) {
+		const bookmark = await store.find({ id });
+		await store.delete(id);
 
 		if (bookmark)
 			await this._syncTagCache(bookmark.tags, []);
@@ -73,10 +62,8 @@ const nooklog = {
 		});
 	},
 
-	async upsert({ id, url, title, memo, rating, tags, html, markdown }) {
-		let bookmark = id ?
-			await store.findById(id) :
-			await store.findByUrl(url);
+	async save({ id, url, title, memo, rating, tags, html, markdown }) {
+		let bookmark = await store.find({ id, url });
 
 		const oldTags = bookmark?.tags || [];
 		const isNew = !bookmark;
@@ -124,7 +111,7 @@ const nooklog = {
 		}
 	},
 
-	async importBookmarks(content, options = {}) {
+	async import(content, options = {}) {
 		const bookmarks = ingest.bookmark.process(content, options);
 		const count = await store.import(bookmarks);
 
