@@ -4,6 +4,7 @@ import store from './store.js';
 import config from './config.js';
 import _ from './util.js';
 import baseLog from './log.js';
+import sentence from './sentence/index.js';
 
 const log = baseLog.child({ module: 'nooklog' });
 
@@ -244,6 +245,12 @@ const nooklog = {
 
 	isEdited(markdown) {
 		return markdown && markdown.endsWith(USER_MARK);
+	},
+
+	async dispose() {
+		log.info('disposing nooklog');
+		await sentence.dispose();
+		db.close();
 	},
 };
 

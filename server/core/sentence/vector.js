@@ -164,7 +164,7 @@ export const providers = {
 			return v.map(x => x / (norm || 1));
 		};
 
-		return wrapWithPrefix(model, options, async inputs => {
+		const engine = wrapWithPrefix(model, options, async inputs => {
 			const vecs = await Promise.all(inputs.map(t => {
 				// 最大サイズへ切り詰める
 				const tokens = llamaModel.tokenize(t);
@@ -174,6 +174,15 @@ export const providers = {
 			}));
 			return vecs.map(v => normalize(Array.from(v.vector)));
 		});
+
+		engine.dispose = async () => {
+			log.info('disposing llama context');
+			await context?.dispose();
+			await llamaModel?.dispose();
+			await llama?.dispose();
+		};
+
+		return engine;
 	},
 
 	// OpenAI Compatible API (Ollama, vLLM, OpenAI, etc.)
@@ -234,4 +243,9 @@ export const vector = {
 	model: config[`sentence.${provider}.model`],
 	dimension: sample.length,
 	threshold,
+};
+
+export const dispose = async () => {
+	if (engine.dispose)
+		await engine.dispose();
 };

@@ -135,13 +135,10 @@ const db = {
 		return rs.rows[0].count;
 	},
 
-	// ヘルパー: トランザクション (batchを使用)
-	async transaction(fn) {
-		// libSQLではJS関数を渡すtransaction()ではなく、batch()で一括実行するか、
-		// 自分でBEGIN/COMMITを管理する。ここでは安全のためbatchを介するパターンを想定。
-		return await fn(this.client);
+	close() {
+		log.info('closing database');
+		this.client?.close();
 	},
 };
 
-// initializeは非同期なので、呼び出し元で待機する必要がある（server.jsなど）
 export default db;

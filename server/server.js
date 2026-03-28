@@ -1,4 +1,9 @@
 import 'dotenv/config';
+
+// WindowsでPM2等によりデーモン起動した際、余計なコンソールウィンドウが出るのを抑制する
+if (process.stdin.isTTY)
+	process.stdin.unref();
+
 import _ from './core/util.js';
 import express from 'express';
 import { z } from 'zod';
@@ -21,7 +26,7 @@ const app = express();
 
 /* ---- Server ---- */
 
-// アプリケーションよりも先に記述する
+// アプリケーションよりサーバー機能を先に記述する
 app.set('json spaces', '\t');
 app.use(express.json({ limit: '500mb' }));
 
@@ -100,11 +105,6 @@ app.get('/component/:component/:name.html.js', async (req, res) => {
 	res.send(`window.${name}_html = \`${html}\`;`);
 });
 
-// 予期せぬエラーを捕捉し、プロセスの停止を防ぐ
-process.on('unhandledRejection', (reason, promise) => {
-	log.error({ error: reason, promise }, 'unhandled rejection');
-});
-
 /* ---- Nooklog ---- */
 
 app.post('/api/search', handle(async (req, res, ps) => {
@@ -172,8 +172,47 @@ app.post('/api/config/save', handle(async (req, res) => {
 	res.json({ success: true });
 }));
 
-app.listen(config['server.port'], async () => {
+const server = app.listen(config['server.port'], async () => {
 	log.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
+});
+
+// Graceful Shutdown
+let shutdown = async signal => {
+	shutdown = () => { };
+
+	log.info({ signal }, 'shutdown signal received');
+
+	try {
+		// HTTPサーバー停止を待つ
+		await new Promise(resolve => server.close(resolve));
+		log.info('http server closed');
+
+		// リソースの破棄(Llama/DB)
+		await nooklog.dispose();
+		log.info('nooklog disposed successfully');
+	} catch (error) {
+		log.error({ error }, 'error during disposal');
+	}
+
+	// 非同期ログの書き出しを待つ
+	setTimeout(() => process.exit(0), 500);
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+// PM2の停止メッセージを受信する
+process.on('message', msg => {
+	if (msg === 'shutdown')
+		shutdown('PM2 shutdown message');
+});
+
+// 予期せぬエラーでもクリーンアップを試みる
+process.on('uncaughtException', async error => {
+	log.error({ error }, 'uncaught exception');
+});
+process.on('unhandledRejection', (reason, promise) => {
+	log.error({ error: reason, promise }, 'unhandled rejection');
 });
 
 const arraySchema = z.array(z.string())

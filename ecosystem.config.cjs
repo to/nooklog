@@ -23,5 +23,9 @@ module.exports = {
 		},
 		// メモリ使用量が一定を超えたら再起動（念のため）
 		max_memory_restart: '4G',
+		// 終了時にクリーンアップを待つ時間 (ms)
+		kill_timeout: 5000,
+		// Windowsでメッセージ送出を有効にする
+		shutdown_with_message: true,
 	}],
 };
