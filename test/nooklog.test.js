@@ -4,7 +4,7 @@ import assert from 'node:assert';
 // USER_MARK の定義
 const USER_MARK = '\u200B';
 
-mock.module('../server/lib/database.js', {
+mock.module('../server/core/database.js', {
 	defaultExport: {
 		initialize: async () => { },
 		createBookmark: () => ({
@@ -23,7 +23,7 @@ mock.module('../server/lib/database.js', {
 	},
 });
 
-mock.module('../server/lib/store.js', {
+mock.module('../server/core/store.js', {
 	defaultExport: {
 		findById: id => ({
 			id: 'test-id',
@@ -40,7 +40,7 @@ mock.module('../server/lib/store.js', {
 });
 
 test('nooklog.js - upsert logic with USER_MARK', async t => {
-	const { default: nooklog } = await import('../server/lib/nooklog.js');
+	const { default: nooklog } = await import('../server/core/nooklog.js');
 
 	await t.test('ユーザー編集済みの Markdown は、編集されていない入力では上書きされないこと', async () => {
 		const input = {

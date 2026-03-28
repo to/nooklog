@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import sentence from '../../server/lib/sentence/index.js';
+import sentence from '../../server/core/sentence/index.js';
 
 test('Sentence Vector (Embedding) Verification', async t => {
 
@@ -15,8 +15,6 @@ test('Sentence Vector (Embedding) Verification', async t => {
 
 		assert.ok(Array.isArray(vec));
 		assert.strictEqual(typeof vec[0], 'number');
-
-		console.log(`✅ Query vector generated (dim: ${vec.length})`);
 	});
 
 	await t.test('embedDocument should return an array of vectors', async () => {
@@ -26,8 +24,6 @@ test('Sentence Vector (Embedding) Verification', async t => {
 		assert.strictEqual(vecs.length, 2);
 		assert.ok(Array.isArray(vecs[0]));
 		assert.strictEqual(vecs[0].length, 768);
-
-		console.log(`✅ Document vectors generated (count: ${vecs.length}, dim: ${vecs[0].length})`);
 	});
 
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import sentence from '../../server/lib/sentence/index.js';
+import sentence from '../../server/core/sentence/index.js';
 
 test('sentence.split() - Basic sentence splitting', () => {
 	const text = 'こんにちは。！！？。お元気ですか？はい、元気です。';

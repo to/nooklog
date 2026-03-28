@@ -69,10 +69,10 @@ const store = {
 
 		await db.client.batch(batch, 'write');
 
-		// ベクトルインデックスを更新
-		// await this.embed(bookmarks).catch(err => {
-		// 	log.error(err, 'failed to index vectors in background');
-		// });
+		// ベクトルインデックスを更新;
+		await this.embed(bookmarks).catch(err => {
+			log.error(err, 'failed to index vectors in background');
+		});
 	},
 
 	async embed(bookmarks) {

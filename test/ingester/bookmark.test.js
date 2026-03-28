@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { process } from '../../server/lib/ingest/bookmark.js';
+import { process } from '../../server/core/ingest/bookmark.js';
 
 test('ingest/bookmark.js - process', async t => {
 

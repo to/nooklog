@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import _ from './lib/util.js';
+import _ from './core/util.js';
 import express from 'express';
 import { z } from 'zod';
 
@@ -8,10 +8,10 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import AssetCache from 'express-asset-file-cache-middleware';
 
-import config from './lib/config.js';
-import nooklog from './lib/nooklog.js';
-import ingest from './lib/ingest/index.js';
-import baseLog from './lib/log.js';
+import config from './core/config.js';
+import nooklog from './core/nooklog.js';
+import ingest from './core/ingest/index.js';
+import baseLog from './core/log.js';
 import archiver from 'archiver';
 
 const log = baseLog.child({ module: 'server' });

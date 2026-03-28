@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import config from '../server/lib/config.js';
+import config from '../server/core/config.js';
 
 test('SQLite FTS Uni-gram Search Verification', async t => {
 	// テスト用にメモリDBを使用するように設定を上書き
 	config['server.data.path'] = ':memory:';
 
 	// 設定上書き後に動的インポートすることで、initialize() に反映させる
-	const { default: db } = await import('../server/lib/database.js');
-	const { default: store } = await import('../server/lib/store.js');
+	const { default: db } = await import('../server/core/database.js');
+	const { default: store } = await import('../server/core/store.js');
 
 	// 初期化待機
 	// (nooklog.js 以外のテストでは手動で呼ぶ必要がある)

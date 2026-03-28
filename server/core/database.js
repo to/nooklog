@@ -82,7 +82,7 @@ const db = {
 			await this.client.batch([
 				'DROP TABLE IF EXISTS bookmark_vector',
 				`CREATE TABLE bookmark_vector (
-					id INTEGER PRIMARY KEY,
+					row_id INTEGER PRIMARY KEY,
 					bookmark_id INTEGER,
 					chunk_index INTEGER,
 					field TEXT,
