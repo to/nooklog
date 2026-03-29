@@ -43,7 +43,6 @@
 	"web_accessible_resources": [
 		{
 			"resources": [
-				"public/*",
 				"content/content.js",
 				"content/frame.html",
 				"content/frame.js",

@@ -1,7 +1,9 @@
-class SettingPage {
+const $ = s => document.querySelector(s);
+
+class SettingForm {
 	constructor() {
 		this.els = {
-			form: $('#form-config'),
+			form: $('.SettingForm'),
 			error: $('#error'),
 		};
 
@@ -13,8 +15,8 @@ class SettingPage {
 		this.config = (await chrome.storage.local.get('config')).config || {};
 
 		const address = this.config['extension.serverAddress'];
-		if (await this._alive(address))
-			location.href = address + '/?setting=true';
+		if (address && await this._alive(address))
+			location.href = address.replace(/\/$/, '') + '/?setting=true';
 
 		this.els.form['extension.serverAddress'].value = address || '';
 	}
@@ -27,7 +29,8 @@ class SettingPage {
 	}
 
 	async _save() {
-		const address = this.els.form['extension.serverAddress'].value.trim();
+		let address = this.els.form['extension.serverAddress'].value.trim();
+		address = address.replace(/\/$/, '');
 
 		this.els.error.classList.add('none');
 
@@ -36,13 +39,14 @@ class SettingPage {
 			const values = { 'extension.serverAddress': address };
 			Object.assign(this.config, values);
 			await chrome.storage.local.set({ config: this.config });
-			await fetch(`${address}/api/config`, {
+
+			await fetch(`${address}/api/config/save`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(values),
 			}).catch(() => { });
 
-			location.href = address;
+			location.href = address + '/?setting=true';
 		} else {
 			this.els.error.classList.remove('none');
 		}
@@ -50,12 +54,13 @@ class SettingPage {
 
 	async _alive(address) {
 		try {
-			await fetch(`${address}/api/alive`, {
+			const res = await fetch(`${address.replace(/\/$/, '')}/api/alive`, {
+				method: 'POST',
 				signal: AbortSignal.timeout(1000),
 			});
-			return true;
+			return res.ok;
 		} catch { }
 	}
 }
 
-new SettingPage();
+new SettingForm();
