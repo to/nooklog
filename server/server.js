@@ -1,9 +1,4 @@
 import 'dotenv/config';
-
-// WindowsでPM2等によりデーモン起動した際、余計なコンソールウィンドウが出るのを抑制する
-if (process.stdin.isTTY)
-	process.stdin.unref();
-
 import express, { response } from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -13,6 +8,7 @@ import AssetCache from 'express-asset-file-cache-middleware';
 import config from './core/config.js';
 import nooklog from './core/nooklog.js';
 import baseLog from './core/log.js';
+import _ from './core/util.js';
 import { router } from './router.js';
 import { RPCHandler } from '@orpc/server/node';
 import { OpenAPIHandler } from '@orpc/openapi/node';
@@ -196,13 +192,14 @@ server.get('/openapi.json', async (req, res) => {
 
 /* ---- Server Lifecycle ---- */
 
+// pm2 restartによるSIGINTから 少し時間を置く
+if (process.env.restart_time > 0)
+	await _.wait(2000);
+
+await nooklog.initialize();
+
 const instance = server.listen(config['server.port'], async () => {
 	log.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
-
-	// pm2 restartによるSIGINTから 少し時間を置く
-	setTimeout(() => {
-		nooklog.initialize();
-	}, process.env.restart_time > 0 ? 2 * 1000 : 0);
 });
 
 // Graceful Shutdown
@@ -212,8 +209,9 @@ let shutdown = async signal => {
 	log.info({ signal }, 'shutdown signal received');
 
 	// HTTPサーバー停止を待つ
-	instance.closeAllConnections();
-	await new Promise(resolve => instance.close(resolve));
+	instance?.closeAllConnections();
+	if (instance)
+		await new Promise(resolve => instance.close(resolve));
 	log.info('http server closed');
 
 	// リソースの破棄(Llama/DB)

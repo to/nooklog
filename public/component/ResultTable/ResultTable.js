@@ -41,6 +41,8 @@ class ResultTable extends Component {
 					this._delete(id, row);
 				else if (button.classList.contains('tag'))
 					hub.emit('ResultTable:selectTag', button.textContent);
+				else if (button.classList.contains('host'))
+					hub.emit('ResultTable:selectHost', button.querySelector('img').title);
 				return;
 			}
 
@@ -92,13 +94,14 @@ class ResultTable extends Component {
 
 	_getRowHTML(r) {
 		const updatedAt = r.updated_at.toISOString().split('T')[0];
+		const host = this._getHostname(r.url);
 		return /* html */`
 		<div class="tr" data-id="${r.id}">
 			<div class="td col-rating">
 				<nl-rating data-rating="${r.rating}"></nl-rating>
 			</div>
 			<div class="td col-favicon">
-				<img src="/api/favicon?domain=${this._getHostname(r.url)}">
+				<button class="host flat"><img src="/api/favicon?domain=${host}" title="${host}"></button>
 			</div>
 			<div class="td col-content">
 				<div class="flex flex-col h-full gap-2s">

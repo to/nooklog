@@ -1,5 +1,5 @@
 import * as chunk from './chunk.js';
-import * as vector from './vector.js';
+import vector from './vector.js';
 
 // 日本語表記揺れの正規化
 const normalizeJp = text => (text || '')

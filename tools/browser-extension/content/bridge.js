@@ -88,8 +88,8 @@ globalThis.bridge = bridge;
 			if (!newValue || !key.includes(':message:'))
 				continue;
 
-			if (sessionId == SESSION_GLOBAL || key.startsWith(SESSION_GLOBAL) ||
-				key.startsWith(sessionId + 'message:')) {
+			// ワーカーなら全て受信、そうでなければ自分宛のみ
+			if (isWorker || key.startsWith(sessionId)) {
 				const { event, ...msg } = newValue;
 				bridge.emit(event, msg);
 				chrome.storage.local.remove(key);

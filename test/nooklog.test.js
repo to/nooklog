@@ -25,7 +25,7 @@ mock.module('../server/core/database.js', {
 
 mock.module('../server/core/store.js', {
 	defaultExport: {
-		findById: id => ({
+		find: ({ id }) => ({
 			id: 'test-id',
 			url: 'https://example.com',
 			title: 'Old Title',
@@ -49,7 +49,7 @@ test('nooklog.js - upsert logic with USER_MARK', async t => {
 			markdown: 'Fresh automatic content', // USER_MARK なし
 		};
 
-		const result = await nooklog.upsert(input);
+		const result = await nooklog.save(input);
 		assert.strictEqual(
 			result.markdown,
 			'User edited content' + USER_MARK,
@@ -64,7 +64,7 @@ test('nooklog.js - upsert logic with USER_MARK', async t => {
 			markdown: 'New manual edit' + USER_MARK, // USER_MARK あり
 		};
 
-		const result = await nooklog.upsert(input);
+		const result = await nooklog.save(input);
 		assert.strictEqual(
 			result.markdown,
 			'New manual edit' + USER_MARK,

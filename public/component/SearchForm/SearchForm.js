@@ -14,16 +14,17 @@ class SearchForm extends Component {
 
 		this.els.query.focus();
 
-		const ps = getSearchParams();
-		this.els.query.value = ps.query || '';
-		this.els.url.value = ps.url || '';
-
+		this.setQuery(getSearchParams());
 		this._search();
 	}
 
 	bindEvents() {
 		hub.on('ResultTable:selectTag', tag => {
 			this.els.tags.tagify.addTags([tag]);
+		});
+		hub.on('ResultTable:selectHost', host => {
+			this.els.url.value = host;
+			this._search();
 		});
 		hub.on('ConfigDialog:import', () => {
 			this.els.tags.refresh();
@@ -54,6 +55,8 @@ class SearchForm extends Component {
 		});
 
 		$.on(this.els.form, 'change', e => {
+			this._updateURL();
+
 			// 条件が空で検索対象を変更した場合、検索をスキップする
 			if (e.target.name === 'field') {
 				if (isEmpty(this.getQuery()))
@@ -86,20 +89,70 @@ class SearchForm extends Component {
 		const url = this.els.url.value;
 		const modes = this.els.mode.filter(el => el.checked).map(el => el.value);
 		const mode = (modes.length === 2 || modes.length === 0) ? 'hybrid' : modes[0];
+		const fields = this.els.fields.filter(el => el.checked).map(el => el.value);
+		const sortBy = this.els.sortBy.find(el => el.checked)?.value;
 
-		return (tags.length || query || url) ? {
+		return (tags.length || query || url || mode !== 'fts' || fields.length !== 2 || sortBy !== 'relevance') ? {
 			tags,
 			query,
 			url,
 			mode,
-			fields: this.els.fields.filter(el => el.checked).map(el => el.value),
-			sortBy: this.els.sortBy.find(el => el.checked)?.value,
+			fields,
+			sortBy,
 		} : {};
+	}
+
+	setQuery(ps) {
+		this.els.query.value = ps.query || '';
+		this.els.url.value = ps.url || '';
+
+		this.els.tags.tagify.removeAllTags();
+		if (ps.tags) {
+			const tags = typeof ps.tags === 'string' ? ps.tags.split(',') : ps.tags;
+			this.els.tags.tagify.addTags(tags);
+		}
+
+		if (ps.mode) {
+			this.els.mode.forEach(el => {
+				el.checked = (ps.mode === 'hybrid') || (el.value === ps.mode);
+			});
+		}
+
+		if (ps.fields) {
+			const fields = typeof ps.fields === 'string' ? ps.fields.split(',') : ps.fields;
+			this.els.fields.forEach(el => el.checked = fields.includes(el.value));
+		}
+
+		if (ps.sortBy) {
+			const el = this.els.sortBy.find(el => el.value === ps.sortBy);
+			if (el)
+				el.checked = true;
+		}
+	}
+
+	_updateURL() {
+		const query = this.getQuery();
+		const ps = { ...query };
+		if (ps.tags?.length)
+			ps.tags = ps.tags.join(',');
+		else
+			delete ps.tags;
+
+		if (ps.fields?.length)
+			ps.fields = ps.fields.join(',');
+		else
+			delete ps.fields;
+
+		const url = new URL(location);
+		url.search = isEmpty(ps) ? '' : qs(ps);
+		history.replaceState(null, '', url);
 	}
 
 	async _search() {
 		$.hide(this.els.count);
 		$.show(this.els.loading);
+
+		this._updateURL();
 
 		const query = this.getQuery();
 		const results = isEmpty(query)

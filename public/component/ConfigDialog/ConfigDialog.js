@@ -8,6 +8,9 @@ class ConfigDialog extends Component {
 			import: this.$('button.import'),
 		};
 		this.results = null;
+
+		// SearchFormで変更される前の値を保存する
+		this.autoOpen = getSearchParams().setting;
 	}
 
 	async ready() {
@@ -24,7 +27,7 @@ class ConfigDialog extends Component {
 				el.value = val;
 		}
 
-		if (getSearchParams().setting)
+		if (this.autoOpen)
 			this.els.dialog.showModal();
 
 		bridge.emit('ConfigDialog:shortcuts', {}, true);

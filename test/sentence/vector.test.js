@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import sentence from '../../server/core/sentence/index.js';
 
 test('Sentence Vector (Embedding) Verification', async t => {
+	await sentence.initialize();
 
 	const query = 'LLMの仕組みを知りたい';
 	const docs = [

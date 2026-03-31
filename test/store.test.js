@@ -9,9 +9,11 @@ test('SQLite FTS Uni-gram Search Verification', async t => {
 	// 設定上書き後に動的インポートすることで、initialize() に反映させる
 	const { default: db } = await import('../server/core/database.js');
 	const { default: store } = await import('../server/core/store.js');
+	const { default: sentence } = await import('../server/core/sentence/index.js');
 
 	// 初期化待機
 	// (nooklog.js 以外のテストでは手動で呼ぶ必要がある)
+	await sentence.initialize();
 	await db.initialize();
 
 	// クリーンアップ

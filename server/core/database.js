@@ -9,13 +9,13 @@ import sentence from './sentence/index.js';
 
 const log = baseLog.child({ module: 'database' });
 
-const db = {
+const database = {
 	client: null,
 
 	async initialize() {
 		let dbUrl = config['server.data.path'];
 		if (dbUrl !== ':memory:') {
-			const dbDir = path.join(config['server.data.path'], 'db');
+			const dbDir = path.join(config['server.data.path'], 'database');
 			if (!fs.existsSync(dbDir))
 				fs.mkdirSync(dbDir, { recursive: true });
 
@@ -70,13 +70,13 @@ const db = {
 	},
 
 	async initializeVectorTable() {
-		const currentModel = sentence.vector.model;
+		const currentModel = sentence.model;
 		const activeModel = await this.getMeta('vector_model');
 		if (activeModel !== currentModel) {
 			log.info({
 				from: activeModel || 'none',
 				to: currentModel,
-				dimension: sentence.vector.dimension,
+				dimension: sentence.dimension,
 			}, 'model changed, re-initializing vector table');
 
 			await this.client.batch([
@@ -88,7 +88,7 @@ const db = {
 					field TEXT,
 					content TEXT,
 					position INTEGER,
-					vector F32_BLOB(${sentence.vector.dimension}),
+					vector F32_BLOB(${sentence.dimension}),
 					FOREIGN KEY (bookmark_id) REFERENCES bookmark(row_id) ON DELETE CASCADE
 				)`,
 				'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
@@ -141,4 +141,4 @@ const db = {
 	},
 };
 
-export default db;
+export default database;

@@ -12,7 +12,6 @@ bridge.on('ConfigDialog:shortcuts', async msg => {
 	const commands = await chrome.commands.getAll();
 	bridge.emit('Background:shortcuts', {
 		shortcuts: commands,
-		sessionId: msg.sessionId,
 	}, true);
 });
 

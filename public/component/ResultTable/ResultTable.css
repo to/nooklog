@@ -1,7 +1,6 @@
 .ResultTable {
 	display: table;
 	width: 100%;
-	cursor: pointer;
 	border-collapse: collapse;
 
 	.tr {
@@ -76,14 +75,29 @@
 		font-size: var(--font-size-m);
 		line-height: var(--line-height-m);
 
-		img {
-			/* 予めサイズを指定し画像枠を確保する */
-			width: 16px;
-			height: 16px;
+		.host {
+			display: inline-block;
+			line-height: 0;
 			vertical-align: middle;
-			background-color: var(--color-bg-image);
+			cursor: pointer;
 			border-radius: var(--radius-s);
 			transform: translateY(calc(var(--font-size-m) * -0.1));
+
+			img {
+				/* 予めサイズを指定し画像枠を確保する */
+				width: 16px;
+				height: 16px;
+				background-color: var(--color-bg-image);
+				border-radius: var(--radius-s);
+			}
+
+			&:hover img {
+				filter: brightness(var(--hover-up));
+			}
+
+			&:active img {
+				filter: unset;
+			}
 		}
 	}
 

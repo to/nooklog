@@ -72,192 +72,195 @@ function wrapWithPrefix(model, options, execute) {
 	};
 }
 
-export const providers = {
-	// Transformers.js(ONNX)
-	// (embeddinggemma(fp16)/dmlなど組み合わせにより計算不能になることがあるので注意)
-	async transformers({
-		model = 'onnx-community/embeddinggemma-300m-ONNX',
-		dtype = 'q8',
-		device,
-		...options
-	} = {}) {
-		const { pipeline, env } = await import('@huggingface/transformers');
-
-		// Transformers.js 設定
-		env.cacheDir = config['sentence.cachePath'];
-		env.logLevel = 'error'; //  Transformers.js ログ(ダウンロード状況/キャッシュ確認)
-		env.backends.onnx.logLevel = 'error'; // ONNX Runtime ログ
-
-		const targetDevice = device || { win32: 'dml', darwin: 'coreml' }[process.platform] || 'cpu';
-		const logged = {};
-		const onProgress = p => {
-			if (p.status !== 'progress')
-				return;
-
-			const step = Math.floor(p.progress / 20) * 20;
-			if (step > (logged[p.file] || 0)) {
-				logged[p.file] = step;
-				log.info({ file: p.file, progress: step }, 'loading model file');
-			}
-		};
-
-		// 安定性を重視した設定
-		const extractor = await pipeline('feature-extraction', model, {
-			dtype,
-			device: targetDevice,
-			progress_callback: onProgress,
-			session_options: {
-				execution_providers: [targetDevice, 'cpu'],
-				enable_cpu_mem_arena: true, // メモリの効率化
-				enable_mem_reuse: true, // メモリの再利用
-				enable_mem_pattern: false, // メモリ計画(安定性重視)
-				execution_mode: 'sequential', // 逐次実行
-				log_severity_level: 4, // エラーのみ
-				extra: {
-					'session.set_denormal_as_zero': '1', // 浮動小数点演算を高速化
-					'session.disable_metacommands': '1', // 最適化を無効にして安定化
-				},
-			},
-		});
-
-		return wrapWithPrefix(model, options, async inputs => {
-			const out = await extractor(inputs, { pooling: 'mean', normalize: true, truncation: true });
-			return out.tolist();
-		});
-	},
-
-	// node-llama-cpp(GGUF/Native)
-	async llama({
-		model = 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
-		device = 'auto',
-		...options
-	} = {}) {
-		const { getLlama, createModelDownloader, LlamaLogLevel } = await import('node-llama-cpp');
-
-		const llama = await getLlama({
-			gpu: device,
-			// build: 'autoAttempt',
-			logLevel: LlamaLogLevel.error,
-			gpuOptions: { vmm: false },
-		});
-
-		if (device !== 'cpu' && llama.gpu === false)
-			log.warn({ requestedDevice: device }, 'GPU acceleration not available, falling back to CPU');
-
-		const modelPath = await (
-			await createModelDownloader({
-				modelUri: model,
-				dirPath: config['sentence.cachePath'],
-			})).download();
-		const llamaModel = await llama.loadModel({ modelPath });
-
-		const contextSize = 2048;
-		let context;
-		try {
-			context = await llamaModel.createEmbeddingContext({ contextSize: contextSize, flashAttention: true });
-		} catch (e) {
-			context = await llamaModel.createEmbeddingContext({ contextSize: contextSize });
-		}
-
-		const normalize = v => {
-			const norm = Math.sqrt(v.reduce((sum, x) => sum + x * x, 0));
-			return v.map(x => x / (norm || 1));
-		};
-
-		const engine = wrapWithPrefix(model, options, async inputs => {
-			const vecs = await Promise.all(inputs.map(t => {
-				// 最大サイズへ切り詰める
-				const tokens = llamaModel.tokenize(t);
-				if (tokens.length > contextSize)
-					t = llamaModel.detokenize(tokens.slice(0, contextSize - 16));
-				return context.getEmbeddingFor(t);
-			}));
-			return vecs.map(v => normalize(Array.from(v.vector)));
-		});
-
-		engine.dispose = async () => {
-			log.info('disposing llama context');
-			await context?.dispose();
-			await llamaModel?.dispose();
-			await llama?.dispose();
-		};
-
-		return engine;
-	},
-
-	// OpenAI Compatible API (Ollama, vLLM, OpenAI, etc.)
-	async openai({
-		model = 'embeddinggemma',
-		endpoint = 'http://localhost:11434/v1/embeddings',
-		apiKey = '',
-		...options
-	} = {}) {
-		return wrapWithPrefix(model, options, async inputs => {
-			const headers = { 'Content-Type': 'application/json' };
-			if (apiKey)
-				headers['Authorization'] = `Bearer ${apiKey}`;
-
-			const res = await fetch(endpoint, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify({ model, input: inputs }),
-			});
-			const data = await res.json();
-			return data.data.map(d => d.embedding);
-		});
-	},
-};
-
-// 指定されたプロバイダーで初期化
-let engine;
-export let embedQuery = (...args) => engine.embedQuery(...args);
-export let embedDocument = (...args) => engine.embedDocument(...args);
-
-export const vector = {
+const vector = {
+	engine: null,
 	model: '',
 	dimension: 0,
 	threshold: 0.5,
+
+	providers: {
+		// Transformers.js(ONNX)
+		async transformers({
+			model = 'onnx-community/embeddinggemma-300m-ONNX',
+			dtype = 'q8',
+			device,
+			...options
+		} = {}) {
+			const { pipeline, env } = await import('@huggingface/transformers');
+
+			env.cacheDir = config['sentence.cachePath'];
+			env.logLevel = 'error';
+			env.backends.onnx.logLevel = 'error';
+
+			const targetDevice = device || { win32: 'dml', darwin: 'coreml' }[process.platform] || 'cpu';
+			const logged = {};
+			const onProgress = p => {
+				if (p.status !== 'progress')
+					return;
+
+				const step = Math.floor(p.progress / 20) * 20;
+				if (step > (logged[p.file] || 0)) {
+					logged[p.file] = step;
+					log.info({ file: p.file, progress: step }, 'loading model file');
+				}
+			};
+
+			const extractor = await pipeline('feature-extraction', model, {
+				dtype,
+				device: targetDevice,
+				progress_callback: onProgress,
+				session_options: {
+					execution_providers: [targetDevice, 'cpu'],
+					enable_cpu_mem_arena: true,
+					enable_mem_reuse: true,
+					enable_mem_pattern: false,
+					execution_mode: 'sequential',
+					log_severity_level: 4,
+					extra: {
+						'session.set_denormal_as_zero': '1',
+						'session.disable_metacommands': '1',
+					},
+				},
+			});
+
+			return wrapWithPrefix(model, options, async inputs => {
+				const out = await extractor(inputs, { pooling: 'mean', normalize: true, truncation: true });
+				return out.tolist();
+			});
+		},
+
+		// node-llama-cpp(GGUF/Native)
+		async llama({
+			model = 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
+			device = 'auto',
+			...options
+		} = {}) {
+			const { getLlama, createModelDownloader, LlamaLogLevel } = await import('node-llama-cpp');
+
+			const llama = await getLlama({
+				gpu: device,
+				build: 'never',
+				logLevel: LlamaLogLevel.error,
+				gpuOptions: { vmm: false },
+			});
+
+			if (device !== 'cpu' && llama.gpu === false)
+				log.warn({ requestedDevice: device }, 'GPU acceleration not available, falling back to CPU');
+
+			const modelPath = await (
+				await createModelDownloader({
+					modelUri: model,
+					dirPath: config['sentence.cachePath'],
+				})).download();
+			const llamaModel = await llama.loadModel({ modelPath });
+
+			const contextSize = 2048;
+			let context;
+			try {
+				context = await llamaModel.createEmbeddingContext({ contextSize: contextSize, flashAttention: true });
+			} catch (e) {
+				context = await llamaModel.createEmbeddingContext({ contextSize: contextSize });
+			}
+
+			const normalize = v => {
+				const norm = Math.sqrt(v.reduce((sum, x) => sum + x * x, 0));
+				return v.map(x => x / (norm || 1));
+			};
+
+			const engine = wrapWithPrefix(model, options, async inputs => {
+				const vecs = await Promise.all(inputs.map(t => {
+					const tokens = llamaModel.tokenize(t);
+					if (tokens.length > contextSize)
+						t = llamaModel.detokenize(tokens.slice(0, contextSize - 16));
+					return context.getEmbeddingFor(t);
+				}));
+				return vecs.map(v => normalize(Array.from(v.vector)));
+			});
+
+			engine.dispose = async () => {
+				log.info('disposing llama context');
+				await context?.dispose();
+				await llamaModel?.dispose();
+				await llama?.dispose();
+			};
+
+			return engine;
+		},
+
+		// OpenAI Compatible API (Ollama, vLLM, OpenAI, etc.)
+		async openai({
+			model = 'embeddinggemma',
+			endpoint = 'http://localhost:11434/v1/embeddings',
+			apiKey = '',
+			...options
+		} = {}) {
+			return wrapWithPrefix(model, options, async inputs => {
+				const headers = { 'Content-Type': 'application/json' };
+				if (apiKey)
+					headers['Authorization'] = `Bearer ${apiKey}`;
+
+				const res = await fetch(endpoint, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify({ model, input: inputs }),
+				});
+				const data = await res.json();
+				return data.data.map(d => d.embedding);
+			});
+		},
+	},
+
+	async initialize() {
+		const provider = config['sentence.provider'] || 'llama';
+		this.engine = await this.providers[provider].call(this.providers, {
+			model: config[`sentence.${provider}.model`],
+			dtype: config[`sentence.${provider}.dtype`],
+			endpoint: config[`sentence.${provider}.url`],
+			apiKey: config[`sentence.${provider}.apiKey`],
+			device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
+			queryPrefix: config['sentence.queryPrefix'],
+			documentTitlePrefix: config['sentence.documentTitlePrefix'],
+			documentTextPrefix: config['sentence.documentTextPrefix'],
+		});
+
+		// Calibrate threshold dynamically
+		const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
+		const vecs = await Promise.all([
+			this.embedQuery('cat'),
+			this.embedDocument({ title: 'Animal', text: 'kitten' }),
+			this.embedQuery('A round fruit with red, yellow, or green skin and a whitish inside.'),
+			this.embedDocument({ title: 'Space exploration', text: 'The exploration of outer space using spacecraft, with or without a human crew.' }),
+		]);
+
+		const near = 1 - dot(vecs[0], vecs[1][0]);
+		const far = 1 - dot(vecs[2], vecs[3][0]);
+		const threshold = (near + far) / 2;
+		log.info({ near: near.toFixed(4), far: far.toFixed(4), threshold: threshold.toFixed(4) }, 'threshold calibrated');
+
+		const [sample] = await this.engine.embedDocument([{ title: '', text: ' ' }]);
+		Object.assign(this, {
+			model: config[`sentence.${provider}.model`],
+			dimension: sample.length,
+			threshold,
+		});
+	},
+
+	async embedQuery(query) {
+		if (!this.engine)
+			throw new Error('Sentence Vector engine not initialized. Call initialize() first.');
+		return this.engine.embedQuery(query);
+	},
+
+	async embedDocument(docs) {
+		if (!this.engine)
+			throw new Error('Sentence Vector engine not initialized. Call initialize() first.');
+		return this.engine.embedDocument(docs);
+	},
+
+	async dispose() {
+		if (this.engine?.dispose)
+			await this.engine.dispose();
+	},
 };
 
-export const initialize = async () => {
-	const provider = config['sentence.provider'] || 'llama';
-	engine = await providers[provider].call(providers, {
-		model: config[`sentence.${provider}.model`],
-		dtype: config[`sentence.${provider}.dtype`],
-		endpoint: config[`sentence.${provider}.url`],
-		apiKey: config[`sentence.${provider}.apiKey`],
-		device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
-		queryPrefix: config['sentence.queryPrefix'],
-		documentTitlePrefix: config['sentence.documentTitlePrefix'],
-		documentTextPrefix: config['sentence.documentTextPrefix'],
-	});
-
-	embedQuery = engine.embedQuery;
-	embedDocument = engine.embedDocument;
-
-	// Calibrate threshold dynamically
-	const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
-	const vecs = await Promise.all([
-		embedQuery('cat'),
-		embedDocument({ title: 'Animal', text: 'kitten' }),
-		embedQuery('A round fruit with red, yellow, or green skin and a whitish inside.'),
-		embedDocument({ title: 'Space exploration', text: 'The exploration of outer space using spacecraft, with or without a human crew.' }),
-	]);
-
-	const near = 1 - dot(vecs[0], vecs[1][0]);
-	const far = 1 - dot(vecs[2], vecs[3][0]);
-	const threshold = (near + far) / 2;
-	log.info({ near: near.toFixed(4), far: far.toFixed(4), threshold: threshold.toFixed(4) }, 'threshold calibrated');
-
-	const [sample] = await engine.embedDocument([{ title: '', text: ' ' }]);
-	Object.assign(vector, {
-		model: config[`sentence.${provider}.model`],
-		dimension: sample.length,
-		threshold,
-	});
-};
-
-export const dispose = async () => {
-	if (engine?.dispose)
-		await engine.dispose();
-};
+export default vector;
