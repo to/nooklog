@@ -209,43 +209,55 @@ export const providers = {
 };
 
 // 指定されたプロバイダーで初期化
-const provider = config['sentence.provider'] || 'llama';
-const engine = await providers[provider].call(providers, {
-	model: config[`sentence.${provider}.model`],
-	dtype: config[`sentence.${provider}.dtype`],
-	endpoint: config[`sentence.${provider}.url`],
-	apiKey: config[`sentence.${provider}.apiKey`],
-	device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
-	queryPrefix: config['sentence.queryPrefix'],
-	documentTitlePrefix: config['sentence.documentTitlePrefix'],
-	documentTextPrefix: config['sentence.documentTextPrefix'],
-});
+let engine;
+export let embedQuery = (...args) => engine.embedQuery(...args);
+export let embedDocument = (...args) => engine.embedDocument(...args);
 
-export const embedQuery = engine.embedQuery;
-export const embedDocument = engine.embedDocument;
-
-// Calibrate threshold dynamically
-const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
-const vecs = await Promise.all([
-	embedQuery('cat'),
-	embedDocument({ title: 'Animal', text: 'kitten' }),
-	embedQuery('A round fruit with red, yellow, or green skin and a whitish inside.'),
-	embedDocument({ title: 'Space exploration', text: 'The exploration of outer space using spacecraft, with or without a human crew.' }),
-]);
-
-const near = 1 - dot(vecs[0], vecs[1][0]);
-const far = 1 - dot(vecs[2], vecs[3][0]);
-const threshold = (near + far) / 2;
-log.info({ near: near.toFixed(4), far: far.toFixed(4), threshold: threshold.toFixed(4) }, 'threshold calibrated');
-
-const [sample] = await engine.embedDocument([{ title: '', text: ' ' }]);
 export const vector = {
-	model: config[`sentence.${provider}.model`],
-	dimension: sample.length,
-	threshold,
+	model: '',
+	dimension: 0,
+	threshold: 0.5,
+};
+
+export const initialize = async () => {
+	const provider = config['sentence.provider'] || 'llama';
+	engine = await providers[provider].call(providers, {
+		model: config[`sentence.${provider}.model`],
+		dtype: config[`sentence.${provider}.dtype`],
+		endpoint: config[`sentence.${provider}.url`],
+		apiKey: config[`sentence.${provider}.apiKey`],
+		device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
+		queryPrefix: config['sentence.queryPrefix'],
+		documentTitlePrefix: config['sentence.documentTitlePrefix'],
+		documentTextPrefix: config['sentence.documentTextPrefix'],
+	});
+
+	embedQuery = engine.embedQuery;
+	embedDocument = engine.embedDocument;
+
+	// Calibrate threshold dynamically
+	const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
+	const vecs = await Promise.all([
+		embedQuery('cat'),
+		embedDocument({ title: 'Animal', text: 'kitten' }),
+		embedQuery('A round fruit with red, yellow, or green skin and a whitish inside.'),
+		embedDocument({ title: 'Space exploration', text: 'The exploration of outer space using spacecraft, with or without a human crew.' }),
+	]);
+
+	const near = 1 - dot(vecs[0], vecs[1][0]);
+	const far = 1 - dot(vecs[2], vecs[3][0]);
+	const threshold = (near + far) / 2;
+	log.info({ near: near.toFixed(4), far: far.toFixed(4), threshold: threshold.toFixed(4) }, 'threshold calibrated');
+
+	const [sample] = await engine.embedDocument([{ title: '', text: ' ' }]);
+	Object.assign(vector, {
+		model: config[`sentence.${provider}.model`],
+		dimension: sample.length,
+		threshold,
+	});
 };
 
 export const dispose = async () => {
-	if (engine.dispose)
+	if (engine?.dispose)
 		await engine.dispose();
 };

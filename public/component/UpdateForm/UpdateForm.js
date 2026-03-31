@@ -62,7 +62,7 @@ class UpdateForm extends Component {
 		bridge.on('Bridge:restore:html', html => {
 			this.setBookmark(html);
 			this.fetch();
-			Nooklog.getMarkdown(this.getBookmark())
+			Nooklog.convertMarkdown(this.getBookmark())
 				.then(markdown => this.setBookmark(markdown));
 		});
 

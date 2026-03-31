@@ -1,15 +1,15 @@
 const Nooklog = {
-	net: new Network(window.location.origin + '/api'),
+	net: new Network(),
 
 	async load() {
-		const values = await this._post('config/get', {});
+		const values = await this.rpc('config/get');
 		this._saveConfig(values);
 		hub.emit('Nooklog:load', values);
 	},
 
 	async saveConfig(values) {
 		this._saveConfig(values);
-		await this._post('config/save', values);
+		await this.rpc('config/save', values);
 	},
 
 	_saveConfig(values) {
@@ -19,7 +19,7 @@ const Nooklog = {
 	},
 
 	async find(ps) {
-		return await this._post('find', ps);
+		return await this.rpc('find', ps);
 	},
 
 	async search(ps = {}) {
@@ -28,7 +28,7 @@ const Nooklog = {
 			...ps,
 			...(ps.tags ? this.separateRating(ps.tags) : {}),
 		};
-		return await this._post('search', data, { count: 0, bookmarks: [] });
+		return await this.rpc('search', data);
 	},
 
 	async save(bookmark) {
@@ -36,34 +36,35 @@ const Nooklog = {
 			...bookmark,
 			...(bookmark.tags ? this.separateRating(bookmark.tags, bookmark.rating) : {}),
 		};
-		return await this._post('save', data, null);
+		return await this.rpc('save', data, null);
 	},
 
 	async delete(id) {
-		return await this.net.post('delete', { id });
+		return await this.rpc('delete', { id });
 	},
 
 	async getTags() {
-		const tags = await this._post('tags/get', []);
+		const tags = await this.rpc('getTags');
 		return config['client.ratingInputMode'] !== 'stars'
 			? tags.concat(['5', '4', '3', '2', '1', '0'])
 			: tags;
 	},
 
-	async getMarkdown({ url, title, html }) {
-		return await this.net.post('markdown/get', { url, title, html }, {});
+	async convertMarkdown({ url, title, html }) {
+		return await this.rpc('convertMarkdown', { url, title, html });
 	},
 
 	async import(file, options = {}) {
-		return await this.net.post(`import?${qs(options)}`, file);
+		return await this.net.post(`/api/import?${qs(options)}`, file);
 	},
 
-	async _post(path, data, def) {
-		return this._populate(await this.net.post(path, data, def));
+	async rpc(path, data = {}, def = undefined) {
+		const res = await this.net.post('/rpc/' + path, { json: data }, def);
+		return this._populate(res?.json ?? res);
 	},
 
 	_populate(r) {
-		if (!r)
+		if (r == null)
 			return r;
 
 		if (Array.isArray(r))

@@ -1,4 +1,6 @@
 class Component extends HTMLElement {
+	static loaded = new Promise(resolve => hub.once('Nooklog:load', resolve));
+
 	constructor() {
 		super();
 
@@ -11,14 +13,16 @@ class Component extends HTMLElement {
 		if (template)
 			this.innerHTML = template;
 
-		const initialized = new Promise(resolve =>
-			requestAnimationFrame(async () => {
-				await this.initialize?.();
-				this.bindEvents?.();
-				resolve();
-			}));
-		hub.on('Nooklog:load', () =>
-			initialized.then(() => this.ready?.()));
+		Promise.all([
+			new Promise(resolve =>
+				// Web Componentの登録完了を待つ
+				requestAnimationFrame(async () => {
+					await this.initialize?.();
+					this.bindEvents?.();
+					resolve();
+				})),
+			Component.loaded,
+		]).then(() => this.ready?.());
 	}
 
 	$(sel) {

@@ -22,21 +22,13 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
-		// データベースの初期化をここで行う
+		await sentence.initialize();
 		await db.initialize();
 
 		// タグキャッシュの構築
 		const tags = await store.getTags();
 		tags.forEach(t => tagCache.add(t));
 		log.info({ count: tagCache.size }, 'tags loaded');
-	},
-
-	getConfig() {
-		return config;
-	},
-
-	saveConfig(values) {
-		config.save(values);
 	},
 
 	async getTags() {
@@ -49,11 +41,16 @@ const nooklog = {
 	},
 
 	async delete(id) {
+		if (!id)
+			throw new Error('Missing id');
+
 		const bookmark = await store.find({ id });
 		await store.delete(id);
 
 		if (bookmark)
 			await this._syncTagCache(bookmark.tags, []);
+
+		return bookmark;
 	},
 
 	async search(options = {}) {
@@ -64,6 +61,9 @@ const nooklog = {
 	},
 
 	async save({ id, url, title, memo, rating, tags, html, markdown }) {
+		if (!id && !url)
+			throw new Error('Missing id or url');
+
 		let bookmark = await store.find({ id, url });
 
 		const oldTags = bookmark?.tags || [];
@@ -254,6 +254,4 @@ const nooklog = {
 	},
 };
 
-// initializeは非同期だがトップレベルawaitで解決する
-await nooklog.initialize();
 export default nooklog;

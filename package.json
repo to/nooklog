@@ -40,7 +40,11 @@
 	"dependencies": {
 		"@huggingface/transformers": "^3.8.1",
 		"@libsql/client": "^0.17.0",
+		"@mjackson/lazy-file": "^3.4.0",
 		"@mozilla/readability": "^0.5.0",
+		"@orpc/openapi": "^1.13.9",
+		"@orpc/server": "^1.13.9",
+		"@orpc/zod": "^1.13.9",
 		"ai": "^6.0.23",
 		"archiver": "^7.0.1",
 		"cors": "^2.8.5",

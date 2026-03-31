@@ -5,7 +5,6 @@ module.exports = {
 		// punycode(express-asset-file-cache-middleware)の警告を抑制
 		node_args: ['--no-deprecation'],
 		watch: false,
-		// エラー時に自動再起動する設定
 		autorestart: true,
 		ignore_watch: [
 			'node_modules',
@@ -21,11 +20,9 @@ module.exports = {
 		env: {
 			NODE_ENV: 'development',
 		},
-		// メモリ使用量が一定を超えたら再起動（念のため）
-		max_memory_restart: '4G',
-		// 終了時にクリーンアップを待つ時間 (ms)
-		kill_timeout: 5000,
-		// Windowsでメッセージ送出を有効にする
-		shutdown_with_message: true,
+		shutdown_with_message: true, // 終了を受診する
+		kill_timeout: 3000, // ネイティブモジュール(llama.cppなど)の終了を待つ
+		restart_delay: 500, // 自動再起動の間隔
+		listen_timeout: 10000, // 正常起動とみなされるまでの時間
 	}],
 };

@@ -173,10 +173,17 @@
 
 			<div>
 				<label>Data Path</label>
-				<input type="text" name="server.data.path">
+				<input type="text" name="server.data.path" autocomplete="off">
 				<span class="description error none">Requires server restart. Changing the path will point to a different
 					data
 					location.</span>
+			</div>
+
+			<div>
+				<label>Password</label>
+				<input type="password" name="server.password" placeholder="No password (public)" autocomplete="new-password">
+				<span class="description">If set, Basic Authentication is enabled (User: any).
+					Requires page reload to prompt.</span>
 			</div>
 
 			<h2>Embedding</h2>
@@ -347,7 +354,14 @@
 				<span class="description">Export bookmarked content as Markdown(.md) files.<br />"Search" follows the current
 					search
 					filters.</span>
-				<span class="description"></span>
+			</div>
+
+			<div>
+				<label>API Reference</label>
+				<div class="flex items-center gap-m">
+					<a href="/openapi.html" target="_blank" class="button">Open OpenAPI UI (Scalar)</a>
+				</div>
+				<span class="description">Interactive API documentation (oRPC) powered by Scalar.</span>
 			</div>
 		</div>
 

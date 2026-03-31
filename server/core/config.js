@@ -27,6 +27,7 @@ let config = {
 	'extension.focusMemoOnSelection': false,
 	'server.port': 5050,
 	'server.data.path': path.join(os.homedir(), '.nooklog', 'data'),
+	'server.password': '',
 	'sentence.provider': 'llama', // 'llama', 'transformers', 'openai'
 	'sentence.device': 'auto',
 	'sentence.cachePath': path.join(os.homedir(), '.nooklog', 'data', '.cache'),

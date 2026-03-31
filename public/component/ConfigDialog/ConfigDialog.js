@@ -103,7 +103,8 @@ class ConfigDialog extends Component {
 			const range = e.target.closest('.container').querySelector('.export-range').value;
 			const query = range === 'search' ? this.results?.query : {};
 
-			window.location.href = `${Nooklog.net.baseUrl}/export?${qs({ ...options, ...query })}`;
+			// OpenAPI経由でダイレクトにダウンロードを行う
+			window.location.href = `${Network.baseUrl}/api/export?${qs({ ...options, ...query })}`;
 			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
 		};
 

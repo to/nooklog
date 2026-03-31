@@ -55,7 +55,6 @@ class SettingForm {
 	async _alive(address) {
 		try {
 			const res = await fetch(`${address.replace(/\/$/, '')}/api/alive`, {
-				method: 'POST',
 				signal: AbortSignal.timeout(1000),
 			});
 			return res.ok;

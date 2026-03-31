@@ -123,7 +123,7 @@ async function checkUrl(tab) {
 		try {
 			// ブックマーク済みかチェックする
 			const res = await fetch(
-				`${config['extension.serverAddress']}/api/bookmarks?url=${encodeURIComponent(url)}`);
+				`${config['extension.serverAddress']}/api/find?url=${encodeURIComponent(url)}`);
 			cache = { time: now, data: await res.json() };
 			checkedUrls.set(url, cache);
 		} catch {
