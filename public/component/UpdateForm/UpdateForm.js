@@ -140,7 +140,7 @@ class UpdateForm extends Component {
 		$.show(this.els.memo, true);
 		(this.isMini ? ['memo', 'markdown'] : ['preview', 'markdown'])
 			.forEach(mode => $.toggle(this.els[mode], mode === to));
-		this.els.modes.forEach(el => el.checked = (el.value === to));
+		$.check(this.els.modes, to);
 
 		this.resizeHandle.toggle(!this.isMini);
 

@@ -6,6 +6,8 @@ import { bench } from './util.js';
 const log = baseLog.child({ module: 'store' });
 
 const store = {
+	UNLIMITED: null,
+
 	async find({ id, url, columns = ['*'] } = {}) {
 		if (!id && !url)
 			return null;
@@ -207,9 +209,13 @@ const store = {
 		} else if (sortBy !== 'updated_at') {
 			orderBy = `${sortBy} DESC, updated_at DESC`;
 		}
-		sql += ` ORDER BY ${orderBy} LIMIT ?`;
+		sql += ` ORDER BY ${orderBy}`;
 
-		const args = [...allParams, limit];
+		let args = [...allParams];
+		if (limit !== null) {
+			sql += ' LIMIT ?';
+			args.push(limit);
+		}
 		const rs = await db.client.execute({ sql, args });
 		const totalCount = await db.getTotalCount();
 		return {
@@ -266,8 +272,10 @@ const store = {
 		else
 			sql += ` ORDER BY b.${sortBy} DESC, score`;
 
-		sql += ' LIMIT ?';
-		args.push(limit);
+		if (limit !== null) {
+			sql += ' LIMIT ?';
+			args.push(limit);
+		}
 
 		const rs = await db.client.execute({ sql, args });
 		return {
@@ -280,7 +288,7 @@ const store = {
 	async searchHybrid(ps) {
 		// 統合するために候補を多めに取得する
 		const { limit = 50, sortBy = 'relevance' } = ps;
-		const searchLimit = Math.floor(limit * 1.5);
+		const searchLimit = limit === null ? null : Math.floor(limit * 1.5);
 		const [fts, vec] = await Promise.all([
 			this.searchFTS({ ...ps, limit: searchLimit, sortBy: 'relevance' }),
 			this.searchVector({ ...ps, limit: searchLimit, sortBy: 'relevance' }),

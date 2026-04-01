@@ -83,7 +83,7 @@ class SearchForm extends Component {
 		this.els.count.textContent = '';
 	}
 
-	getQuery() {
+	getQuery(full = false) {
 		const tags = this.els.tags.getTags();
 		const query = this.els.query.value;
 		const url = this.els.url.value;
@@ -92,7 +92,7 @@ class SearchForm extends Component {
 		const fields = this.els.fields.filter(el => el.checked).map(el => el.value);
 		const sortBy = this.els.sortBy.find(el => el.checked)?.value;
 
-		return (tags.length || query || url || mode !== 'fts' || fields.length !== 2 || sortBy !== 'relevance') ? {
+		return (full || tags.length || query || url) ? {
 			tags,
 			query,
 			url,
@@ -112,40 +112,13 @@ class SearchForm extends Component {
 			this.els.tags.tagify.addTags(tags);
 		}
 
-		if (ps.mode) {
-			this.els.mode.forEach(el => {
-				el.checked = (ps.mode === 'hybrid') || (el.value === ps.mode);
-			});
-		}
-
-		if (ps.fields) {
-			const fields = typeof ps.fields === 'string' ? ps.fields.split(',') : ps.fields;
-			this.els.fields.forEach(el => el.checked = fields.includes(el.value));
-		}
-
-		if (ps.sortBy) {
-			const el = this.els.sortBy.find(el => el.value === ps.sortBy);
-			if (el)
-				el.checked = true;
-		}
+		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);
+		$.check(this.els.fields, ps.fields);
+		$.check(this.els.sortBy, ps.sortBy);
 	}
 
 	_updateURL() {
-		const query = this.getQuery();
-		const ps = { ...query };
-		if (ps.tags?.length)
-			ps.tags = ps.tags.join(',');
-		else
-			delete ps.tags;
-
-		if (ps.fields?.length)
-			ps.fields = ps.fields.join(',');
-		else
-			delete ps.fields;
-
-		const url = new URL(location);
-		url.search = isEmpty(ps) ? '' : qs(ps);
-		history.replaceState(null, '', url);
+		setSearchParams(this.getQuery(true));
 	}
 
 	async _search() {

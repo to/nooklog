@@ -10,9 +10,31 @@ $.observeResize = (el, fn) => {
 	new ResizeObserver(entries =>
 		requestAnimationFrame(() => fn(entries[0]))).observe(el);
 };
+$.check = (els, val) => {
+	if (val == null)
+		return;
+	const list = Array.isArray(val) ? val : String(val).split(',').filter(Boolean);
+	els.forEach(el => el.checked = list.includes(el.value));
+};
 
 const qs = obj => new URLSearchParams(obj).toString();
 const getSearchParams = () => Object.fromEntries(new URLSearchParams(location.search));
+
+const setSearchParams = (ps = {}) => {
+	const params = new URLSearchParams();
+	for (const [key, val] of Object.entries(ps)) {
+		if (val === undefined || val === null || val === '')
+			continue;
+
+		const str = Array.isArray(val) ? val.join(',') : val;
+		params.set(key, str);
+	}
+
+	const search = params.toString();
+	const url = new URL(location);
+	url.search = search ? '?' + search : '';
+	history.replaceState(null, '', url);
+};
 
 const _escapeEl = document.createElement('div');
 const sanitize = str => {
