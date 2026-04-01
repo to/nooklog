@@ -241,6 +241,8 @@ const vector = {
 		Object.assign(this, {
 			model: config[`sentence.${provider}.model`],
 			dimension: sample.length,
+			near,
+			far,
 			threshold,
 		});
 	},

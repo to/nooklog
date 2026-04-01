@@ -138,7 +138,7 @@ class SearchForm extends Component {
 
 		this.els.count.innerHTML = '<span class="icon">bookmark</span>' +
 			(results.bookmarks.length !== results.count ?
-				`${results.bookmarks.length} / ${results.count}` : results.count);
+				`${results.bookmarks.length} / ${results.count}` : `${results.count}+`);
 
 		$.hide(this.els.loading);
 		$.show(this.els.count);

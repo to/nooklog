@@ -135,6 +135,12 @@ const database = {
 		return rs.rows[0].count;
 	},
 
+	async count({ from, where, args }) {
+		const sql = `SELECT count(*) as count ${from} ${where ? `WHERE ${where}` : ''}`;
+		const rs = await this.client.execute({ sql, args });
+		return rs.rows[0].count;
+	},
+
 	close() {
 		log.info('closing database');
 		this.client?.close();

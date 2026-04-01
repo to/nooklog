@@ -191,10 +191,12 @@ const store = {
 		const hasFts = ftsConditions.length > 0;
 		const select = (hasFts ? columns.map(c => `b.${c}`) : columns).join(', ');
 
-		let sql = hasFts
-			? `SELECT ${select}, f.rank as score FROM bookmark b
-			   JOIN bookmark_fts f ON f.rowid = b.row_id`
-			: `SELECT ${select} FROM bookmark b`;
+		const selectSql = hasFts ? `${select}, f.rank as score` : select;
+		const fromSql = hasFts
+			? 'FROM bookmark b JOIN bookmark_fts f ON f.rowid = b.row_id'
+			: 'FROM bookmark b';
+
+		let sql = `SELECT ${selectSql} ${fromSql}`;
 
 		const allConditions = [...ftsConditions, ...conditions];
 		const allParams = [...ftsParams, ...params];
@@ -216,10 +218,21 @@ const store = {
 			sql += ' LIMIT ?';
 			args.push(limit);
 		}
+
 		const rs = await db.client.execute({ sql, args });
 		const totalCount = await db.getTotalCount();
+
+		let count = totalCount;
+		if (allConditions.length > 0) {
+			count = await db.count({
+				from: fromSql,
+				where: allConditions.join(' AND '),
+				args: allParams,
+			});
+		}
+
 		return {
-			count: allConditions.length > 0 ? rs.rows.length : totalCount,
+			count,
 			totalCount,
 			bookmarks: rs.rows.map(r => this._parse(r)),
 		};
@@ -266,6 +279,12 @@ const store = {
 			sql += ' WHERE ' + where.join(' AND ');
 
 		sql += ' GROUP BY b.id';
+
+		// エクスポート時は 適度な類似度で切り捨てる
+		if (limit === null) {
+			sql += ' HAVING score <= ?';
+			args.push(sentence.near * 0.2 + sentence.far * 0.8);
+		}
 
 		if (sortBy === 'relevance')
 			sql += ' ORDER BY score';

@@ -37,8 +37,10 @@ class ConfigDialog extends Component {
 	bindEvents() {
 		hub.on('SearchForm:search', results => {
 			this.results = results;
-			this.$$('.export-range option[value="all"]').forEach(el => el.textContent = `All (${results.totalCount})`);
-			this.$$('.export-range option[value="search"]').forEach(el => el.textContent = `Search (${results.count})`);
+			this.$$('.export-range option[value="all"]').forEach(el => el.textContent =
+				`All (${results.totalCount})`);
+			this.$$('.export-range option[value="search"]').forEach(el => el.textContent =
+				`Search (${results.count}${results.bookmarks.length === results.count ? '+' : ''})`);
 		});
 		$.on(this.els.open, 'click', () => this.els.dialog.showModal());
 		$.on(this.els.close, 'click', () => this.els.dialog.close());
