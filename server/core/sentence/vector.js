@@ -37,7 +37,7 @@ function wrapWithPrefix(model, options, execute) {
 
 	const embed = async inputs => {
 		const isArray = Array.isArray(inputs);
-		inputs = [].concat(inputs);
+		inputs = [].concat(inputs).map(s => s.trim());
 
 		// 偶発的なエラー(メモリ割り当て失敗など)に対処するため縮小リトライする
 		const results = [];
@@ -77,6 +77,7 @@ const vector = {
 	model: '',
 	dimension: 0,
 	threshold: 0.5,
+	contextSize: config['sentence.contextSize'] || 2048,
 
 	_createProgressReporter() {
 		const logged = {};
@@ -95,6 +96,7 @@ const vector = {
 			model = 'onnx-community/embeddinggemma-300m-ONNX',
 			dtype = 'q8',
 			device,
+			contextSize = 2048,
 			...options
 		} = {}) {
 			const { pipeline, env } = await import('@huggingface/transformers');
@@ -128,6 +130,11 @@ const vector = {
 				},
 			});
 
+			engine.contextSize = Math.min(contextSize,
+				extractor.tokenizer?.model_max_length ||
+				extractor.model?.config?.max_position_embeddings ||
+				Infinity);
+
 			const engine = wrapWithPrefix(model, options, async inputs => {
 				const out = await extractor(inputs, { pooling: 'mean', normalize: true, truncation: true });
 				return out.tolist();
@@ -145,6 +152,7 @@ const vector = {
 		async llama({
 			model = 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
 			device = 'auto',
+			contextSize = 2048,
 			...options
 		} = {}) {
 			const { getLlama, createModelDownloader, LlamaLogLevel } = await import('node-llama-cpp');
@@ -170,12 +178,12 @@ const vector = {
 			const modelPath = await downloader.download();
 			const llamaModel = await llama.loadModel({ modelPath });
 
-			const contextSize = 2048;
 			let context;
+			contextSize = Math.min(contextSize, llamaModel.trainContextSize || Infinity);
 			try {
-				context = await llamaModel.createEmbeddingContext({ contextSize: contextSize, flashAttention: true });
+				context = await llamaModel.createEmbeddingContext({ contextSize, flashAttention: true });
 			} catch (e) {
-				context = await llamaModel.createEmbeddingContext({ contextSize: contextSize });
+				context = await llamaModel.createEmbeddingContext({ contextSize });
 			}
 
 			const normalize = v => {
@@ -192,6 +200,7 @@ const vector = {
 				}));
 				return vecs.map(v => normalize(Array.from(v.vector)));
 			});
+			engine.contextSize = contextSize;
 
 			engine.dispose = async () => {
 				log.info('disposing llama context');
@@ -206,7 +215,7 @@ const vector = {
 		// OpenAI Compatible API (Ollama, vLLM, OpenAI, etc.)
 		async openai({
 			model = 'embeddinggemma',
-			endpoint = 'http://localhost:11434/v1/embeddings',
+			url = 'http://localhost:11434/v1/embeddings',
 			apiKey = '',
 			...options
 		} = {}) {
@@ -215,7 +224,7 @@ const vector = {
 				if (apiKey)
 					headers['Authorization'] = `Bearer ${apiKey}`;
 
-				const res = await fetch(endpoint, {
+				const res = await fetch(url, {
 					method: 'POST',
 					headers,
 					body: JSON.stringify({ model, input: inputs }),
@@ -231,13 +240,16 @@ const vector = {
 		this.engine = await this.providers[provider].call(this.providers, {
 			model: config[`sentence.${provider}.model`],
 			dtype: config[`sentence.${provider}.dtype`],
-			endpoint: config[`sentence.${provider}.url`],
+			url: config[`sentence.${provider}.url`],
 			apiKey: config[`sentence.${provider}.apiKey`],
 			device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
 			queryPrefix: config['sentence.queryPrefix'],
 			documentTitlePrefix: config['sentence.documentTitlePrefix'],
 			documentTextPrefix: config['sentence.documentTextPrefix'],
+			contextSize: this.contextSize,
 		});
+
+		this.contextSize = this.engine.contextSize || this.contextSize;
 
 		// Calibrate threshold dynamically
 		const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);

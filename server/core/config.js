@@ -40,6 +40,7 @@ let config = {
 	'sentence.openai.model': 'embeddinggemma',
 	'sentence.openai.url': 'http://localhost:11434/v1/embeddings',
 	'sentence.openai.apiKey': '',
+	'sentence.contextSize': 2048,
 	'database.searchLimit': 300,
 	'database.saveHTML': false,
 };

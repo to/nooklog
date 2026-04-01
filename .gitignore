@@ -1,4 +1,5 @@
 .env
+.env_node_options
 *.pem
 *.key
 id_rsa

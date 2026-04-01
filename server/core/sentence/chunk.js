@@ -3,9 +3,12 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
+import vector from './vector.js';
 
 export const chunkMarkdown = (md, {
-	targetSize = 900, limitSize = 2000, overlapSize = 50,
+	limitSize = vector.contextSize,
+	targetSize = Math.min(1024, Math.max(512, Math.floor(limitSize / 2))),
+	overlapSize = 50,
 } = {}) => {
 	// パラグラフ内にあるURLを除去する
 	md = md
@@ -253,9 +256,12 @@ export const split = text => {
 };
 
 const subChunk = (text, limitSize, i = 0) => {
-	const test = subTests[i];
-	if (!test || text.length <= limitSize)
+	if (text.length <= limitSize)
 		return [text];
+
+	const test = subTests[i];
+	if (!test)
+		return [text.slice(0, limitSize)];
 
 	return bundle(text, test, limitSize)
 		.flatMap(p => subChunk(p, limitSize, i + 1));
