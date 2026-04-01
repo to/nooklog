@@ -78,6 +78,17 @@ const vector = {
 	dimension: 0,
 	threshold: 0.5,
 
+	_createProgressReporter() {
+		const logged = {};
+		return (file, progress) => {
+			const step = Math.floor(progress / 20) * 20;
+			if (logged[file] === undefined || step > logged[file]) {
+				logged[file] = step;
+				log.info({ file, progress: step }, 'loading model file');
+			}
+		};
+	},
+
 	providers: {
 		// Transformers.js(ONNX)
 		async transformers({
@@ -93,16 +104,10 @@ const vector = {
 			env.backends.onnx.logLevel = 'error';
 
 			const targetDevice = device || { win32: 'dml', darwin: 'coreml' }[process.platform] || 'cpu';
-			const logged = {};
+			const reporter = vector._createProgressReporter();
 			const onProgress = p => {
-				if (p.status !== 'progress')
-					return;
-
-				const step = Math.floor(p.progress / 20) * 20;
-				if (step > (logged[p.file] || 0)) {
-					logged[p.file] = step;
-					log.info({ file: p.file, progress: step }, 'loading model file');
-				}
+				if (p.status === 'progress')
+					reporter(p.file, p.progress);
 			};
 
 			const extractor = await pipeline('feature-extraction', model, {
@@ -123,10 +128,17 @@ const vector = {
 				},
 			});
 
-			return wrapWithPrefix(model, options, async inputs => {
+			const engine = wrapWithPrefix(model, options, async inputs => {
 				const out = await extractor(inputs, { pooling: 'mean', normalize: true, truncation: true });
 				return out.tolist();
 			});
+
+			engine.dispose = async () => {
+				log.info('disposing transformers (onnx) context');
+				await extractor.dispose();
+			};
+
+			return engine;
 		},
 
 		// node-llama-cpp(GGUF/Native)
@@ -147,11 +159,15 @@ const vector = {
 			if (device !== 'cpu' && llama.gpu === false)
 				log.warn({ requestedDevice: device }, 'GPU acceleration not available, falling back to CPU');
 
-			const modelPath = await (
-				await createModelDownloader({
-					modelUri: model,
-					dirPath: config['sentence.cachePath'],
-				})).download();
+			const reporter = vector._createProgressReporter();
+			const downloader = await createModelDownloader({
+				modelUri: model,
+				dirPath: config['sentence.cachePath'],
+				onProgress: ({ downloadedSize, totalSize }) => {
+					reporter(model, (downloadedSize / totalSize) * 100);
+				},
+			});
+			const modelPath = await downloader.download();
 			const llamaModel = await llama.loadModel({ modelPath });
 
 			const contextSize = 2048;
