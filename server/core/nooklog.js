@@ -8,7 +8,7 @@ import sentence from './sentence/index.js';
 
 const log = baseLog.child({ module: 'nooklog' });
 
-let tagCache = new Set();
+let tagCache = null;
 
 const USER_MARK = '\u200B';
 const DEFAULT_COLUMNS = [
@@ -22,13 +22,39 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
+		await store.initialize();
 		await sentence.initialize();
 		await db.initialize();
+		store.backfill();
 
 		// タグキャッシュの構築
-		const tags = await store.getTags();
-		tags.forEach(t => tagCache.add(t));
-		log.info({ count: tagCache.size }, 'tags loaded');
+		if (!tagCache) {
+			tagCache = new Set(await store.getTags());
+			log.info({ count: tagCache.size }, 'tags loaded');
+		}
+	},
+
+	async dispose() {
+		log.info('disposing nooklog');
+		await store.dispose();
+		await sentence.dispose();
+		db.close();
+	},
+
+	getConfig() {
+		return config;
+	},
+
+	async setConfig(input) {
+		const oldModel = config[`sentence.${config['sentence.provider']}.model`];
+		config.save(input);
+
+		// モデルが変更されたらバックフィルなどの処理を開始する
+		const newModel = config[`sentence.${config['sentence.provider']}.model`];
+		if (newModel !== oldModel)
+			await this.initialize();
+
+		return config;
 	},
 
 	async getTags() {
@@ -245,12 +271,6 @@ const nooklog = {
 
 	isEdited(markdown) {
 		return markdown && markdown.endsWith(USER_MARK);
-	},
-
-	async dispose() {
-		log.info('disposing nooklog');
-		await sentence.dispose();
-		db.close();
 	},
 };
 

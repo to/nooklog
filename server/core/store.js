@@ -1,12 +1,21 @@
 import sentence from './sentence/index.js';
 import db from './database.js';
 import baseLog from './log.js';
-import { bench } from './util.js';
+import _, { bench } from './util.js';
+import queue from './queue.js';
 
 const log = baseLog.child({ module: 'store' });
 
 const store = {
 	UNLIMITED: null,
+
+	async initialize() {
+		await this.dispose();
+	},
+
+	async dispose() {
+		await this.backfillJob?.abort();
+	},
 
 	async find({ id, url, columns = ['*'] } = {}) {
 		if (!id && !url)
@@ -29,7 +38,6 @@ const store = {
 				...b,
 			};
 
-			// IDに基づき重複判定が必要なため、一度関連データを全て削除する (rowidの整合性を保つため)
 			batch.push({
 				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [data.id],
@@ -49,7 +57,6 @@ const store = {
 				],
 			});
 
-			// 最後にFTSに追加
 			batch.push({
 				sql: `
 					INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
@@ -67,57 +74,76 @@ const store = {
 		await db.client.batch(batch, 'write');
 
 		// ベクトルインデックスを更新;
-		await this.embed(bookmarks).catch(err => {
+		this.embed(bookmarks, { priority: 10 }).catch(err => {
 			log.error(err, 'failed to index vectors in background');
 		});
 	},
 
-	async embed(bookmarks) {
+	embed(bookmarks, { priority = 10 } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
-		for (const b of bookmarks) {
-			const data = { ...db.createBookmark(), ...b };
+		return queue.batch(bookmarks, async (slice, i, signal) => {
+			const batch = [];
+			for (const b of slice) {
+				const data = { ...db.createBookmark(), ...b };
 
-			// 既存のベクトルを削除
-			await db.client.execute({
-				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
-				args: [data.id],
-			});
+				batch.push({
+					sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
+					args: [data.id],
+				});
 
-			const memoChunks = sentence.split(data.memo);
-			const targets = [
-				{ field: 'title', title: data.title, position: 0 },
-				{ field: 'memo', text: data.memo, position: 0 },
-				...(memoChunks.length > 1 ? memoChunks.map(c => ({
-					field: 'memo',
-					text: c.text,
-					position: c.position,
-				})) : []),
-				...sentence.chunkMarkdown(data.markdown).map(c => ({
-					field: 'markdown',
-					title: c.titles.join(' > '),
-					text: c.text,
-					position: c.position.offset,
-				})),
-			].filter(t => t.text?.trim() || t.title?.trim());
+				const memoChunks = sentence.split(data.memo);
+				const targets = [
+					{ field: 'title', title: data.title, position: 0 },
+					{ field: 'memo', text: data.memo, position: 0 },
+					...(memoChunks.length > 1 ? memoChunks.map(c => ({
+						field: 'memo',
+						text: c.text,
+						position: c.position,
+					})) : []),
+					...sentence.chunkMarkdown(data.markdown).map(c => ({
+						field: 'markdown',
+						title: c.titles.join(' > '),
+						text: c.text,
+						position: c.position.offset,
+					})),
+				].filter(t => t.text?.trim() || t.title?.trim());
 
-			if (targets.length === 0)
-				continue;
+				if (targets.length === 0)
+					continue;
 
-			// ベクトル化 (タイトルと本文をセットで渡す)
-			const vectors = await sentence.embedDocument(targets);
-			const vectorBatch = targets.map((t, i) => ({
-				sql: `
+				// ベクトル化 (タイトルと本文をセットで渡す)
+				const vectors = await sentence.embedDocument(targets);
+				batch.push(...targets.map((t, i) => ({
+					sql: `
 					INSERT INTO bookmark_vector (
 						bookmark_id, chunk_index, field, content, position, vector
 					) VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, vector32(?))`,
-				args: [
-					data.id, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
-					JSON.stringify(vectors[i]),
-				],
-			}));
-			await db.client.batch(vectorBatch, 'write');
-		}
+					args: [
+						data.id, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
+						JSON.stringify(vectors[i]),
+					],
+				})));
+			}
+
+			await db.client.batch(batch, 'write');
+		}, { priority, size: 10, label: 'Embedding' });
+	},
+
+	async backfill() {
+		await this.backfillJob?.abort();
+
+		const rs = await db.client.execute(`
+			SELECT id, title, memo, markdown FROM bookmark
+			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
+			ORDER BY updated_at DESC`);
+
+		const bookmarks = rs.rows;
+		if (bookmarks.length === 0)
+			return;
+
+		log.info({ count: bookmarks.length }, 'backfilling missing vectors');
+		this.backfillJob = this.embed(bookmarks, { priority: 0 });
 	},
 
 	async import(bookmarks) {

@@ -130,15 +130,14 @@ const vector = {
 				},
 			});
 
-			engine.contextSize = Math.min(contextSize,
-				extractor.tokenizer?.model_max_length ||
-				extractor.model?.config?.max_position_embeddings ||
-				Infinity);
-
 			const engine = wrapWithPrefix(model, options, async inputs => {
 				const out = await extractor(inputs, { pooling: 'mean', normalize: true, truncation: true });
 				return out.tolist();
 			});
+			engine.contextSize = Math.min(contextSize,
+				extractor.tokenizer?.model_max_length ||
+				extractor.model?.config?.max_position_embeddings ||
+				Infinity);
 
 			engine.dispose = async () => {
 				log.info('disposing transformers (onnx) context');
@@ -236,6 +235,7 @@ const vector = {
 	},
 
 	async initialize() {
+		await this.dispose();
 		const provider = config['sentence.provider'] || 'llama';
 		this.engine = await this.providers[provider].call(this.providers, {
 			model: config[`sentence.${provider}.model`],

@@ -1,7 +1,8 @@
-// 軽度なUI状態の保存
-// (iframeと通常ページは別の設定になるためconfigを代替できない)
 const app = {
+	// 軽度なUI状態の保存
+	// (iframeと通常ページは別の設定になるためconfigを代替できない)
 	...JSON.parse(localStorage.getItem('ui') || '{}'),
+
 	set(key, value) {
 		this[key] = value;
 		localStorage.setItem('ui', JSON.stringify(this));
@@ -64,6 +65,16 @@ const bridge = {
 	},
 };
 
+const eventSource = new EventSource('/api/event');
+eventSource.onmessage = event => {
+	const msg = JSON.parse(event.data);
+	hub.emit(`Server:${msg.type}`, msg);
+};
+eventSource.onerror = error => eventSource.close();
+
+window.onerror = error => app.error(error);
+window.onunhandledrejection = event => app.error(event.reason);
+
 const matchingGrays = {
 	'tomato': 'mauve',
 	'red': 'mauve',
@@ -108,6 +119,3 @@ const updateTint = () => {
 	});
 	root.style.setProperty('--color-1', `var(--${tint}-11)`);
 };
-
-window.onerror = message => app.error(message);
-window.onunhandledrejection = event => app.error(event.reason);

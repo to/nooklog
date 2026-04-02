@@ -16,7 +16,7 @@ body {
 .area-main {
 	flex: 1;
 	min-width: 0;
-	padding: var(--_page-margin) 0;
+	padding: 0 0 var(--_page-margin) 0;
 	overflow-y: auto;
 
 	.ConfigDialog {
@@ -24,10 +24,13 @@ body {
 			width: var(--_page-margin);
 			height: var(--_page-margin);
 			padding: var(--space-2s);
-
-			/* アイコンを左上に寄せる */
-			margin-top: calc(var(--_page-margin) * -1);
 		}
+	}
+
+	.ProgressBar {
+		/* アイコンの高さに合わせる */
+		height: var(--font-size-l);
+		margin-bottom: var(--space-2s);
 	}
 }
 

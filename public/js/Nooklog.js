@@ -7,13 +7,13 @@ const Nooklog = {
 		hub.emit('Nooklog:load', values);
 	},
 
-	async saveConfig(values) {
-		this._saveConfig(values);
-		await this.rpc('config/save', values);
+	async saveConfig(input) {
+		this._saveConfig(input);
+		await this.rpc('config/save', input);
 	},
 
-	_saveConfig(values) {
-		Object.assign(config, values);
+	_saveConfig(input) {
+		Object.assign(config, input);
 		localStorage.config = JSON.stringify(config);
 		bridge.emit('Nooklog:config', { config });
 	},

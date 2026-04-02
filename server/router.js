@@ -1,13 +1,17 @@
 import { os } from '@orpc/server';
 import { z } from 'zod';
-import { oz } from '@orpc/zod';
+import { EventPublisher } from '@orpc/server';
 import archiver from 'archiver';
 import nooklog from './core/nooklog.js';
 import ingest from './core/ingest/index.js';
 import config from './core/config.js';
 import baseLog from './core/log.js';
-import { Readable } from 'node:stream';
-import { LazyFile } from '@mjackson/lazy-file';
+import hub from './core/hub.js';
+
+const publisher = new EventPublisher();
+hub.on('*', data => {
+	publisher.publish('message', data);
+});
 
 const log = baseLog.child({ module: 'router' });
 
@@ -186,19 +190,20 @@ export const router = {
 
 	config: {
 		get: os
-			.route({ method: 'GET', path: '/config/get' })
 			.output(z.unknown())
-			.handler(async () => {
-				return config;
-			}),
+			.handler(async () => nooklog.getConfig()),
 
 		save: os
-			.route({ method: 'POST', path: '/config/save' })
 			.input(z.unknown())
 			.output(z.unknown())
-			.handler(async ({ input }) => {
-				config.save(input);
-				return config;
-			}),
+			.handler(async ({ input }) => nooklog.setConfig(input)),
 	},
+
+	// 汎用的なSSEイベントストリーム
+	event: os
+		.route({ method: 'GET', path: '/event', tags: ['internal'] })
+		.handler(async function* ({ signal }) {
+			for await (const payload of publisher.subscribe('message', { signal }))
+				yield payload;
+		}),
 };

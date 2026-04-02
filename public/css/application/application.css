@@ -286,7 +286,7 @@ header {
 }
 
 header .icon,
-footer .icon{
+footer .icon {
 	font-size: var(--font-size-l);
 }
 

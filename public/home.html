@@ -23,12 +23,16 @@
 	<link rel="stylesheet" href="component/ConfigDialog/ConfigDialog.css">
 	<link rel="stylesheet" href="component/ResultTable/ResultTable.css">
 	<link rel="stylesheet" href="component/RatingInput/RatingInput.css">
+	<link rel="stylesheet" href="component/ProgressBar/ProgressBar.css">
 	<link rel="stylesheet" href="css/home.css">
 </head>
 
 <body>
 	<div class="area-main">
-		<nl-config-dialog></nl-config-dialog>
+		<header class="flex items-end">
+			<nl-config-dialog></nl-config-dialog>
+			<nl-progress-bar></nl-progress-bar>
+		</header>
 		<nl-search-form></nl-search-form>
 		<nl-result-table></nl-result-table>
 	</div>
@@ -52,6 +56,7 @@
 	<script src="js/Nooklog.js"></script>
 	<script src="component/ConfigDialog/ConfigDialog.html.js"></script>
 	<script src="component/ConfigDialog/ConfigDialog.js"></script>
+	<script src="component/ProgressBar/ProgressBar.js"></script>
 	<script src="component/SearchForm/SearchForm.html.js"></script>
 	<script src="component/SearchForm/SearchForm.js"></script>
 	<script src="component/ResultTable/ResultTable.js"></script>
