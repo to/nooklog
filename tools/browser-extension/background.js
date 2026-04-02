@@ -6,6 +6,34 @@ chrome.storage.local.get('config').then(r => {
 	registerMessagingBridge();
 });
 
+const tint = {
+	tomato: '#ef7253',
+	red: '#ed6f6a',
+	ruby: '#eb6c7c',
+	crimson: '#eb6a8e',
+	pink: '#e769b1',
+	plum: '#c673d2',
+	purple: '#b179e1',
+	violet: '#9883e3',
+	iris: '#8f86e8',
+	indigo: '#7a8de9',
+	blue: '#539ceb',
+	cyan: '#36acc6',
+	teal: '#05b69b',
+	jade: '#21b58b',
+	green: '#32b477',
+	grass: '#55ae65',
+	bronze: '#b09083',
+	gold: '#a6957c',
+	brown: '#b69174',
+	orange: '#eb8038',
+	amber: '#dda00b',
+	yellow: '#d2b12c',
+	lime: '#95ba53',
+	mint: '#3baf96',
+	sky: '#51a5ce',
+};
+
 import './content/bridge.js';
 
 bridge.on('ConfigDialog:shortcuts', async msg => {
@@ -135,15 +163,11 @@ async function checkUrl(tab) {
 
 async function setIcon(tabId, isBookmarked) {
 	try {
-		const tint = config['client.tint'] || 'grass';
-		const icon = isBookmarked ? `image/tint/${tint}_32.png` : 'image/tint/gray_32.png';
-		await chrome.action.setIcon({
-			tabId: tabId,
-			path: {
-				16: icon,
-				32: icon,
-			},
-		});
+		// console.log(config['client.tint']);
+		const color = tint[config['client.tint']] || tint.grass;
+		chrome.action.setBadgeText({ tabId, text: isBookmarked ? ' ' : '' });
+		if (isBookmarked)
+			chrome.action.setBadgeBackgroundColor({ tabId, color });
 	} catch {
 	}
 }

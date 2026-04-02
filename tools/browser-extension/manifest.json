@@ -25,13 +25,13 @@
 	},
 	"action": {
 		"default_icon": {
-			"16": "image/tint/gray_32.png",
-			"32": "image/tint/gray_32.png"
+			"16": "image/icon_32.png",
+			"32": "image/icon_32.png"
 		}
 	},
 	"icons": {
-		"16": "image/tint/gray_32.png",
-		"32": "image/tint/gray_32.png",
+		"16": "image/icon_32.png",
+		"32": "image/icon_32.png",
 		"48": "image/icon_48.png",
 		"128": "image/icon_128.png"
 	},
