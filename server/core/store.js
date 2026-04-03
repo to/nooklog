@@ -46,14 +46,15 @@ const store = {
 			batch.push({
 				sql: `
 					INSERT OR REPLACE INTO bookmark (
-						id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary
+						id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary, meta
 					) VALUES (
-						?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+						?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 					)`,
 				args: [
 					data.id, data.url, data.title, data.memo, data.rating,
 					JSON.stringify(data.tags || []),
 					data.created_at, data.updated_at, data.html, data.markdown, data.summary,
+					JSON.stringify(data.meta || {}),
 				],
 			});
 

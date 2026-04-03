@@ -33,6 +33,7 @@ const database = {
 		await this.client.execute('PRAGMA foreign_keys = ON');
 
 		await this.createTables();
+		await this.client.execute(`ALTER TABLE bookmark ADD COLUMN meta TEXT DEFAULT '{}'`).catch(() => { });
 		await this.initializeVectorTable();
 	},
 
@@ -50,7 +51,8 @@ const database = {
 				updated_at INTEGER,
 				html TEXT,
 				markdown TEXT,
-				summary TEXT
+				summary TEXT,
+				meta TEXT DEFAULT '{}' -- JSON object for management
 			)`,
 			`CREATE TABLE IF NOT EXISTS meta (
 				id TEXT PRIMARY KEY,
@@ -110,6 +112,7 @@ const database = {
 			summary: '',
 			html: '',
 			markdown: '',
+			meta: {},
 			created_at: now,
 			updated_at: now,
 		};

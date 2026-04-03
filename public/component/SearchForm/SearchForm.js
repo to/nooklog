@@ -136,9 +136,10 @@ class SearchForm extends Component {
 			: await Nooklog.search(query);
 		results.query = query;
 
-		this.els.count.innerHTML = '<span class="icon">bookmark</span>' +
-			(results.bookmarks.length !== results.count ?
-				`${results.bookmarks.length} / ${results.count}` : `${results.count}+`);
+		this.els.count.innerHTML = '<span class="icon">bookmark</span>' + (
+			(results.count === 0) ? '0' :
+				(results.bookmarks.length !== results.count ?
+					`${results.bookmarks.length} / ${results.count}` : `${results.count}+`));
 
 		$.hide(this.els.loading);
 		$.show(this.els.count);

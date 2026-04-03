@@ -14,7 +14,7 @@ export default [
 			},
 		},
 		rules: {
-			'quotes': ['error', 'single'],
+			'quotes': ['error', 'single', { 'avoidEscape': true, 'allowTemplateLiterals': true }],
 			'indent': ['error', 'tab', { 'ignoredNodes': ['TemplateLiteral *'] }],
 			'semi': ['error', 'always'],
 			'comma-dangle': ['error', 'always-multiline'],
