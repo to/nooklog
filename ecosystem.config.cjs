@@ -20,8 +20,9 @@ module.exports = {
 		env: {
 			NODE_ENV: 'development',
 		},
+		// ネイティブモジュール(llama.cppなど)やバッチジョブチャンクの終了を待つ
+		kill_timeout: 5000,
 		shutdown_with_message: true, // 終了を受診する
-		kill_timeout: 3000, // ネイティブモジュール(llama.cppなど)の終了を待つ
 		restart_delay: 500, // 自動再起動の間隔
 		listen_timeout: 10000, // 正常起動とみなされるまでの時間
 	}],

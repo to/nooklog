@@ -19,8 +19,10 @@ export const chunkMarkdown = (md, {
 		return [];
 
 	// CJK言語の場合チャンクサイズを半分にする
-	if (/[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uff9f]/.test(md.slice(0, targetSize)))
+	if (/[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uff9f]/.test(md.slice(0, targetSize))) {
 		targetSize = Math.floor(targetSize / 2);
+		overlapSize = Math.floor(overlapSize / 2);
+	}
 	const allowanceSize = targetSize * 1.4;
 
 	// 構造的に分割する
@@ -60,7 +62,7 @@ export const chunkMarkdown = (md, {
 		header._titles = breadcrumb.filter(Boolean);
 
 		if (header.type === 'heading')
-			breadcrumb[depth] = engine.stringify(header).replace(/^#+\s*/, '').trim();
+			breadcrumb[depth] = engine.stringify(header).trim();
 
 		if (header.type === 'yaml') {
 			c._text = c._text.replace(/^(url:|readerable:).+?\n/gm, '');
@@ -73,6 +75,7 @@ export const chunkMarkdown = (md, {
 
 	// Markdownテキストを決定する
 	chunks = chunks.map(c => {
+		// YAMLフロントマターはタイトルと重複するため捨てる
 		const header = c.children[0];
 		if (header.type === 'yaml')
 			return;

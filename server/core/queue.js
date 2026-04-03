@@ -15,31 +15,38 @@ export const batch = (list, task, {
 	const { signal } = controller;
 
 	const promise = (async () => {
-		for (let i = 0; i < list.length; i += size) {
-			// Early exit if the job was cancelled during the delay or previous task
-			if (signal.aborted)
-				return;
-
-			const slice = list.slice(i, i + size);
-			await queue.add(async () => {
-				// Prevent execution if the job was cancelled while waiting in the queue
+		try {
+			for (let i = 0; i < list.length; i += size) {
+				// Early exit if the job was cancelled during the delay or previous task
 				if (signal.aborted)
 					return;
 
-				await task(slice, i, signal);
-			}, { priority, signal });
+				const slice = list.slice(i, i + size);
+				await queue.add(async () => {
+					// Prevent execution if the job was cancelled while waiting in the queue
+					if (signal.aborted)
+						return;
 
-			if (list.length > size) {
-				hub.emit('progress', {
-					label,
-					value: Math.min(i + size, list.length),
-					total: list.length,
-				});
+					await task(slice, i, signal);
+				}, { priority });
+
+				if (list.length > size) {
+					hub.emit('progress', {
+						label,
+						value: Math.min(i + size, list.length),
+						total: list.length,
+					});
+				}
+
+				// Yield control to let other high-priority tasks (e.g. saves) slip into the queue
+				if (i + size < list.length)
+					await wait(interval);
 			}
+		} catch (err) {
+			if (err.name === 'AbortError')
+				return;
 
-			// Yield control to let other high-priority tasks (e.g. saves) slip into the queue
-			if (i + size < list.length)
-				await wait(interval);
+			throw err;
 		}
 	})();
 

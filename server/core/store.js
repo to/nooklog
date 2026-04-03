@@ -92,22 +92,32 @@ const store = {
 					args: [data.id],
 				});
 
-				const memoChunks = sentence.split(data.memo);
-				const targets = [
+				let targets = [
 					{ field: 'title', title: data.title, position: 0 },
 					{ field: 'memo', text: data.memo, position: 0 },
-					...(memoChunks.length > 1 ? memoChunks.map(c => ({
+				];
+
+				// H2以上の見出しをタイトルにする
+				targets.push(...sentence.chunkMarkdown(data.markdown).map(c => ({
+					field: 'markdown',
+					title: c.titles
+						.filter(t => t.startsWith('##'))
+						.map(t => t.replace(/^#+\s*/, ''))
+						.join(' > '),
+					text: c.text,
+					position: c.position.offset,
+				})));
+
+				const memoChunks = sentence.split(data.memo);
+				if (memoChunks.length > 1) {
+					targets.push(...memoChunks.map(c => ({
 						field: 'memo',
 						text: c.text,
 						position: c.position,
-					})) : []),
-					...sentence.chunkMarkdown(data.markdown).map(c => ({
-						field: 'markdown',
-						title: c.titles.join(' > '),
-						text: c.text,
-						position: c.position.offset,
-					})),
-				].filter(t => t.text?.trim() || t.title?.trim());
+					})));
+				}
+
+				targets = targets.filter(t => t.text?.trim() || t.title?.trim());
 
 				if (targets.length === 0)
 					continue;
