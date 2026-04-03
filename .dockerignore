@@ -1,0 +1,10 @@
+data/
+node_modules/
+.git/
+.agent/
+logs/
+work/
+dist/
+electron/dist/
+*.db
+nooklog.config.json

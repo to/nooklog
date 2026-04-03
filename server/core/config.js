@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONFIG_PATH = path.join(__dirname, '../../nooklog.config.json');
 
 // デフォルト設定
+const defaultDataPath = process.env.NOOKLOG_DATA_PATH || path.join(os.homedir(), '.nooklog', 'data');
 let config = {
 	'client.theme': 'system', // 'light', 'dark', 'system'
 	'client.tint': 'grass', // 'red', 'pink', etc.
@@ -26,11 +27,11 @@ let config = {
 	'extension.openSearchInForeground': true,
 	'extension.focusMemoOnSelection': false,
 	'server.port': 5050,
-	'server.data.path': path.join(os.homedir(), '.nooklog', 'data'),
+	'server.data.path': defaultDataPath,
 	'server.password': '',
 	'sentence.provider': 'llama', // 'llama', 'transformers', 'openai'
 	'sentence.device': 'auto',
-	'sentence.cachePath': path.join(os.homedir(), '.nooklog', 'data', '.cache'),
+	'sentence.cachePath': path.join(defaultDataPath, '.cache'),
 	'sentence.queryPrefix': '', // 空文字ならプリセットを使用
 	'sentence.documentTitlePrefix': '', // 空文字ならプリセットを使用
 	'sentence.documentTextPrefix': '', // 空文字ならプリセットを使用

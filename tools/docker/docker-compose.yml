@@ -1,0 +1,15 @@
+services:
+  nooklog:
+    image: nooklog-app
+    build:
+      context: ../..
+      dockerfile: tools/docker/Dockerfile
+    container_name: nooklog-app
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ../../data:/app/data
+    environment:
+      - NODE_ENV=production
+      - NOOKLOG_DATA_PATH=/app/data
