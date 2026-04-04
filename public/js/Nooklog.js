@@ -22,6 +22,14 @@ const Nooklog = {
 		return await this.rpc('find', ps);
 	},
 
+	async pop(ps) {
+		return await this.rpc('pop', ps);
+	},
+
+	async stash(ps) {
+		return await this.rpc('stash', ps);
+	},
+
 	async search(ps = {}) {
 		const data = {
 			limit: config['database.searchLimit'],
@@ -48,10 +56,6 @@ const Nooklog = {
 		return config['client.ratingInputMode'] !== 'stars'
 			? tags.concat(['5', '4', '3', '2', '1', '0'])
 			: tags;
-	},
-
-	async convertMarkdown({ url, title, html }) {
-		return await this.rpc('convertMarkdown', { url, title, html });
 	},
 
 	async import(file, options = {}) {

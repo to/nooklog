@@ -173,18 +173,39 @@ export const router = {
 			return await nooklog.getTags();
 		}),
 
+	stash: os
+		.route({
+			method: 'POST',
+			path: '/stash',
+			tags: ['internal'],
+		})
+		.input(z.any())
+		.handler(async ({ input }) => {
+			await nooklog.stash(input);
+		}),
+
+	pop: os
+		.route({
+			method: 'POST',
+			path: '/pop',
+			tags: ['internal'],
+		})
+		.input(z.any())
+		.handler(async ({ input }) => {
+			return await nooklog.pop(input);
+		}),
+
 	convertMarkdown: os
 		.route({ method: 'POST', path: '/markdown/convert' })
 		.input(z.object({
 			url: z.string().optional(),
-			title: z.string().optional(),
 			html: z.string(),
 		}))
 		.output(z.object({
 			markdown: z.string(),
 		}))
 		.handler(async ({ input }) => {
-			const { html, title, ...rest } = ingest.html.process(input.url, input.title, input.html);
+			const { html, ...rest } = ingest.html.process(input.url, input.html);
 			return rest;
 		}),
 

@@ -36,7 +36,8 @@ class UpdateForm extends Component {
 
 		this.setBookmark(getSearchParams());
 
-		bridge.emit('UpdateForm:restore');
+		Nooklog.pop(getSearchParams())
+			.then(b => this.setBookmark(b));
 	}
 
 	ready() {
@@ -53,17 +54,6 @@ class UpdateForm extends Component {
 			this.closeOnSave = false;
 			this.clear();
 			this.setBookmark(bookmark);
-		});
-
-		bridge.on('Bridge:restore:empty', () => this.fetch());
-
-		bridge.on('Bridge:restore:bookmark', b => this.setBookmark(b));
-
-		bridge.on('Bridge:restore:html', html => {
-			this.setBookmark(html);
-			this.fetch();
-			Nooklog.convertMarkdown(this.getBookmark())
-				.then(markdown => this.setBookmark(markdown));
 		});
 
 		bridge.on('Content:select', msg => {
@@ -155,12 +145,6 @@ class UpdateForm extends Component {
 		this.els.preview.innerHTML = app.renderMarkdown(this.els.markdown.value);
 	}
 
-	fetch() {
-		Nooklog.find(this.getBookmark())
-			.then(b => this.setBookmark(b))
-			.catch(e => app.error(e));
-	}
-
 	clear() {
 		['id', 'url', 'title', 'rating', 'memo', 'markdown', 'html'].forEach(k => {
 			this.els[k].value = '';
@@ -169,19 +153,12 @@ class UpdateForm extends Component {
 		this.bookmark = {};
 	}
 
-	// リクエストパラメーター/HTML/編集途中データ/Madkdown/既存データ が集積される
+	// リクエスト基本パラメーター/既存データ/編集途中データ
 	setBookmark(bookmark) {
 		if (!bookmark)
 			return;
 
-		// ユーザ編集データ > 現在データ > 旧データ の優先順位で上書きする
-		// (idがあるもの = 既存データ)
-		if (bookmark.markdown) {
-			if (!this.els.markdown.value || this.isEdited(bookmark.markdown) || !bookmark.id)
-				this.els.markdown.value = bookmark.markdown;
-		}
-
-		['id', 'url', 'title', 'rating', 'memo', 'html'].forEach(k => {
+		['id', 'url', 'title', 'rating', 'memo', 'html', 'markdown'].forEach(k => {
 			if (bookmark[k] != null)
 				this.els[k].value = bookmark[k];
 		});
@@ -234,7 +211,7 @@ class UpdateForm extends Component {
 
 	async detach() {
 		// 編集内容を保存する
-		bridge.emit('UpdateForm:save:bookmark', this.getBookmark());
+		await Nooklog.stash(this.getBookmark());
 		bridge.emit('UpdateForm:detach', {}, true);
 	}
 
@@ -269,10 +246,6 @@ class UpdateForm extends Component {
 		return markdown.replace(
 			new RegExp(`${UpdateForm.USER_MARK}?$`),
 			UpdateForm.USER_MARK);
-	}
-
-	isEdited(markdown) {
-		return markdown && markdown.endsWith(UpdateForm.USER_MARK) && (markdown.length > 1);
 	}
 
 	_normalizeText(text) {

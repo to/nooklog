@@ -51,27 +51,6 @@ globalThis.bridge = bridge;
 		chrome.storage.local.set({ config: msg.config });
 	});
 
-	['Content:save:html', 'UpdateForm:save:bookmark'].forEach(event => {
-		bridge.on(event, msg => {
-			msg.label = event.split(':').pop();
-			chrome.storage.local.set({ [sessionId + 'data']: msg });
-		}, true);
-	});
-
-	bridge.on('UpdateForm:restore', msg => {
-		const key = sessionId + 'data';
-		chrome.storage.local.get(key, items => {
-			const data = items[key];
-			if (!data)
-				return bridge.emit('Bridge:restore:empty');
-
-			const label = data.label;
-			delete data.label;
-			bridge.emit(`Bridge:restore:${label}`, data);
-			chrome.storage.local.remove(key);
-		});
-	});
-
 	// メッセージを転送する
 	bridge.on('Bridge:transfer', msg => {
 		chrome.storage.local.set({
@@ -80,6 +59,7 @@ globalThis.bridge = bridge;
 	}, true);
 
 	// メッセージを受信する
+	// (サービスワーカーも起動される)
 	chrome.storage.onChanged.addListener((changes, area) => {
 		if (area !== 'local' || !sessionId)
 			return;

@@ -8,6 +8,8 @@ import sentence from './sentence/index.js';
 
 const log = baseLog.child({ module: 'nooklog' });
 
+const stashMap = new Map();
+
 let tagCache = null;
 
 const USER_MARK = '\u200B';
@@ -65,6 +67,31 @@ const nooklog = {
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
 	},
 
+	async stash(b) {
+		stashMap.set(b.url, b);
+	},
+
+	async pop(b) {
+		b = stashMap.get(b.url) || b;
+		stashMap.delete(b.url);
+
+		// 初回のpopか？
+		if (b.memo == null)
+			b = { ...await this.find(b), ...b };
+
+		if (b.html) {
+			// 不要なタグを取り除き最新のHTMLに更新する
+			const processed = ingest.html.process(b.url, b.html);
+			b.html = processed.html;
+
+			// ユーザー編集がされていない場合 最新のMarkdownに更新する
+			if (!this.isEdited(b.markdown))
+				b.markdown = processed.markdown;
+		}
+
+		return b;
+	},
+
 	async find(ps) {
 		return await store.find({ ...ps, columns: DETAIL_COLUMNS });
 	},
@@ -107,7 +134,7 @@ const nooklog = {
 			bookmark.markdown = markdown || '';
 
 		if (html) {
-			const processed = ingest.html.process(url, title, html);
+			const processed = ingest.html.process(url, html);
 			bookmark.html = processed.html;
 			if (!this.isEdited(bookmark.markdown))
 				bookmark.markdown = processed.markdown;

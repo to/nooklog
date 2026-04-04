@@ -112,7 +112,7 @@ turndown.addRule('smartLink', {
 	},
 });
 
-export function process(url, title, html) {
+export function process(url, html) {
 	try {
 		url = normalizeUrl(url, { stripHash: true });
 	} catch (e) {
@@ -171,11 +171,8 @@ export function process(url, title, html) {
 		}
 	}
 
-	// ユーザー指定のタイトルを最優先する
-	page.title = title || page.title || '';
 	return {
-		title: page.title,
-		html: html,
+		html,
 		markdown: generateMarkdown(page),
 	};
 }

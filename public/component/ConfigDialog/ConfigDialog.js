@@ -31,7 +31,8 @@ class ConfigDialog extends Component {
 			this.els.dialog.showModal();
 
 		bridge.emit('ConfigDialog:shortcuts', {}, true);
-		this._updateVisibility();
+		this._updateBookmarklet();
+		this._updateSentenceProviderVisibility();
 	}
 
 	bindEvents() {
@@ -61,7 +62,10 @@ class ConfigDialog extends Component {
 			}
 
 			if (name === 'sentence.provider')
-				this._updateVisibility();
+				this._updateSentenceProviderVisibility();
+
+			if (name === 'client.windowPosition' || name === 'extension.serverAddress')
+				this._updateBookmarklet();
 
 			const isDirty = this._getValue(e.target) != config[name];
 			$.toggle(e.target.closest('.grid > div')?.querySelector('.error'), isDirty);
@@ -153,9 +157,20 @@ class ConfigDialog extends Component {
 		this.els.dialog.close();
 	}
 
-	_updateVisibility() {
+	_updateSentenceProviderVisibility() {
 		const provider = this.$('input[name="sentence.provider"]:checked')?.value;
 		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider === provider));
+	}
+
+	_updateBookmarklet() {
+		const server = this.els.form['extension.serverAddress'].value.replace(/\/$/, '');
+		const isTopRight = this.$('input[name="client.windowPosition"]:checked')?.value === 'top-right';
+
+		const code = `javascript:(function(server='${server.replace(/\/$/, '')}',isTopRight=${isTopRight}){const width=500,height=480,left=screen.availLeft+screen.availWidth-width-30,top=isTopRight?screen.availTop+8:screen.availTop+screen.availHeight-height-2,query=\`url=\${encodeURIComponent(location.href)}&title=\${encodeURIComponent(document.title)}\`,features=\`width=\${width},height=\${height},left=\${left},top=\${top},toolbar=0,menubar=0,location=0,status=0,scrollbars=1,resizable=1\`;window.open(\`\${server}/update.html?\${query}\`,'nooklog',features);})();`;
+
+		const link = this.$('.bookmarklet a');
+		if (link)
+			link.href = code;
 	}
 }
 

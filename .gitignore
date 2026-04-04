@@ -14,5 +14,6 @@ public/work/
 dist/
 work/
 /work
+memo/
 .geminiignore
 nooklog.config.json

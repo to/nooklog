@@ -29,7 +29,7 @@
 	});
 
 	// 拡張機能内のページを仲介しiframe埋め込み警告を回避する
-	// セッションIDを配布する
+	// セッションIDを共有する
 	const serverUrl = `${config['extension.serverAddress']}/update.html`
 		+ `?url=${encodeURIComponent(location.href)}`
 		+ `&title=${encodeURIComponent(document.title)}`
@@ -40,7 +40,13 @@
 	const shadow = host.attachShadow({ mode: 'open' });
 	shadow.appendChild(iframe);
 
-	bridge.emit('Content:save:html', { html: cleanHtml() });
+	// HTMLをサーバーへ保存する
+	// (セキュリティを回避するためバックグラウンドワーカーへ依頼する)
+	bridge.emit('Content:stash', {
+		url: location.href,
+		title: document.title,
+		html: document.documentElement.outerHTML,
+	}, true);
 
 	// テキスト選択を監視する
 	let previousSelection;
@@ -66,25 +72,3 @@
 		closeHost();
 	});
 })();
-
-function cleanHtml() {
-	const clone = document.documentElement.cloneNode(true);
-
-	// 不要な要素を削除
-	clone.querySelectorAll([
-		'script', 'style', 'iframe', 'link',
-		'video', 'audio', 'svg', 'noscript',
-		'canvas', 'template', 'object', 'embed',
-		'form', 'input', 'button', 'select', 'textarea',
-		'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
-	].join(',')).forEach(el => el.remove());
-
-	// HTMLコメントを削除
-	const walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
-	const nodes = [];
-	while (walker.nextNode())
-		nodes.push(walker.currentNode);
-	nodes.forEach(n => n.remove());
-
-	return clone.outerHTML;
-}

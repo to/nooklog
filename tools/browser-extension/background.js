@@ -125,6 +125,14 @@ async function openSearchPage(query) {
 	});
 }
 
+bridge.on('Content:stash', async payload => {
+	await fetch(`${config['extension.serverAddress']}/api/stash`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload),
+	});
+});
+
 bridge.on('UpdateForm:save', async bookmark => {
 	checkedUrls.delete(bookmark.url);
 
@@ -163,7 +171,6 @@ async function checkUrl(tab) {
 
 async function setIcon(tabId, isBookmarked) {
 	try {
-		// console.log(config['client.tint']);
 		const color = tint[config['client.tint']] || tint.grass;
 		chrome.action.setBadgeText({ tabId, text: isBookmarked ? ' ' : '' });
 		if (isBookmarked)
