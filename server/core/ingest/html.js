@@ -113,8 +113,13 @@ turndown.addRule('smartLink', {
 });
 
 export function process(url, html) {
+	const normalizeUrlOptions = {
+		stripWWW: false,
+		removeTrailingSlash: false,
+		removeDirectoryIndex: false,
+	};
 	try {
-		url = normalizeUrl(url, { stripHash: true });
+		url = normalizeUrl(url, { stripHash: true, ...normalizeUrlOptions });
 	} catch (e) {
 		url = url ? url.split('#')[0] : '';
 	}
@@ -128,7 +133,7 @@ export function process(url, html) {
 	document.querySelectorAll('a').forEach(el => {
 		const href = el.getAttribute('href');
 		if (href)
-			el.setAttribute('href', normalizeUrl(new URL(href, url).href));
+			el.setAttribute('href', normalizeUrl(new URL(href, url).href, normalizeUrlOptions));
 	});
 	document.querySelectorAll('img').forEach(el => {
 		const src = el.getAttribute('src');
