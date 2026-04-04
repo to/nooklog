@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import AssetCache from 'express-asset-file-cache-middleware';
+import { rateLimit } from 'express-rate-limit';
+import basicAuth from 'express-basic-auth';
 
 import config from './core/config.js';
 import nooklog from './core/nooklog.js';
@@ -23,6 +25,7 @@ const server = express();
 /* ---- Server Framework Setup ---- */
 
 server.set('json spaces', '\t');
+server.set('trust proxy', true);
 server.use(express.json({ limit: '500mb' }));
 
 server.use((req, res, next) => {
@@ -41,21 +44,32 @@ server.use((req, res, next) => {
 
 /* ---- Dynamic Basic Authentication ---- */
 
+// 失敗リクエスト（401）だけをカウントするレートリミッター
+const authLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000,
+	max: 10, // 15分間に10回失敗したらブロック
+	skipSuccessfulRequests: true, // 成功したリクエストはカウントしない
+	message: 'Too many failed login attempts. Please try again after 15 minutes.',
+	standardHeaders: true,
+	legacyHeaders: false,
+});
+
+// Basic認証ミドルウェア
+const basicAuthenticator = basicAuth({
+	authorizer: (user, pass) => pass === config['server.password'],
+	challenge: true,
+	realm: 'Nooklog',
+});
+
 server.use((req, res, next) => {
 	const password = config['server.password'];
 	if (!password || req.path === '/api/alive' || req.path.startsWith('/api/favicon'))
 		return next();
 
-	// ユーザー名は問わない
-	const authHeader = req.headers.authorization;
-	if (authHeader && authHeader.startsWith('Basic ')) {
-		const [_, pass] = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-		if (pass === password)
-			return next();
-	}
-
-	res.setHeader('WWW-Authenticate', 'Basic realm="Nooklog"');
-	res.status(401).send('Authentication required');
+	// レートリミット（防御）を適用してから、認証を行う
+	authLimiter(req, res, () => {
+		basicAuthenticator(req, res, next);
+	});
 });
 
 /* ---- Static File Server ---- */
