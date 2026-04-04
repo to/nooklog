@@ -26,6 +26,7 @@ const nooklog = {
 		await sentence.initialize();
 		await db.initialize();
 		store.backfill();
+		store.reindexFts();
 
 		// タグキャッシュの構築
 		if (!tagCache) {
@@ -47,11 +48,13 @@ const nooklog = {
 
 	async setConfig(input) {
 		const oldModel = config[`sentence.${config['sentence.provider']}.model`];
+		const oldTokenizer = config['database.tokenizer'];
 		config.save(input);
 
-		// モデルが変更されたらバックフィルなどの処理を開始する
+		// モデルやトークナイザーが変更されたらバックフィルなどの処理を開始する
 		const newModel = config[`sentence.${config['sentence.provider']}.model`];
-		if (newModel !== oldModel)
+		const newTokenizer = config['database.tokenizer'];
+		if (newModel !== oldModel || newTokenizer !== oldTokenizer)
 			await this.initialize();
 
 		return config;

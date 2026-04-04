@@ -195,8 +195,8 @@
 					<label><input type="radio" name="sentence.provider" value="transformers"> Transformers</label>
 					<label><input type="radio" name="sentence.provider" value="openai"> OpenAI</label>
 				</div>
-				<span class="description error none">Requires server restart. All current vectors will be LOST and
-					re-initialized!</span>
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
+					background re-indexing.</span>
 			</div>
 
 			<div>
@@ -213,15 +213,15 @@
 				<label>Llama Model</label>
 				<input type="text" name="sentence.llama.model" placeholder="hf:ggml-org/...">
 				<span class="description">HuggingFace URI or local path to GGUF model.</span>
-				<span class="description error none">Changing the model will cause all current vectors to be LOST and
-					re-initialized!</span>
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
+					background re-indexing.</span>
 			</div>
 
 			<div data-provider="transformers">
 				<label>Transformers Model</label>
 				<input type="text" name="sentence.transformers.model" placeholder="onnx-community/...">
-				<span class="description error none">Changing the model will cause all current vectors to be LOST and
-					re-initialized!</span>
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
+					background re-indexing.</span>
 			</div>
 			<div data-provider="transformers">
 				<label>Transformers DType</label>
@@ -231,8 +231,8 @@
 			<div data-provider="openai">
 				<label>OpenAI Model</label>
 				<input type="text" name="sentence.openai.model" placeholder="embeddinggemma">
-				<span class="description error none">Changing the model will cause all current vectors to be LOST and
-					re-initialized!</span>
+				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
+					background re-indexing.</span>
 			</div>
 			<div data-provider="openai">
 				<label>OpenAI URL</label>
@@ -286,6 +286,24 @@
 			</div>
 
 			<h2>Database</h2>
+
+			<div>
+				<label>Search Tokenizer</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="database.tokenizer" value="word"> Word</label>
+					<label><input type="radio" name="database.tokenizer" value="unigram"> Unigram</label>
+				</div>
+				<span class="description">
+					<span class="value">Word: </span>Standard for space-separated languages (English, etc.).
+				</span>
+				<span class="description">
+					<span class="value">Unigram: </span>Recommended for CJK languages or when search recall is prioritized.
+					Supports matching any part of a word.
+				</span>
+				<span class="description error none">Changing this setting will trigger a background re-indexing.</span>
+			</div>
+
+			<hr>
 
 			<div>
 				<label>Search Result Limit</label>

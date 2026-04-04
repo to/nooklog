@@ -33,6 +33,7 @@ const database = {
 		await this.client.execute('PRAGMA foreign_keys = ON');
 
 		await this.createTables();
+		await this.initializeFtsTable();
 		await this.initializeVectorTable();
 	},
 
@@ -57,26 +58,43 @@ const database = {
 				id TEXT PRIMARY KEY,
 				value TEXT
 			)`,
-			`CREATE VIRTUAL TABLE IF NOT EXISTS bookmark_fts USING fts5(
-				title,
-				memo,
-				markdown,
-				url,
-				tokenize="unicode61 categories 'L* N* P* S*'"
-			)`,
 			'CREATE INDEX IF NOT EXISTS bookmark_updated_at_idx ON bookmark (updated_at DESC)',
 			'CREATE INDEX IF NOT EXISTS bookmark_created_at_idx ON bookmark (created_at DESC)',
 			'CREATE INDEX IF NOT EXISTS bookmark_rating_idx ON bookmark (rating)',
 		], 'write');
 	},
 
+	async initializeFtsTable() {
+		const current = config['database.tokenizer'];
+		const old = await this.getMeta('fts_tokenizer');
+		if (old !== current) {
+			log.info({ from: old || 'none', to: current }, 'tokenizer changed, re-initializing FTS table');
+
+			const tokenizerString = current === 'unigram'
+				? "unicode61 categories 'L* N* P* S*'"
+				: 'porter unicode61';
+			await this.client.batch([
+				'DROP TABLE IF EXISTS bookmark_fts',
+				`CREATE VIRTUAL TABLE bookmark_fts USING fts5(
+					title,
+					memo,
+					markdown,
+					url,
+					tokenize="${tokenizerString}"
+				)`,
+			], 'write');
+
+			await this.setMeta('fts_tokenizer', current);
+		}
+	},
+
 	async initializeVectorTable() {
-		const currentModel = sentence.model;
-		const activeModel = await this.getMeta('vector_model');
-		if (activeModel !== currentModel) {
+		const current = sentence.model;
+		const old = await this.getMeta('vector_model');
+		if (old !== current) {
 			log.info({
-				from: activeModel || 'none',
-				to: currentModel,
+				from: old || 'none',
+				to: current,
 				dimension: sentence.dimension,
 			}, 'model changed, re-initializing vector table');
 
@@ -95,7 +113,7 @@ const database = {
 				'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
 			], 'write');
 
-			await this.setMeta('vector_model', currentModel);
+			await this.setMeta('vector_model', current);
 		}
 	},
 

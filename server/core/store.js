@@ -1,5 +1,6 @@
 import sentence from './sentence/index.js';
 import db from './database.js';
+import config from './config.js';
 import baseLog from './log.js';
 import _, { bench } from './util.js';
 import queue from './queue.js';
@@ -15,6 +16,7 @@ const store = {
 
 	async dispose() {
 		await this.backfillJob?.abort();
+		await this.reindexJob?.abort();
 	},
 
 	async find({ id, url, columns = ['*'] } = {}) {
@@ -39,11 +41,6 @@ const store = {
 			};
 
 			batch.push({
-				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
-				args: [data.id],
-			});
-
-			batch.push({
 				sql: `
 					INSERT OR REPLACE INTO bookmark (
 						id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary, meta
@@ -57,27 +54,46 @@ const store = {
 					JSON.stringify(data.meta || {}),
 				],
 			});
-
-			batch.push({
-				sql: `
-					INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
-					VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?)`,
-				args: [
-					data.id,
-					sentence.segment(data.title),
-					sentence.segment(data.memo),
-					sentence.segmentMarkdown(data.markdown),
-					sentence.segmentUrl(data.url),
-				],
-			});
 		}
 
 		await db.client.batch(batch, 'write');
 
-		// ベクトルインデックスを更新;
-		this.embed(bookmarks, { priority: 10 }).catch(err => {
+		// バックグラウンドでインデックス・ベクトル化を開始
+		this.indexFts(bookmarks).catch(err => {
+			log.error(err, 'failed to index FTS in background');
+		});
+
+		this.embed(bookmarks).catch(err => {
 			log.error(err, 'failed to index vectors in background');
 		});
+	},
+
+	indexFts(bookmarks, { priority = 20 } = {}) {
+		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
+
+		const useUnigram = config['database.tokenizer'] === 'unigram';
+		return queue.batch(bookmarks, async slice => {
+			const batch = slice.flatMap(data => [
+				{
+					sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
+					args: [data.id],
+				},
+				{
+					sql: `
+						INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
+						VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?)`,
+					args: [
+						data.id,
+						useUnigram ? sentence.segment(data.title) : sentence.normalizeJp(data.title),
+						useUnigram ? sentence.segment(data.memo) : sentence.normalizeJp(data.memo),
+						useUnigram ? sentence.segmentMarkdown(data.markdown) : sentence.cleanMarkdown(data.markdown),
+						useUnigram ? sentence.segmentUrl(data.url) : sentence.cleanUrl(data.url),
+					],
+				},
+			]);
+
+			await db.client.batch(batch, 'write');
+		}, { priority, size: 50, label: 'FTS Indexing' });
 	},
 
 	embed(bookmarks, { priority = 10 } = {}) {
@@ -148,13 +164,30 @@ const store = {
 			SELECT id, title, memo, markdown FROM bookmark
 			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
 			ORDER BY updated_at DESC`);
-
 		const bookmarks = rs.rows;
 		if (bookmarks.length === 0)
 			return;
 
 		log.info({ count: bookmarks.length }, 'backfilling missing vectors');
-		this.backfillJob = this.embed(bookmarks, { priority: 0 });
+		this.backfillJob = this.embed(bookmarks, { priority: 2 });
+
+		return this.backfillJob;
+	},
+
+	async reindexFts() {
+		await this.reindexJob?.abort();
+
+		const rs = await db.client.execute(`
+			SELECT id, title, memo, markdown, url FROM bookmark
+			WHERE row_id NOT IN (SELECT rowid FROM bookmark_fts)`);
+		const bookmarks = rs.rows;
+		if (bookmarks.length === 0)
+			return;
+
+		log.info({ count: bookmarks.length }, 're-indexing bookmarks in FTS');
+		this.reindexJob = this.indexFts(bookmarks, { priority: 5 });
+
+		return this.reindexJob;
 	},
 
 	async import(bookmarks) {
@@ -434,10 +467,17 @@ const store = {
 		// FTS5のカラム指定形式を生成(指定があれば { col1 col2 } : の形式)
 		// (無指定の場合 全FTSカラムが対象となる)
 		const columnSpec = fields.length > 0 ? `{ ${fields.join(' ')} } : ` : '';
+		const useUnigram = config['database.tokenizer'] === 'unigram';
 		const ftsTokens = tokens.map(token => {
-			// 1文字 Uni-gram をフレーズとして結合し、隣接マッチを実現(NEAR(len - 2)相当)
-			const phrase = [...sentence.normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
-			return `${columnSpec}"${phrase}"`;
+			if (useUnigram) {
+				// 1文字 Uni-gram をフレーズとして結合し、隣接マッチを実現(NEAR(len - 2)相当)
+				const phrase = [...sentence.normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
+				return `${columnSpec}"${phrase}"`;
+			} else {
+				// 単語単位: 必要なら末尾に "*" をつけて前方一致を許可
+				const cleanToken = token.replace(/"/g, '""');
+				return `${columnSpec}"${cleanToken}"*`;
+			}
 		});
 
 		return {

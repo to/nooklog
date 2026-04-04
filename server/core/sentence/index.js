@@ -12,18 +12,26 @@ const segment = text => [...normalizeJp(text)]
 	.replace(/\s+/g, ' ')
 	.trim();
 
-// URL専用セグメント (プロトコルのみ除去し、記号は保持してUni-gram化)
-const segmentUrl = url => segment((url || '')
+// URL専用正規化 (プロトコルのみ除去して小文字化)
+const cleanUrl = url => (url || '')
 	.replace(/^https?:\/\//, '')
-	.toLowerCase());
+	.toLowerCase();
 
-// Markdown専用セグメント (記号やURLを物理的に除去するのではなく、スペースに置換してインデックスの重なりを抑制)
-const segmentMarkdown = text => segment((text || '')
+// URL専用セグメント (Uni-gram化)
+const segmentUrl = url => segment(cleanUrl(url));
+
+// Markdown専用正規化 (記号やURLをスペースに置換)
+const cleanMarkdown = text => (text || '')
 	.replace(/https?:\/\/[^\s]+/g, ' ') // URL自体はurlカラムにあるので除去
-	.replace(/[#*`_~[\]()>+-]/g, ' ')); // 装飾記号をスペースへ
+	.replace(/[#*`_~[\]()>+-]/g, ' '); // 装飾記号をスペースへ
+
+// Markdown専用セグメント (Uni-gram化)
+const segmentMarkdown = text => segment(cleanMarkdown(text));
 
 export default {
 	normalizeJp,
+	cleanUrl,
+	cleanMarkdown,
 	segment,
 	segmentUrl,
 	segmentMarkdown,

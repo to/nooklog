@@ -43,6 +43,7 @@ let config = {
 	'sentence.openai.apiKey': '',
 	'sentence.contextSize': 2048,
 	'database.searchLimit': 300,
+	'database.tokenizer': 'word', // 'word', 'unigram'
 	'database.saveHTML': false,
 };
 
