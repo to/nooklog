@@ -25,7 +25,8 @@ const DETAIL_COLUMNS = [
 const nooklog = {
 	async initialize() {
 		await sentence.initialize();
-		await db.initialize();
+		await db.initializeSearch();
+
 		store.reembed();
 		store.reindexFts();
 
@@ -47,11 +48,12 @@ const nooklog = {
 		return config;
 	},
 
-	async setConfig(input) {
+	async saveConfig(input) {
 		const oldProvider = config['sentence.provider'];
 		const oldModel = config[`sentence.${oldProvider}.model`];
 		const oldTokenizer = config['database.tokenizer'];
-		config.save(input);
+
+		await db.saveConfig(input);
 
 		// プロバイダー、モデル、トークナイザーのいずれかが変更されたら初期化（バックフィル等）をやり直す
 		const newProvider = config['sentence.provider'];

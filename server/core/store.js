@@ -54,17 +54,11 @@ const store = {
 
 		await db.client.batch(batch, 'write');
 
-		// バックグラウンドでインデックス・ベクトル化を開始
-		this.indexFts(bookmarks).catch(err => {
-			log.error(err, 'failed to index FTS in background');
-		});
-
-		this.embed(bookmarks).catch(err => {
-			log.error(err, 'failed to index vectors in background');
-		});
+		this.indexFts(bookmarks);
+		this.embed(bookmarks);
 	},
 
-	indexFts(bookmarks, { priority = 20 } = {}) {
+	async indexFts(bookmarks, { priority = 20 } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
 		const useUnigram = config['database.tokenizer'] === 'unigram';
@@ -92,7 +86,7 @@ const store = {
 		}, { priority, size: 50, label: 'FTS Indexing' });
 	},
 
-	embed(bookmarks, { priority = 10 } = {}) {
+	async embed(bookmarks, { priority = 10 } = {}) {
 		if (config['sentence.provider'] === 'none')
 			return;
 
@@ -157,6 +151,9 @@ const store = {
 	},
 
 	async reembed() {
+		if (config['sentence.provider'] === 'none')
+			return;
+
 		await this.reembedJob?.abort();
 
 		const rs = await db.client.execute(`
@@ -204,11 +201,14 @@ const store = {
 	},
 
 	async delete(id) {
-		await db.client.batch([
-			{
+		const batch = [];
+		if (config['sentence.provider'] !== 'none') {
+			batch.push({
 				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [id],
-			},
+			});
+		}
+		batch.push(
 			{
 				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [id],
@@ -217,7 +217,8 @@ const store = {
 				sql: 'DELETE FROM bookmark WHERE id = ?',
 				args: [id],
 			},
-		], 'write');
+		);
+		await db.client.batch(batch, 'write');
 	},
 
 	async getTags() {

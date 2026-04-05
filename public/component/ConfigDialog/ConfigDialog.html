@@ -182,10 +182,8 @@
 
 			<div>
 				<label>Data Path</label>
-				<input type="text" name="server.data.path" autocomplete="off">
-				<span class="description error none">Requires server restart. Changing the path will point to a different
-					data
-					location.</span>
+				<input type="text" name="server.data.path" autocomplete="off" readonly>
+				<span class="description">Set via the <code>NOOKLOG_DATA_PATH</code> environment variable.</span>
 			</div>
 
 			<div>
@@ -251,12 +249,6 @@
 			<div data-provider="openai">
 				<label>OpenAI API Key</label>
 				<input type="password" name="sentence.openai.apiKey" placeholder="sk-...">
-			</div>
-
-			<div data-provider="llama,transformers,openai">
-				<label>Cache Path</label>
-				<input type="text" name="sentence.cachePath">
-				<span class="description">Directory to store downloaded models.</span>
 			</div>
 
 			<div data-provider="llama,transformers,openai">

@@ -217,7 +217,7 @@ export const router = {
 		save: os
 			.input(z.unknown())
 			.output(z.unknown())
-			.handler(async ({ input }) => nooklog.setConfig(input)),
+			.handler(async ({ input }) => nooklog.saveConfig(input)),
 	},
 
 	// 汎用的なSSEイベントストリーム

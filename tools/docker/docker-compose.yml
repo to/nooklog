@@ -9,12 +9,11 @@ services:
     ports:
       - "5050:5050"
     volumes:
-      - ../../data:/app/data
+      - ../../data:/data
     environment:
       - NODE_ENV=production
-      - NOOKLOG_DATA_PATH=/app/data
+      - NOOKLOG_DATA_PATH=/data
       # 🚀 To use Turso mode, just provide the database URL and Auth Token.
       # (If URL is empty, it runs in local-only mode)
       - TURSO_DATABASE_URL=${TURSO_DATABASE_URL:-}
       - TURSO_AUTH_TOKEN=${TURSO_AUTH_TOKEN:-}
-      - TURSO_REPLICA=${TURSO_REPLICA:-true}

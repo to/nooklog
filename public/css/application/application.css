@@ -57,6 +57,11 @@ select {
 	}
 }
 
+input:read-only {
+	color: var(--ink-3);
+	cursor: default;
+}
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
 	/* Chrome/Safari/Edge/Opera */
