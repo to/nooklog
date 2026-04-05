@@ -24,10 +24,9 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
-		await store.initialize();
 		await sentence.initialize();
 		await db.initialize();
-		store.backfill();
+		store.reembed();
 		store.reindexFts();
 
 		// タグキャッシュの構築
@@ -58,8 +57,22 @@ const nooklog = {
 		const newProvider = config['sentence.provider'];
 		const newModel = config[`sentence.${newProvider}.model`];
 		const newTokenizer = config['database.tokenizer'];
-		if (newProvider !== oldProvider || newModel !== oldModel || newTokenizer !== oldTokenizer)
-			await this.initialize();
+		if (newProvider !== oldProvider || newModel !== oldModel || newTokenizer !== oldTokenizer) {
+			await store.dispose();
+			await sentence.dispose();
+
+			await sentence.initialize();
+
+			if (newTokenizer !== oldTokenizer) {
+				await db.initializeFtsTable();
+				store.reindexFts();
+			}
+
+			if (newProvider !== oldProvider || newModel !== oldModel) {
+				await db.initializeVectorTable();
+				store.reembed();
+			}
+		}
 
 		return config;
 	},

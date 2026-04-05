@@ -10,12 +10,8 @@ const log = baseLog.child({ module: 'store' });
 const store = {
 	UNLIMITED: null,
 
-	async initialize() {
-		await this.dispose();
-	},
-
 	async dispose() {
-		await this.backfillJob?.abort();
+		await this.reembedJob?.abort();
 		await this.reindexJob?.abort();
 	},
 
@@ -160,8 +156,8 @@ const store = {
 		}, { priority, size: 10, label: 'Embedding' });
 	},
 
-	async backfill() {
-		await this.backfillJob?.abort();
+	async reembed() {
+		await this.reembedJob?.abort();
 
 		const rs = await db.client.execute(`
 			SELECT id, title, memo, markdown FROM bookmark
@@ -171,10 +167,10 @@ const store = {
 		if (bookmarks.length === 0)
 			return;
 
-		log.info({ count: bookmarks.length }, 'backfilling missing vectors');
-		this.backfillJob = this.embed(bookmarks, { priority: 2 });
+		log.info({ count: bookmarks.length }, 're-embedding missing vectors');
+		this.reembedJob = this.embed(bookmarks, { priority: 2 });
 
-		return this.backfillJob;
+		return this.reembedJob;
 	},
 
 	async reindexFts() {

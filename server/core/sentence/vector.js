@@ -235,7 +235,6 @@ const vector = {
 	},
 
 	async initialize() {
-		await this.dispose();
 		const provider = config['sentence.provider'] || 'llama';
 		if (provider === 'none')
 			return;
@@ -302,8 +301,9 @@ const vector = {
 	async dispose() {
 		this._dimension = 0;
 		this._calibration = null;
-		if (this.engine?.dispose)
-			await this.engine.dispose();
+
+		await this.engine?.dispose?.();
+		this.engine = null;
 	},
 };
 
