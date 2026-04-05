@@ -355,8 +355,9 @@ const store = {
 
 		// エクスポート時は 適度な類似度で切り捨てる
 		if (limit === null) {
+			const { near, far } = await sentence.getCalibration();
 			sql += ' HAVING score <= ?';
-			args.push(sentence.near * 0.2 + sentence.far * 0.8);
+			args.push(near * 0.2 + far * 0.8);
 		}
 
 		if (sortBy === 'relevance')

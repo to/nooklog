@@ -75,9 +75,9 @@ function wrapWithPrefix(model, options, execute) {
 const vector = {
 	engine: null,
 	model: '',
-	dimension: 0,
-	threshold: 0.5,
 	contextSize: config['sentence.contextSize'] || 2048,
+	_dimension: 0,
+	_calibration: null,
 
 	_createProgressReporter() {
 		const logged = {};
@@ -253,14 +253,30 @@ const vector = {
 		});
 
 		this.contextSize = this.engine.contextSize || this.contextSize;
+		this.model = config[`sentence.${provider}.model`];
+	},
 
-		// Calibrate threshold dynamically
+	async getDimension() {
+		if (this._dimension)
+			return this._dimension;
+
+		const [sample] = await this.engine.embedDocument([{ title: '', text: ' ' }]);
+		return this._dimension = sample.length;
+	},
+
+	async getCalibration() {
+		if (this._calibration)
+			return this._calibration;
+
 		const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
 		const vecs = await Promise.all([
 			this.embedQuery('cat'),
 			this.embedDocument({ title: 'Animal', text: 'kitten' }),
 			this.embedQuery('A round fruit with red, yellow, or green skin and a whitish inside.'),
-			this.embedDocument({ title: 'Space exploration', text: 'The exploration of outer space using spacecraft, with or without a human crew.' }),
+			this.embedDocument({
+				title: 'Space exploration',
+				text: 'The exploration of outer space using spacecraft, with or without a human crew.',
+			}),
 		]);
 
 		const near = 1 - dot(vecs[0], vecs[1][0]);
@@ -268,14 +284,7 @@ const vector = {
 		const threshold = (near + far) / 2;
 		log.info({ near: near.toFixed(4), far: far.toFixed(4), threshold: threshold.toFixed(4) }, 'threshold calibrated');
 
-		const [sample] = await this.engine.embedDocument([{ title: '', text: ' ' }]);
-		Object.assign(this, {
-			model: config[`sentence.${provider}.model`],
-			dimension: sample.length,
-			near,
-			far,
-			threshold,
-		});
+		return this._calibration = { near, far, threshold };
 	},
 
 	async embedQuery(query) {
@@ -291,6 +300,8 @@ const vector = {
 	},
 
 	async dispose() {
+		this._dimension = 0;
+		this._calibration = null;
 		if (this.engine?.dispose)
 			await this.engine.dispose();
 	},

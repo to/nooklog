@@ -121,10 +121,11 @@ const database = {
 		const current = sentence.model;
 		const old = await this.getMeta('vector_model');
 		if (old !== current) {
+			const dimension = await sentence.getDimension();
 			log.info({
 				from: old || 'none',
 				to: current,
-				dimension: sentence.dimension,
+				dimension,
 			}, 'model changed, re-initializing vector table');
 
 			await this.client.batch([
@@ -136,7 +137,7 @@ const database = {
 					field TEXT,
 					content TEXT,
 					position INTEGER,
-					vector F32_BLOB(${sentence.dimension}),
+					vector F32_BLOB(${dimension}),
 					FOREIGN KEY (bookmark_id) REFERENCES bookmark(row_id) ON DELETE CASCADE
 				)`,
 				'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
