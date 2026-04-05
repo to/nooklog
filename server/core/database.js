@@ -115,6 +115,9 @@ const database = {
 	},
 
 	async initializeVectorTable() {
+		if (config['sentence.provider'] === 'none')
+			return;
+
 		const current = sentence.model;
 		const old = await this.getMeta('vector_model');
 		if (old !== current) {

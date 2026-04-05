@@ -15,7 +15,8 @@ const Nooklog = {
 	_saveConfig(input) {
 		Object.assign(config, input);
 		localStorage.config = JSON.stringify(config);
-		bridge.emit('Nooklog:config', { config });
+		bridge.emit('Nooklog:saveConfig', { config });
+		hub.emit('Nooklog:saveConfig', config);
 	},
 
 	async find(ps) {

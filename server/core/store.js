@@ -97,6 +97,9 @@ const store = {
 	},
 
 	embed(bookmarks, { priority = 10 } = {}) {
+		if (config['sentence.provider'] === 'none')
+			return;
+
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
 		return queue.batch(bookmarks, async (slice, i, signal) => {

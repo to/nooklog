@@ -237,6 +237,9 @@ const vector = {
 	async initialize() {
 		await this.dispose();
 		const provider = config['sentence.provider'] || 'llama';
+		if (provider === 'none')
+			return;
+
 		this.engine = await this.providers[provider].call(this.providers, {
 			model: config[`sentence.${provider}.model`],
 			dtype: config[`sentence.${provider}.dtype`],

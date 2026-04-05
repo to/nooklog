@@ -49,14 +49,16 @@ const nooklog = {
 	},
 
 	async setConfig(input) {
-		const oldModel = config[`sentence.${config['sentence.provider']}.model`];
+		const oldProvider = config['sentence.provider'];
+		const oldModel = config[`sentence.${oldProvider}.model`];
 		const oldTokenizer = config['database.tokenizer'];
 		config.save(input);
 
-		// モデルやトークナイザーが変更されたらバックフィルなどの処理を開始する
-		const newModel = config[`sentence.${config['sentence.provider']}.model`];
+		// プロバイダー、モデル、トークナイザーのいずれかが変更されたら初期化（バックフィル等）をやり直す
+		const newProvider = config['sentence.provider'];
+		const newModel = config[`sentence.${newProvider}.model`];
 		const newTokenizer = config['database.tokenizer'];
-		if (newModel !== oldModel || newTokenizer !== oldTokenizer)
+		if (newProvider !== oldProvider || newModel !== oldModel || newTokenizer !== oldTokenizer)
 			await this.initialize();
 
 		return config;

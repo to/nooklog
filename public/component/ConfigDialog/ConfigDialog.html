@@ -200,15 +200,16 @@
 			<div>
 				<label>Provider</label>
 				<div class="radio-flat">
-					<label><input type="radio" name="sentence.provider" value="llama"> Llama</label>
-					<label><input type="radio" name="sentence.provider" value="transformers"> Transformers</label>
-					<label><input type="radio" name="sentence.provider" value="openai"> OpenAI</label>
+					<label><input type="radio" name="sentence.provider" value="none">None</label>
+					<label><input type="radio" name="sentence.provider" value="llama">Llama</label>
+					<label><input type="radio" name="sentence.provider" value="transformers">Transformers</label>
+					<label><input type="radio" name="sentence.provider" value="openai">OpenAI</label>
 				</div>
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
 			</div>
 
-			<div>
+			<div data-provider="llama,transformers">
 				<label>Device</label>
 				<div class="radio-flat">
 					<label><input type="radio" name="sentence.device" value="auto"> Auto</label>
@@ -252,13 +253,13 @@
 				<input type="password" name="sentence.openai.apiKey" placeholder="sk-...">
 			</div>
 
-			<div>
+			<div data-provider="llama,transformers,openai">
 				<label>Cache Path</label>
 				<input type="text" name="sentence.cachePath">
 				<span class="description">Directory to store downloaded models.</span>
 			</div>
 
-			<div>
+			<div data-provider="llama,transformers,openai">
 				<label>Query Prefix</label>
 				<input type="text" name="sentence.queryPrefix" placeholder="Default">
 				<span class="description">Empty to use preset defaults based on model name:</span>
@@ -274,7 +275,7 @@
 				</span>
 			</div>
 
-			<div>
+			<div data-provider="llama,transformers,openai">
 				<label>Document Title Prefix</label>
 				<input type="text" name="sentence.documentTitlePrefix" placeholder="Default">
 				<span class="description">Empty to use preset defaults.</span>
@@ -285,7 +286,7 @@
 				</span>
 			</div>
 
-			<div>
+			<div data-provider="llama,transformers,openai">
 				<label>Document Text Prefix</label>
 				<input type="text" name="sentence.documentTextPrefix" placeholder="Default">
 				<span class="description">Separator between title and text (default: <code>\n</code>).</span>

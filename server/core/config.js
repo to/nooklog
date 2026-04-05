@@ -29,7 +29,7 @@ let config = {
 	'server.port': 5050,
 	'server.data.path': defaultDataPath,
 	'server.password': '',
-	'sentence.provider': 'llama', // 'llama', 'transformers', 'openai'
+	'sentence.provider': 'none', // 'llama', 'transformers', 'openai', 'none'
 	'sentence.device': 'auto',
 	'sentence.cachePath': path.join(defaultDataPath, '.cache'),
 	'sentence.queryPrefix': '', // 空文字ならプリセットを使用

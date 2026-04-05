@@ -18,7 +18,12 @@ class SearchForm extends Component {
 		this._search();
 	}
 
+	async ready() {
+		this._updateVectorVisibility();
+	}
+
 	bindEvents() {
+		hub.on('Nooklog:saveConfig', () => this._updateVectorVisibility());
 		hub.on('ResultTable:selectTag', tag => {
 			this.els.tags.tagify.addTags([tag]);
 		});
@@ -145,6 +150,13 @@ class SearchForm extends Component {
 		$.show(this.els.count);
 
 		hub.emit('SearchForm:search', results);
+	}
+
+	_updateVectorVisibility() {
+		const isNone = config['sentence.provider'] === 'none';
+		this.$('input[name=mode]').parentElement.parentElement.classList.toggle('invisible', isNone);
+		if (isNone)
+			$.check(this.els.mode, 'fts');
 	}
 }
 

@@ -159,7 +159,7 @@ class ConfigDialog extends Component {
 
 	_updateSentenceProviderVisibility() {
 		const provider = this.$('input[name="sentence.provider"]:checked')?.value;
-		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider === provider));
+		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider.split(',').includes(provider)));
 	}
 
 	_updateBookmarklet() {
