@@ -45,6 +45,9 @@ let config = {
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
 	'database.saveHTML': false,
+	'database.turso.replica': process.env.TURSO_REPLICA === 'true', // false (standard cloud mode)
+	'database.turso.url': process.env.TURSO_DATABASE_URL || '',
+	'database.turso.authToken': process.env.TURSO_AUTH_TOKEN || '',
 };
 
 Object.defineProperty(config, 'save', {

@@ -131,7 +131,8 @@
 				<div class="flex items-center gap-m">
 					<a href="#" class="button flat" title="Drag this to your bookmarks bar">Save to Nooklog</a>
 				</div>
-				<span class="description">Drag this button to your bookmarks bar. It quickly saves current page URL and title to Nooklog, even on pages with strict security.</span>
+				<span class="description">Drag this button to your bookmarks bar. It quickly saves current page URL and title to
+					Nooklog, even on pages with strict security.</span>
 			</div>
 
 			<div class="shortcut-info">
@@ -296,6 +297,12 @@
 			<h2>Database</h2>
 
 			<div>
+				<label>Search Result Limit</label>
+				<input type="number" name="database.searchLimit">
+				<span class="description">Maximum number of results to display in the table (default: 300)</span>
+			</div>
+
+			<div>
 				<label>Search Tokenizer</label>
 				<div class="radio-flat">
 					<label><input type="radio" name="database.tokenizer" value="word"> Word</label>
@@ -314,19 +321,21 @@
 			<hr>
 
 			<div>
-				<label>Search Result Limit</label>
-				<input type="number" name="database.searchLimit">
-				<span class="description">Maximum number of results to display in the table (default: 300)</span>
+				<label>Turso URL</label>
+				<input type="text" name="database.turso.url" placeholder="libsql://...">
+				<span class="description">Turso is a distributed database that allows you to sync and share bookmarks across
+					different environments (e.g., home and office).</span>
+				<span class="description">With "Embedded Replica" enabled, you can enjoy cloud benefits while maintaining
+					local-level performance and offline support! ✨</span>
+				<span class="description">URL for your Turso database (e.g., <code>libsql://db-name.turso.io</code>). Empty for
+					local-only mode.</span>
 			</div>
-
-			<hr>
 
 			<div>
-				<label>Max Small Fragments</label>
-				<input type="number" name="database.optimization.maxSmallFragments">
-				<span class="description">Maximum fragment fragmentation threshold for optimization (default: 100)</span>
+				<label>Turso Auth Token</label>
+				<input type="text" name="database.turso.authToken" placeholder="eyJhbGciOiJIUzI1NiI...">
+				<span class="description">Authentication token for your Turso database.</span>
 			</div>
-			<hr>
 
 			<h2>Tools</h2>
 

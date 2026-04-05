@@ -13,24 +13,50 @@ const database = {
 	client: null,
 
 	async initialize() {
-		let dbUrl = config['server.data.path'];
-		if (dbUrl !== ':memory:') {
-			const dbDir = path.join(config['server.data.path'], 'database');
-			if (!fs.existsSync(dbDir))
-				fs.mkdirSync(dbDir, { recursive: true });
+		const dbDir = path.join(config['server.data.path'], 'database');
+		if (!fs.existsSync(dbDir))
+			fs.mkdirSync(dbDir, { recursive: true });
 
-			dbUrl = `file:${path.join(dbDir, 'nooklog.db')}`;
+		const localDbPath = path.join(dbDir, 'nooklog.db');
+		const localDbUrl = `file:${localDbPath}`;
+
+		if (config['database.turso.url'] && config['database.turso.authToken']) {
+			if (config['database.turso.replica']) {
+				// Turso Embedded Replica Mode (Local Cache + Sync)
+				log.info({ path: localDbUrl, sync: config['database.turso.url'] }, 'opening libsql database with Turso sync');
+				this.client = createClient({
+					url: localDbUrl,
+					syncUrl: config['database.turso.url'],
+					authToken: config['database.turso.authToken'],
+				});
+
+				try {
+					await this.client.sync();
+				} catch (e) {
+					log.warn({ error: e.message }, 'initial sync failed, proceeding with local cache');
+				}
+			} else {
+				// Turso Remote Only Mode (Direct Connection)
+				log.info({ url: config['database.turso.url'] }, 'opening remote libsql database');
+				this.client = createClient({
+					url: config['database.turso.url'],
+					authToken: config['database.turso.authToken'],
+				});
+			}
+		} else {
+			// Standard Local Mode
+			log.info({ path: localDbUrl }, 'opening local libsql database');
+			this.client = createClient({
+				url: localDbUrl,
+			});
 		}
-		log.info({ path: dbUrl }, 'opening libsql database');
 
-		this.client = createClient({
-			url: dbUrl,
-		});
-
-		// 高速な検索と並列読み書きを可能にするパフォーマンス設定 (WALモード)
-		await this.client.execute('PRAGMA journal_mode = WAL');
-		await this.client.execute('PRAGMA synchronous = NORMAL');
-		await this.client.execute('PRAGMA foreign_keys = ON');
+		// パフォーマンス設定 (純粋なローカルモードのときだけ実行)
+		if (!config['database.turso.url']) {
+			await this.client.execute('PRAGMA journal_mode = WAL');
+			await this.client.execute('PRAGMA synchronous = NORMAL');
+			await this.client.execute('PRAGMA foreign_keys = ON');
+		}
 
 		await this.createTables();
 		await this.initializeFtsTable();
