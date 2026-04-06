@@ -1,7 +1,7 @@
 /* ---- Tagify ---- */
 .tagify {
 	--tags-border-color: var(--ink-2);
-	--tags-focus-border-color: var(--ink-2);
+	--tags-focus-border-color: var(--ink-4);
 	--tags-hover-border-color: var(--ink-2);
 
 	--tag-bg: var(--ink-5);
@@ -18,6 +18,11 @@
 	&, *, *::before, *::after  {
 		transition: none !important;
 		animation: none !important;
+	}
+
+	&.tagify--focus{
+		/* 設定値で更新するために再宣言する */
+		--tags-border-color: var(--tags-focus-border-color);
 	}
 
 	gap: var(--space-2s);
