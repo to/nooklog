@@ -4,8 +4,17 @@ export function process(content, options = {}) {
 	if (typeof content === 'string')
 		return processHTML(content, options);
 
-	if (content.collections)
+	if (content.bookmarks)
+		return processKarakeep(content, options);
+
+	if (content.collections) {
+		// Linkwardenはcollections直下にlinksがあるか？
+		// (Session Buddyはfoldersの中にlinksがある)
+		if (content.collections.some(it => it.links))
+			return processLinkwarden(content, options);
+
 		return processSessionBuddy(content, options);
+	}
 
 	if (Array.isArray(content)) {
 		// nooklog
@@ -22,7 +31,53 @@ export function process(content, options = {}) {
 	return [];
 }
 
-// PinboardのJSONをブックマークに変換する
+export function processLinkwarden(data, options = {}) {
+	const results = [];
+	for (const coll of data.collections || []) {
+		const collTags = options.folderTag ? [normalizeTag(coll.name)] : [];
+		for (const link of coll.links || []) {
+			results.push({
+				url: link.url,
+				title: link.name || '',
+				memo: link.description || '',
+				tags: [...collTags, ...(link.tags || []).map(it => normalizeTag(it.name))],
+				created_at: link.createdAt ? new Date(link.createdAt).getTime() : undefined,
+				updated_at: link.updatedAt ? new Date(link.updatedAt).getTime() : undefined,
+			});
+		}
+	}
+	return results;
+}
+
+export function processKarakeep(data, options = {}) {
+	const results = [];
+	const listMap = new Map((data.lists || []).map(it => [it.id, it.name]));
+
+	for (const item of data.bookmarks || []) {
+		const bookmark = {
+			url: item.content?.url || '',
+			title: item.title || '',
+			memo: item.note || item.content?.text || '',
+			tags: (item.tags || []).map(normalizeTag),
+			created_at: item.createdAt ? item.createdAt * 1000 : undefined,
+			updated_at: item.createdAt ? item.createdAt * 1000 : undefined,
+		};
+
+		if (options.folderTag) {
+			for (const listId of item.lists || []) {
+				const listName = listMap.get(listId);
+				if (listName)
+					bookmark.tags.push(normalizeTag(listName));
+			}
+		}
+
+		bookmark.tags = [...new Set(bookmark.tags)];
+		results.push(bookmark);
+	}
+
+	return results;
+}
+
 export function processPinboard(data, options = {}) {
 	return data.map(it => ({
 		url: it.href,
@@ -34,7 +89,6 @@ export function processPinboard(data, options = {}) {
 	}));
 }
 
-// Session BuddyのJSONをブックマークに変換する
 export function processSessionBuddy(data, options = {}) {
 	const results = [];
 	for (const collection of data.collections || []) {
@@ -52,7 +106,6 @@ export function processSessionBuddy(data, options = {}) {
 	return results;
 }
 
-// Tab Session ManagerのJSONをブックマークに変換する
 export function processTabSessionManager(sessions, options = {}) {
 	let results = [];
 	for (const session of sessions) {
