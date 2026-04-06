@@ -153,6 +153,7 @@ class ConfigDialog extends Component {
 		}
 
 		await Nooklog.saveConfig(config);
+		this.$$('.error').forEach($.hide);
 
 		this.els.dialog.close();
 	}
