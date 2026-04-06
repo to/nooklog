@@ -52,21 +52,29 @@ class ResultTable extends Component {
 		});
 
 		$.on(window, 'keydown', e => {
-			if (e.target !== document.body)
-				return;
+			const isBody = e.target === document.body;
+			const isAlt = e.altKey;
+			const isCtrl = e.ctrlKey;
 
-			if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-				const direction = e.key === 'ArrowDown' ? 'next' : 'previous';
+			let dir = null;
+			if (isBody && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))
+				dir = e.key === 'ArrowDown' ? 'next' : 'previous';
+			else if (isAlt && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))
+				dir = e.key === 'ArrowDown' ? 'next' : 'previous';
+			else if (isCtrl && (e.key === 'j' || e.key === 'k'))
+				dir = e.key === 'j' ? 'next' : 'previous';
+
+			if (dir) {
 				const current = this.$('.tr.is-selected');
 				const target = current
-					? current[direction + 'ElementSibling']
-					: this.firstElementChild;
+					? current[dir + 'ElementSibling']
+					: this.$('.tr');
 
 				if (target) {
 					e.preventDefault();
 					this._select(target);
 
-					const viewTarget = target[direction + 'ElementSibling']?.[direction + 'ElementSibling'] || target;
+					const viewTarget = target[dir + 'ElementSibling']?.[dir + 'ElementSibling'] || target;
 					viewTarget.scrollIntoView({ block: 'nearest' });
 				}
 			}
