@@ -182,6 +182,7 @@ header {
 	color: var(--ink-3);
 
 	label {
+		position: relative;
 		font-size: var(--font-size-s);
 		line-height: 1;
 		cursor: pointer;

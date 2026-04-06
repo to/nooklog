@@ -39,6 +39,7 @@ const nooklog = {
 
 	async dispose() {
 		log.info('disposing nooklog');
+		await ingest.browser.dispose();
 		await store.dispose();
 		await sentence.dispose();
 		db.close();
@@ -49,6 +50,9 @@ const nooklog = {
 	},
 
 	async saveConfig(input) {
+		if (config['server.readonly'])
+			return config;
+
 		const oldProvider = config['sentence.provider'];
 		const oldModel = config[`sentence.${oldProvider}.model`];
 		const oldTokenizer = config['database.tokenizer'];
@@ -176,6 +180,9 @@ const nooklog = {
 	},
 
 	async _syncTagCache(oldTags, newTags) {
+		if (config['server.readonly'])
+			return;
+
 		for (const tag of newTags)
 			tagCache.add(tag);
 

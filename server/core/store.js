@@ -30,12 +30,8 @@ const store = {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
 		const batch = [];
-		for (const b of bookmarks) {
-			const data = {
-				...db.createBookmark(),
-				...b,
-			};
-
+		for (let b of bookmarks) {
+			b = _.merge(db.createBookmark(), b);
 			batch.push({
 				sql: `
 					INSERT OR REPLACE INTO bookmark (
@@ -44,10 +40,10 @@ const store = {
 						?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 					)`,
 				args: [
-					data.id, data.url, data.title, data.memo, data.rating,
-					JSON.stringify(data.tags || []),
-					data.created_at, data.updated_at, data.html, data.markdown, data.summary,
-					JSON.stringify(data.meta || {}),
+					b.id, b.url, b.title, b.memo, b.rating,
+					JSON.stringify(b.tags || []),
+					b.created_at, b.updated_at, b.html, b.markdown, b.summary,
+					JSON.stringify(b.meta || {}),
 				],
 			});
 		}

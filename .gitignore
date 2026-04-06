@@ -16,4 +16,4 @@ work/
 /work
 memo/
 .geminiignore
-nooklog.config.json
+fly.toml

@@ -1,3 +1,4 @@
+import nodeOs from 'node:os';
 import { os } from '@orpc/server';
 import { z } from 'zod';
 import { EventPublisher } from '@orpc/server';
@@ -219,6 +220,33 @@ export const router = {
 			.output(z.unknown())
 			.handler(async ({ input }) => nooklog.saveConfig(input)),
 	},
+
+	status: os
+		.route({ method: 'GET', path: '/status', tags: ['internal'] })
+		.output(z.object({
+			uptime: z.number(),
+			memory: z.object({
+				rss: z.number(),
+				heapTotal: z.number(),
+				heapUsed: z.number(),
+				external: z.number(),
+				arrayBuffers: z.number().optional(),
+			}),
+			system: z.object({
+				total: z.number(),
+				free: z.number(),
+			}),
+		}))
+		.handler(async () => {
+			return {
+				uptime: process.uptime(),
+				memory: process.memoryUsage(),
+				system: {
+					total: nodeOs.totalmem(),
+					free: nodeOs.freemem(),
+				},
+			};
+		}),
 
 	// 汎用的なSSEイベントストリーム
 	event: os

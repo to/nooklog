@@ -103,8 +103,10 @@ html:has(dialog[open]) {
 		}
 
 		input {
+			position: unset;
 			display: block;
 			width: var(--space-m);
+			height: var(--space-m);
 			aspect-ratio: 1;
 			margin: 0;
 			appearance: none;

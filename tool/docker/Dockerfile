@@ -12,8 +12,9 @@ WORKDIR /app
 # Copy package manifest files first to leverage Docker build caching for dependencies
 COPY package*.json ./
 
-# Install production-only dependencies to keep the image lightweight
-RUN npm install --omit=dev
+# Install node modules using cache mount for faster builds
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --omit=dev
 
 # Copy the rest of the application source code
 # Files specified in .dockerignore will be excluded

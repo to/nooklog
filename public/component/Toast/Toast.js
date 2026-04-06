@@ -13,7 +13,8 @@ class Toast extends Component {
 		this.innerHTML = `<span class="icon">${TOAST_ICONS[type]}</span>
 			<span>${sanitize(message)}</span>`;
 
-		document.body.appendChild(this);
+		const target = document.querySelector('dialog[open]') || document.body;
+		target.appendChild(this);
 		this.showPopover();
 
 		if (type === 'error')

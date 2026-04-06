@@ -31,7 +31,7 @@ export const batch = (list, task, {
 				}, { priority });
 
 				if (list.length > size) {
-					hub.emit('progress', {
+					hub.emit('queue.progress', {
 						label,
 						value: Math.min(i + size, list.length),
 						total: list.length,

@@ -1,6 +1,6 @@
 export default {
 	'client.theme': 'system', // 'light', 'dark', 'system'
-	'client.tint': 'grass', // 'red', 'pink', etc.
+	'client.tint': 'cyan', // 'red', 'pink', etc.
 	'client.windowPosition': 'bottom-right', // 'top-right', 'bottom-right'
 	'client.tagMatchMode': 'smart', // 'smart'（飛び石）, 'contains'（部分一致）, 'starts-with'（前方一致）
 	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both'

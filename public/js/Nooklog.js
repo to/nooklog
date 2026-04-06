@@ -60,7 +60,7 @@ const Nooklog = {
 	},
 
 	async import(file, options = {}) {
-		return await this.net.post(`/api/import?${qs(options)}`, file);
+		return await this.net.post(`/api/import?${qs(options)}`, file, {});
 	},
 
 	async rpc(path, data = {}, def = undefined) {

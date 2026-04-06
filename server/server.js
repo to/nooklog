@@ -216,8 +216,8 @@ if (process.env.restart_time > 0)
 
 await nooklog.initialize();
 
-const instance = server.listen(config['server.port'], async () => {
-	log.info({ url: `http://localhost:${config['server.port']}` }, 'server started');
+const instance = server.listen(config['server.port'], '::', async () => {
+	log.info({ port: config['server.port'], host: '::' }, 'server started');
 });
 
 // Graceful Shutdown

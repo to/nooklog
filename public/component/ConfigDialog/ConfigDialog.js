@@ -92,14 +92,14 @@ class ConfigDialog extends Component {
 
 					const folderTag = this.$('.folder-tag').value === 'true';
 					const { count } = await Nooklog.import(file, { folderTag });
+					if (count == null)
+						return;
 
 					const message = count > 0 ?
 						`Successfully imported ${count} bookmarks! ✨` :
 						'All bookmarks are already up to date.';
 					app.notify(message, 'info', 5000);
 					hub.emit('ConfigDialog:import');
-				} catch (err) {
-					app.error(err);
 				} finally {
 					this.els.import.disabled = false;
 					this.els.import.textContent = buttonText;
@@ -164,10 +164,8 @@ class ConfigDialog extends Component {
 	}
 
 	_updateBookmarklet() {
-		const server = this.els.form['extension.serverAddress'].value.replace(/\/$/, '');
 		const isTopRight = this.$('input[name="client.windowPosition"]:checked')?.value === 'top-right';
-
-		const code = `javascript:(function(server='${server.replace(/\/$/, '')}',isTopRight=${isTopRight}){const width=500,height=480,left=screen.availLeft+screen.availWidth-width-30,top=isTopRight?screen.availTop+8:screen.availTop+screen.availHeight-height-2,query=\`url=\${encodeURIComponent(location.href)}&title=\${encodeURIComponent(document.title)}\`,features=\`width=\${width},height=\${height},left=\${left},top=\${top},toolbar=0,menubar=0,location=0,status=0,scrollbars=1,resizable=1\`;window.open(\`\${server}/update.html?\${query}\`,'nooklog',features);})();`;
+		const code = `javascript:(function(server='${location.origin}',isTopRight=${isTopRight}){const width=500,height=480,left=screen.availLeft+screen.availWidth-width-30,top=isTopRight?screen.availTop+8:screen.availTop+screen.availHeight-height-2,query=\`url=\${encodeURIComponent(location.href)}&title=\${encodeURIComponent(document.title)}\`,features=\`width=\${width},height=\${height},left=\${left},top=\${top},toolbar=0,menubar=0,location=0,status=0,scrollbars=1,resizable=1\`;window.open(\`\${server}/update.html?\${query}\`,'nooklog',features);})();`;
 
 		const link = this.$('.bookmarklet a');
 		if (link)

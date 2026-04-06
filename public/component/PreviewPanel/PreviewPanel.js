@@ -36,7 +36,7 @@ class PreviewPanel extends Component {
 			this._render(bookmark);
 
 			this.show();
-			app.get('PreviewPanel.edit', false) ?
+			app.get('PreviewPanel.edit', true) ?
 				this._showEdit() :
 				this._showPreview();
 		});

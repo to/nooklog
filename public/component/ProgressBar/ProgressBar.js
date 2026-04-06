@@ -6,7 +6,7 @@ class ProgressBar extends Component {
 	}
 
 	bindEvents() {
-		hub.on('Server:progress', msg => {
+		hub.on('Server.queue.progress', msg => {
 			const { value, total, label } = msg;
 			const percent = (value / total) * 100;
 

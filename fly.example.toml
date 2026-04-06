@@ -1,0 +1,32 @@
+# fly.toml app configuration file sample for nooklog
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+# Copy this file to fly.toml and edit it for your deployment.
+
+app = 'your-unique-app-name'
+primary_region = 'iad' # Change to your preferred region (e.g., iad for Ashburn, ams for Amsterdam, nrt for Tokyo)
+
+[build]
+  image = "quoposk/nooklog:latest"
+#   dockerfile = "tool/docker/Dockerfile"
+
+[env]
+  PORT = '5050'
+
+[http_service]
+  internal_port = 5050
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
+
+# If you need persistent storage, create a volume and uncomment these lines.
+# For example: fly volumes create nooklog_data --region iad --size 1
+# [mounts]
+#   source = 'nooklog_data'
+#   destination = '/data'

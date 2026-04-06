@@ -19,12 +19,12 @@ const database = {
 	client: null,
 
 	async initialize() {
+		const isReadOnly = ['demo', 'readonly'].includes(process.env.NOOKLOG_MODE);
+
 		const dbDir = path.join(dataPath, 'database');
 		if (!fs.existsSync(dbDir))
 			fs.mkdirSync(dbDir, { recursive: true });
-
-		const localDbPath = path.join(dbDir, 'nooklog.db');
-		const localDbUrl = `file:${localDbPath}`;
+		const localDbUrl = `file:${path.join(dbDir, 'nooklog.db')}`;
 
 		const tursoUrl = process.env.TURSO_DATABASE_URL;
 		const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -59,11 +59,30 @@ const database = {
 			});
 		}
 
-		// パフォーマンス設定 (純粋なローカルモードのときだけ実行)
-		if (!tursoUrl) {
+		// パフォーマンス設定 (純粋なローカルモード かつ 書き込み可能なときだけ実行)
+		if (!tursoUrl && !isReadOnly) {
 			await this.client.execute('PRAGMA journal_mode = WAL');
 			await this.client.execute('PRAGMA synchronous = NORMAL');
 			await this.client.execute('PRAGMA foreign_keys = ON');
+		}
+
+		// デモモード（リードオンリー）対策：書き込み禁止エラーを無視するラッパーを被せる
+		if (isReadOnly) {
+			for (const m of ['execute', 'batch']) {
+				const origin = this.client[m].bind(this.client);
+				this.client[m] = async (...args) => {
+					try {
+						return await origin(...args);
+					} catch (e) {
+						if (e.code === 'BLOCKED' || e.code === 'SQLITE_READONLY') {
+							return m === 'execute'
+								? { rows: [] }
+								: [];
+						}
+						throw e;
+					}
+				};
+			}
 		}
 
 		await this.createTables();
@@ -74,6 +93,10 @@ const database = {
 
 	async loadConfig() {
 		Object.assign(config, JSON.parse(await this.getMeta('config') || '{}'));
+		if (process.env.PORT)
+			config['server.port'] = parseInt(process.env.PORT, 10);
+		config['server.mode'] = process.env.NOOKLOG_MODE || 'normal';
+		config['server.readonly'] = ['demo', 'readonly'].includes(config['server.mode']);
 		config['server.data.path'] = dataPath;
 		config['sentence.cachePath'] = path.join(dataPath, '.cache');
 	},
