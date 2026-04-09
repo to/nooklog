@@ -36,7 +36,7 @@ class PreviewPanel extends Component {
 			this._render(bookmark);
 
 			this.show();
-			app.get('PreviewPanel.edit', true) ?
+			(app.get('PreviewPanel.edit', true) && config['server.mode'] !== 'readonly') ?
 				this._showEdit() :
 				this._showPreview();
 		});
@@ -75,7 +75,8 @@ class PreviewPanel extends Component {
 		app.set('PreviewPanel.edit', false);
 
 		$.hide(this.els.preview);
-		$.show(this.els.edit);
+		if (config['server.mode'] !== 'readonly')
+			$.show(this.els.edit);
 	}
 
 	_showEdit() {

@@ -75,7 +75,7 @@ function wrapWithPrefix(model, options, execute) {
 const vector = {
 	engine: null,
 	model: '',
-	contextSize: config['sentence.contextSize'] || 2048,
+	contextSize: config['sentence.vector.contextSize'] || 2048,
 	_dimension: 0,
 	_calibration: null,
 
@@ -235,24 +235,24 @@ const vector = {
 	},
 
 	async initialize() {
-		const provider = config['sentence.provider'] || 'llama';
-		if (provider === 'none')
+		if (config['sentence.vector.disabled'])
 			return;
 
+		const provider = config['sentence.vector.provider'];
 		this.engine = await this.providers[provider].call(this.providers, {
-			model: config[`sentence.${provider}.model`],
-			dtype: config[`sentence.${provider}.dtype`],
-			url: config[`sentence.${provider}.url`],
-			apiKey: config[`sentence.${provider}.apiKey`],
-			device: config['sentence.device'] === 'auto' ? undefined : config['sentence.device'],
-			queryPrefix: config['sentence.queryPrefix'],
-			documentTitlePrefix: config['sentence.documentTitlePrefix'],
-			documentTextPrefix: config['sentence.documentTextPrefix'],
+			model: config[`sentence.vector.${provider}.model`],
+			dtype: config[`sentence.vector.${provider}.dtype`],
+			url: config[`sentence.vector.${provider}.url`],
+			apiKey: config[`sentence.vector.${provider}.apiKey`],
+			device: config['sentence.vector.device'] === 'auto' ? undefined : config['sentence.vector.device'],
+			queryPrefix: config['sentence.vector.queryPrefix'],
+			documentTitlePrefix: config['sentence.vector.documentTitlePrefix'],
+			documentTextPrefix: config['sentence.vector.documentTextPrefix'],
 			contextSize: this.contextSize,
 		});
 
 		this.contextSize = this.engine.contextSize || this.contextSize;
-		this.model = config[`sentence.${provider}.model`];
+		this.model = config[`sentence.vector.${provider}.model`];
 	},
 
 	async getDimension() {

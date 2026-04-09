@@ -153,9 +153,9 @@ class SearchForm extends Component {
 	}
 
 	_updateVectorVisibility() {
-		const isNone = config['sentence.provider'] === 'none';
-		this.$('input[name=mode]').parentElement.parentElement.classList.toggle('invisible', isNone);
-		if (isNone)
+		this.$('input[name=mode]').parentElement.parentElement.classList.toggle(
+			'invisible', config['sentence.vector.disabled']);
+		if (config['sentence.vector.disabled'])
 			$.check(this.els.mode, 'fts');
 	}
 }

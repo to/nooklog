@@ -7,7 +7,10 @@ import AssetCache from 'express-asset-file-cache-middleware';
 import { rateLimit } from 'express-rate-limit';
 import basicAuth from 'express-basic-auth';
 
+// 最初にデータベースからcofigを読み込む
+import database from './core/database.js';
 import config from './core/config.js';
+
 import nooklog from './core/nooklog.js';
 import baseLog from './core/log.js';
 import _ from './core/util.js';

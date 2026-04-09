@@ -47,7 +47,7 @@ const app = {
 };
 
 const hub = new EventEmitter();
-hub.on('Nooklog:load', () => {
+hub.once('Nooklog:load', () => {
 	updateTheme();
 	updateTint();
 });

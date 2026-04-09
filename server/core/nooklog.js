@@ -1,10 +1,13 @@
-let ingest;
 import db from './database.js';
 import store from './store.js';
 import config from './config.js';
 import _ from './util.js';
 import baseLog from './log.js';
 import sentence from './sentence/index.js';
+
+let ingest;
+if (!config['server.readonly'])
+	ingest = (await import('./ingest/index.js')).default;
 
 const log = baseLog.child({ module: 'nooklog' });
 
@@ -24,9 +27,6 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
-		if (!config['server.readonly'])
-			ingest = (await import('./ingest/index.js')).default;
-
 		await sentence.initialize();
 		await db.initializeSearch();
 
@@ -56,15 +56,15 @@ const nooklog = {
 		if (config['server.readonly'])
 			return config;
 
-		const oldProvider = config['sentence.provider'];
-		const oldModel = config[`sentence.${oldProvider}.model`];
+		const oldProvider = config['sentence.vector.provider'];
+		const oldModel = config[`sentence.vector.${oldProvider}.model`];
 		const oldTokenizer = config['database.tokenizer'];
 
 		await db.saveConfig(input);
 
 		// プロバイダー、モデル、トークナイザーのいずれかが変更されたら初期化（バックフィル等）をやり直す
-		const newProvider = config['sentence.provider'];
-		const newModel = config[`sentence.${newProvider}.model`];
+		const newProvider = config['sentence.vector.provider'];
+		const newModel = config[`sentence.vector.${newProvider}.model`];
 		const newTokenizer = config['database.tokenizer'];
 		if (newProvider !== oldProvider || newModel !== oldModel || newTokenizer !== oldTokenizer) {
 			await store.dispose();
@@ -121,8 +121,8 @@ const nooklog = {
 	},
 
 	async delete(id) {
-		if (!id)
-			throw new Error('Missing id');
+		if (config['server.readonly'])
+			return;
 
 		const bookmark = await store.find({ id });
 		await store.delete(id);
@@ -141,6 +141,9 @@ const nooklog = {
 	},
 
 	async save({ id, url, title, memo, rating, tags, html, markdown }) {
+		if (config['server.readonly'])
+			return await this.find({ id, url });
+
 		if (!id && !url)
 			throw new Error('Missing id or url');
 
@@ -196,6 +199,9 @@ const nooklog = {
 	},
 
 	async import(content, options = {}) {
+		if (config['server.readonly'])
+			return { count: 0 };
+
 		const bookmarks = ingest.bookmark.process(content, options);
 		const count = await store.import(bookmarks);
 

@@ -13,18 +13,18 @@ export default {
 	'extension.focusMemoOnSelection': false,
 	'server.port': 5050,
 	'server.password': '',
-	'sentence.provider': 'none', // 'llama', 'transformers', 'openai', 'none'
-	'sentence.device': 'auto',
-	'sentence.queryPrefix': '', // 空文字ならプリセットを使用
-	'sentence.documentTitlePrefix': '', // 空文字ならプリセットを使用
-	'sentence.documentTextPrefix': '', // 空文字ならプリセットを使用
-	'sentence.llama.model': 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
-	'sentence.transformers.model': 'onnx-community/embeddinggemma-300m-ONNX',
-	'sentence.transformers.dtype': 'q8',
-	'sentence.openai.model': 'embeddinggemma',
-	'sentence.openai.url': 'http://localhost:11434/v1/embeddings',
-	'sentence.openai.apiKey': '',
-	'sentence.contextSize': 2048,
+	'sentence.vector.provider': 'none', // 'llama', 'transformers', 'openai', 'none'
+	'sentence.vector.device': 'auto',
+	'sentence.vector.queryPrefix': '', // 空文字ならプリセットを使用
+	'sentence.vector.documentTitlePrefix': '', // 空文字ならプリセットを使用
+	'sentence.vector.documentTextPrefix': '', // 空文字ならプリセットを使用
+	'sentence.vector.llama.model': 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
+	'sentence.vector.transformers.model': 'onnx-community/embeddinggemma-300m-ONNX',
+	'sentence.vector.transformers.dtype': 'q8',
+	'sentence.vector.openai.model': 'embeddinggemma',
+	'sentence.vector.openai.url': 'http://localhost:11434/v1/embeddings',
+	'sentence.vector.openai.apiKey': '',
+	'sentence.vector.contextSize': 2048,
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
 	'database.saveHTML': false,

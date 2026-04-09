@@ -12,14 +12,14 @@ const log = baseLog.child({ module: 'database' });
 
 const dataPath = process.env.NOOKLOG_DATA_PATH || (
 	process.platform === 'linux'
-		? '/data'
+		? path.join(process.cwd(), 'data')
 		: path.join(os.homedir(), '.nooklog', 'data'));
 
 const database = {
 	client: null,
 
 	async initialize() {
-		const isReadOnly = ['demo', 'lite'].includes(process.env.NOOKLOG_MODE);
+		const isReadOnly = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
 
 		const dbDir = path.join(dataPath, 'database');
 		if (!fs.existsSync(dbDir))
@@ -95,11 +95,16 @@ const database = {
 		Object.assign(config, JSON.parse(await this.getMeta('config') || '{}'));
 		if (process.env.PORT)
 			config['server.port'] = parseInt(process.env.PORT, 10);
-		config['server.mode'] = process.env.NOOKLOG_MODE || 'normal';
-		config['server.readonly'] = ['demo', 'lite'].includes(config['server.mode']);
-		config['server.disableAi'] = config['sentence.provider'] === 'none' || config['server.readonly'];
+		config['server.mode'] = process.env.NOOKLOG_READONLY ? 'readonly' :
+			(process.env.NOOKLOG_DEMO ? 'demo' : 'normal');
+		config['server.readonly'] = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
+		config['sentence.vector.disabled'] = config['sentence.vector.provider'] === 'none' || (
+			config['sentence.vector.provider'] === 'openapi'
+				? false
+				: config['server.readonly']);
 		config['server.data.path'] = dataPath;
 		config['sentence.cachePath'] = path.join(dataPath, '.cache');
+		this.saveConfig(config);
 	},
 
 	async saveConfig(input) {
@@ -164,7 +169,7 @@ const database = {
 	},
 
 	async initializeVectorTable() {
-		if (config['sentence.provider'] === 'none')
+		if (config['sentence.vector.disabled'])
 			return;
 
 		const current = sentence.model;

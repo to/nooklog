@@ -4,31 +4,36 @@ class RatingInput extends Component {
 
 	// 1つのイベントハンドラで多数のインスタンスを処理する
 	static {
-		document.addEventListener('click', e => {
-			const el = e.target.closest('nl-rating');
-			if (!el)
+		hub.once('Nooklog:load', () => {
+			if (config['server.mode'] === 'readonly')
 				return;
 
-			const button = e.target.closest('[data-rating]');
-			if (!button)
-				return;
+			document.addEventListener('click', e => {
+				const el = e.target.closest('nl-rating');
+				if (!el)
+					return;
 
-			const rating = +button.dataset.rating;
-			el.value = (+el.dataset.rating === rating) ? 0 : rating;
-			el.classList.remove('is-over');
-			el.dispatchEvent(new Event('change', { bubbles: true }));
-		});
+				const button = e.target.closest('[data-rating]');
+				if (!button)
+					return;
 
-		document.addEventListener('mouseover', e => {
-			const el = e.target.closest('nl-rating');
-			if (el)
-				el.classList.add('is-over');
-		});
-
-		document.addEventListener('mouseout', e => {
-			const el = e.target.closest('nl-rating');
-			if (el && !el.contains(e.relatedTarget))
+				const rating = +button.dataset.rating;
+				el.value = (+el.dataset.rating === rating) ? 0 : rating;
 				el.classList.remove('is-over');
+				el.dispatchEvent(new Event('change', { bubbles: true }));
+			});
+
+			document.addEventListener('mouseover', e => {
+				const el = e.target.closest('nl-rating');
+				if (el)
+					el.classList.add('is-over');
+			});
+
+			document.addEventListener('mouseout', e => {
+				const el = e.target.closest('nl-rating');
+				if (el && !el.contains(e.relatedTarget))
+					el.classList.remove('is-over');
+			});
 		});
 	}
 

@@ -41,6 +41,14 @@ class UpdateForm extends Component {
 	}
 
 	ready() {
+		if (config['server.mode'] === 'readonly') {
+			$.hide(this.els.submit);
+			this.els.memo.readOnly = true;
+			this.els.markdown.readOnly = true;
+			this.els.title.readOnly = true;
+			this.els.url.readOnly = true;
+		}
+
 		this.els.rating.toggle(
 			config['client.ratingInputMode'] !== 'tags');
 		this.els.tags.focus();
@@ -216,7 +224,7 @@ class UpdateForm extends Component {
 	}
 
 	async _handleSubmit() {
-		if (this.isSubmitting)
+		if (this.isSubmitting || config['server.mode'] === 'readonly')
 			return;
 
 		this.setSubmitting(true);

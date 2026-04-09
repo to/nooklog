@@ -1,5 +1,5 @@
 <header class="flex justify-end items-end">
-	<button class="open flat icon">settings</button>
+	<button class="open flat icon none">settings</button>
 </header>
 
 <dialog closedby="any">
@@ -198,10 +198,10 @@
 			<div>
 				<label>Provider</label>
 				<div class="radio-flat">
-					<label><input type="radio" name="sentence.provider" value="none">None</label>
-					<label><input type="radio" name="sentence.provider" value="llama">Llama</label>
-					<label><input type="radio" name="sentence.provider" value="transformers">Transformers</label>
-					<label><input type="radio" name="sentence.provider" value="openai">OpenAI</label>
+					<label><input type="radio" name="sentence.vector.provider" value="none">None</label>
+					<label><input type="radio" name="sentence.vector.provider" value="llama">Llama</label>
+					<label><input type="radio" name="sentence.vector.provider" value="transformers">Transformers</label>
+					<label><input type="radio" name="sentence.vector.provider" value="openai">OpenAI</label>
 				</div>
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
@@ -210,16 +210,16 @@
 			<div data-provider="llama,transformers">
 				<label>Device</label>
 				<div class="radio-flat">
-					<label><input type="radio" name="sentence.device" value="auto"> Auto</label>
-					<label><input type="radio" name="sentence.device" value="cpu"> CPU</label>
-					<label><input type="radio" name="sentence.device" value="gpu"> GPU</label>
+					<label><input type="radio" name="sentence.vector.device" value="auto"> Auto</label>
+					<label><input type="radio" name="sentence.vector.device" value="cpu"> CPU</label>
+					<label><input type="radio" name="sentence.vector.device" value="gpu"> GPU</label>
 				</div>
 				<span class="description">Select the device for calculation (Auto is recommended).</span>
 			</div>
 
 			<div data-provider="llama">
 				<label>Llama Model</label>
-				<input type="text" name="sentence.llama.model" placeholder="hf:ggml-org/...">
+				<input type="text" name="sentence.vector.llama.model" placeholder="hf:ggml-org/...">
 				<span class="description">HuggingFace URI or local path to GGUF model.</span>
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
@@ -227,33 +227,33 @@
 
 			<div data-provider="transformers">
 				<label>Transformers Model</label>
-				<input type="text" name="sentence.transformers.model" placeholder="onnx-community/...">
+				<input type="text" name="sentence.vector.transformers.model" placeholder="onnx-community/...">
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
 			</div>
 			<div data-provider="transformers">
 				<label>Transformers DType</label>
-				<input type="text" name="sentence.transformers.dtype" placeholder="q8">
+				<input type="text" name="sentence.vector.transformers.dtype" placeholder="q8">
 			</div>
 
 			<div data-provider="openai">
 				<label>OpenAI Model</label>
-				<input type="text" name="sentence.openai.model" placeholder="embeddinggemma">
+				<input type="text" name="sentence.vector.openai.model" placeholder="embeddinggemma">
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
 			</div>
 			<div data-provider="openai">
 				<label>OpenAI URL</label>
-				<input type="text" name="sentence.openai.url" placeholder="http://localhost:11434/v1/embeddings">
+				<input type="text" name="sentence.vector.openai.url" placeholder="http://localhost:11434/v1/embeddings">
 			</div>
 			<div data-provider="openai">
 				<label>OpenAI API Key</label>
-				<input type="password" name="sentence.openai.apiKey" placeholder="sk-...">
+				<input type="password" name="sentence.vector.openai.apiKey" placeholder="sk-...">
 			</div>
 
 			<div data-provider="llama,transformers,openai">
 				<label>Query Prefix</label>
-				<input type="text" name="sentence.queryPrefix" placeholder="Default">
+				<input type="text" name="sentence.vector.queryPrefix" placeholder="Default">
 				<span class="description">Empty to use preset defaults based on model name:</span>
 				<span class="description"><span class="value">gemma: </span>
 					<code>task: search result | query: </code></span>
@@ -269,7 +269,7 @@
 
 			<div data-provider="llama,transformers,openai">
 				<label>Document Title Prefix</label>
-				<input type="text" name="sentence.documentTitlePrefix" placeholder="Default">
+				<input type="text" name="sentence.vector.documentTitlePrefix" placeholder="Default">
 				<span class="description">Empty to use preset defaults.</span>
 				<span class="description">
 					<span class="value">gemma: </span><code>title: </code> /
@@ -280,7 +280,7 @@
 
 			<div data-provider="llama,transformers,openai">
 				<label>Document Text Prefix</label>
-				<input type="text" name="sentence.documentTextPrefix" placeholder="Default">
+				<input type="text" name="sentence.vector.documentTextPrefix" placeholder="Default">
 				<span class="description">Separator between title and text (default: <code>\n</code>).</span>
 				<span class="description">
 					<span class="value">gemma: </span><code>text: </code>

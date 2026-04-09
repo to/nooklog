@@ -54,7 +54,7 @@ const store = {
 		this.embed(bookmarks);
 	},
 
-	async indexFts(bookmarks, { priority = 20 } = {}) {
+	indexFts(bookmarks, { priority = 20 } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
 		const useUnigram = config['database.tokenizer'] === 'unigram';
@@ -82,8 +82,8 @@ const store = {
 		}, { priority, size: 50, label: 'FTS Indexing' });
 	},
 
-	async embed(bookmarks, { priority = 10 } = {}) {
-		if (config['sentence.provider'] === 'none')
+	embed(bookmarks, { priority = 10 } = {}) {
+		if (config['sentence.vector.disabled'])
 			return;
 
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
@@ -147,7 +147,7 @@ const store = {
 	},
 
 	async reembed() {
-		if (config['sentence.provider'] === 'none')
+		if (config['sentence.vector.disabled'])
 			return;
 
 		await this.reembedJob?.abort();
@@ -198,7 +198,7 @@ const store = {
 
 	async delete(id) {
 		const batch = [];
-		if (config['sentence.provider'] !== 'none') {
+		if (!config['sentence.vector.disabled']) {
 			batch.push({
 				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [id],

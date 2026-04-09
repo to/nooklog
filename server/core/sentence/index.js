@@ -1,4 +1,9 @@
-import * as chunk from './chunk.js';
+import config from '../config.js';
+
+let chunk = {};
+if (!config['server.readonly'])
+	chunk = await import('./chunk.js');
+
 import vector from './vector.js';
 
 // 日本語表記揺れの正規化 (全角空白/英数→半角、分離された濁点→合成など)

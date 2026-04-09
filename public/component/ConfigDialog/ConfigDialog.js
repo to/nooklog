@@ -14,6 +14,11 @@ class ConfigDialog extends Component {
 	}
 
 	async ready() {
+		if (config['server.mode'] === 'readonly')
+			return;
+
+		$.show(this.els.open);
+
 		for (const el of this.els.form.elements) {
 			if (!el.name)
 				continue;
@@ -61,7 +66,7 @@ class ConfigDialog extends Component {
 				updateTint();
 			}
 
-			if (name === 'sentence.provider')
+			if (name === 'sentence.vector.provider')
 				this._updateSentenceProviderVisibility();
 
 			if (name === 'client.windowPosition' || name === 'extension.serverAddress')
@@ -159,7 +164,7 @@ class ConfigDialog extends Component {
 	}
 
 	_updateSentenceProviderVisibility() {
-		const provider = this.$('input[name="sentence.provider"]:checked')?.value;
+		const provider = this.$('input[name="sentence.vector.provider"]:checked')?.value;
 		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider.split(',').includes(provider)));
 	}
 
