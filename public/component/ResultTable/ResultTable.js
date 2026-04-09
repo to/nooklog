@@ -65,13 +65,14 @@ class ResultTable extends Component {
 				dir = e.key === 'j' ? 'next' : 'previous';
 
 			if (dir) {
+				e.preventDefault();
+
 				const current = this.$('.tr.is-selected');
 				const target = current
 					? current[dir + 'ElementSibling']
 					: this.$('.tr');
 
 				if (target) {
-					e.preventDefault();
 					this._select(target);
 
 					const viewTarget = target[dir + 'ElementSibling']?.[dir + 'ElementSibling'] || target;
