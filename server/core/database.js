@@ -19,7 +19,7 @@ const database = {
 	client: null,
 
 	async initialize() {
-		const isReadOnly = ['demo', 'readonly'].includes(process.env.NOOKLOG_MODE);
+		const isReadOnly = ['demo', 'lite'].includes(process.env.NOOKLOG_MODE);
 
 		const dbDir = path.join(dataPath, 'database');
 		if (!fs.existsSync(dbDir))
@@ -96,7 +96,8 @@ const database = {
 		if (process.env.PORT)
 			config['server.port'] = parseInt(process.env.PORT, 10);
 		config['server.mode'] = process.env.NOOKLOG_MODE || 'normal';
-		config['server.readonly'] = ['demo', 'readonly'].includes(config['server.mode']);
+		config['server.readonly'] = ['demo', 'lite'].includes(config['server.mode']);
+		config['server.disableAi'] = config['sentence.provider'] === 'none' || config['server.readonly'];
 		config['server.data.path'] = dataPath;
 		config['sentence.cachePath'] = path.join(dataPath, '.cache');
 	},

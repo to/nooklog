@@ -1,4 +1,4 @@
-import ingest from './ingest/index.js';
+let ingest;
 import db from './database.js';
 import store from './store.js';
 import config from './config.js';
@@ -24,6 +24,9 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
+		if (!config['server.readonly'])
+			ingest = (await import('./ingest/index.js')).default;
+
 		await sentence.initialize();
 		await db.initializeSearch();
 
@@ -39,7 +42,7 @@ const nooklog = {
 
 	async dispose() {
 		log.info('disposing nooklog');
-		await ingest.browser.dispose();
+		await ingest?.browser.dispose();
 		await store.dispose();
 		await sentence.dispose();
 		db.close();

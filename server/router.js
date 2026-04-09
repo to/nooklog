@@ -1,11 +1,10 @@
-import nodeOs from 'node:os';
-import { os } from '@orpc/server';
+import os from 'node:os';
+import { os as orpc } from '@orpc/server';
 import { z } from 'zod';
 import { EventPublisher } from '@orpc/server';
 import archiver from 'archiver';
 import nooklog from './core/nooklog.js';
-import ingest from './core/ingest/index.js';
-import config from './core/config.js';
+import * as ingestHtml from './core/ingest/html.js';
 import baseLog from './core/log.js';
 import hub from './core/hub.js';
 
@@ -46,7 +45,7 @@ const bookmarkSchema = z.object({
 });
 
 export const router = {
-	search: os
+	search: orpc
 		.route({ method: 'GET', path: '/search' })
 		.input(searchSchema.extend({
 			sortBy: z.enum(['updated_at', 'created_at', 'rating', 'relevance']).default('updated_at'),
@@ -67,7 +66,7 @@ export const router = {
 			return await nooklog.search(input);
 		}),
 
-	find: os
+	find: orpc
 		.route({ method: 'GET', path: '/find' })
 		.input(idOrUrlSchema)
 		.output(bookmarkSchema.nullish())
@@ -75,7 +74,7 @@ export const router = {
 			return await nooklog.find(input);
 		}),
 
-	save: os
+	save: orpc
 		.route({ method: 'POST', path: '/save' })
 		.input(z.object({
 			title: z.string().default(''),
@@ -90,7 +89,7 @@ export const router = {
 			return await nooklog.save(input);
 		}),
 
-	delete: os
+	delete: orpc
 		.route({ method: 'POST', path: '/delete' })
 		.input(z.object({
 			id: z.string(),
@@ -102,7 +101,7 @@ export const router = {
 			return await nooklog.delete(input.id);
 		}),
 
-	import: os
+	import: orpc
 		.route({
 			method: 'POST',
 			path: '/import',
@@ -126,7 +125,7 @@ export const router = {
 			return await nooklog.import(input.body, input.query);
 		}),
 
-	export: os
+	export: orpc
 		.route({ method: 'GET', path: '/export' })
 		.input(searchSchema.extend({
 			exportFormat: z.enum(['json', 'html', 'markdown']),
@@ -167,14 +166,14 @@ export const router = {
 			res.end = () => res;
 		}),
 
-	getTags: os
+	getTags: orpc
 		.route({ method: 'GET', path: '/tags' })
 		.output(z.array(z.string()))
 		.handler(async () => {
 			return await nooklog.getTags();
 		}),
 
-	stash: os
+	stash: orpc
 		.route({
 			method: 'POST',
 			path: '/stash',
@@ -185,7 +184,7 @@ export const router = {
 			await nooklog.stash(input);
 		}),
 
-	pop: os
+	pop: orpc
 		.route({
 			method: 'POST',
 			path: '/pop',
@@ -196,7 +195,7 @@ export const router = {
 			return await nooklog.pop(input);
 		}),
 
-	convertMarkdown: os
+	convertMarkdown: orpc
 		.route({ method: 'POST', path: '/markdown/convert' })
 		.input(z.object({
 			url: z.string().optional(),
@@ -206,22 +205,22 @@ export const router = {
 			markdown: z.string(),
 		}))
 		.handler(async ({ input }) => {
-			const { html, ...rest } = ingest.html.process(input.url, input.html);
+			const { html, ...rest } = ingestHtml.process(input.url, input.html);
 			return rest;
 		}),
 
 	config: {
-		get: os
+		get: orpc
 			.output(z.unknown())
 			.handler(async () => nooklog.getConfig()),
 
-		save: os
+		save: orpc
 			.input(z.unknown())
 			.output(z.unknown())
 			.handler(async ({ input }) => nooklog.saveConfig(input)),
 	},
 
-	status: os
+	status: orpc
 		.route({ method: 'GET', path: '/status', tags: ['internal'] })
 		.output(z.object({
 			uptime: z.number(),
@@ -238,18 +237,21 @@ export const router = {
 			}),
 		}))
 		.handler(async () => {
+			const toMB = bytes => Math.floor(bytes / 1024 / 1024);
 			return {
 				uptime: process.uptime(),
-				memory: process.memoryUsage(),
+				memory: Object.fromEntries(
+					Object.entries(process.memoryUsage()).map(([k, v]) => [k, toMB(v)]),
+				),
 				system: {
-					total: nodeOs.totalmem(),
-					free: nodeOs.freemem(),
+					total: toMB(os.totalmem()),
+					free: toMB(os.freemem()),
 				},
 			};
 		}),
 
 	// 汎用的なSSEイベントストリーム
-	event: os
+	event: orpc
 		.route({ method: 'GET', path: '/event', tags: ['internal'] })
 		.handler(async function* ({ signal }) {
 			for await (const payload of publisher.subscribe('message', { signal }))
