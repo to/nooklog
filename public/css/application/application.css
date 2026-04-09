@@ -59,7 +59,7 @@ select {
 
 input:focus-visible,
 textarea:focus-visible {
-	border-color: var(--ink-3);
+	border-color: color-mix(in oklch, var(--ink-2) 60%, var(--ink-3) 40%);
 }
 
 input:read-only {

@@ -1,7 +1,7 @@
 /* ---- Tagify ---- */
 .tagify {
 	--tags-border-color: var(--ink-2);
-	--tags-focus-border-color: var(--ink-3);
+	--tags-focus-border-color: color-mix(in oklch, var(--ink-2) 60%, var(--ink-3) 40%);
 	--tags-hover-border-color: var(--ink-2);
 
 	--tag-bg: var(--ink-5);
