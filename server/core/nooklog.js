@@ -92,12 +92,13 @@ const nooklog = {
 	},
 
 	async stash(b) {
-		stashMap.set(b.url, b);
+		stashMap.set(b.id || b.url, b);
 	},
 
 	async pop(b) {
-		b = stashMap.get(b.url) || b;
-		stashMap.delete(b.url);
+		const key = b.id || b.url;
+		b = stashMap.get(key) || b;
+		stashMap.delete(key);
 
 		// 初回のpopか？
 		if (b.memo == null)
