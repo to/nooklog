@@ -165,7 +165,7 @@ const database = {
 	},
 
 	async initializeVectorTable() {
-		if (config['server.readonly'])
+		if (config['server.readonly'] || config['sentence.vector.error'])
 			return;
 
 		const provider = config['sentence.vector.provider'];

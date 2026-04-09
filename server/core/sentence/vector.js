@@ -235,24 +235,34 @@ const vector = {
 	},
 
 	async initialize() {
+		config['sentence.vector.error'] = false;
 		if (config['sentence.vector.disabled'])
 			return;
 
-		const provider = config['sentence.vector.provider'];
-		this.engine = await this.providers[provider].call(this.providers, {
-			model: config[`sentence.vector.${provider}.model`],
-			dtype: config[`sentence.vector.${provider}.dtype`],
-			url: config[`sentence.vector.${provider}.url`],
-			apiKey: config[`sentence.vector.${provider}.apiKey`],
-			device: config['sentence.vector.device'] === 'auto' ? undefined : config['sentence.vector.device'],
-			queryPrefix: config['sentence.vector.queryPrefix'],
-			documentTitlePrefix: config['sentence.vector.documentTitlePrefix'],
-			documentTextPrefix: config['sentence.vector.documentTextPrefix'],
-			contextSize: this.contextSize,
-		});
+		try {
+			const provider = config['sentence.vector.provider'];
+			this.engine = await this.providers[provider].call(this.providers, {
+				model: config[`sentence.vector.${provider}.model`],
+				dtype: config[`sentence.vector.${provider}.dtype`],
+				url: config[`sentence.vector.${provider}.url`],
+				apiKey: config[`sentence.vector.${provider}.apiKey`],
+				device: config['sentence.vector.device'] === 'auto' ? undefined : config['sentence.vector.device'],
+				queryPrefix: config['sentence.vector.queryPrefix'],
+				documentTitlePrefix: config['sentence.vector.documentTitlePrefix'],
+				documentTextPrefix: config['sentence.vector.documentTextPrefix'],
+				contextSize: this.contextSize,
+			});
 
-		this.contextSize = this.engine.contextSize || this.contextSize;
-		this.model = config[`sentence.vector.${provider}.model`];
+			this.contextSize = this.engine.contextSize || this.contextSize;
+			this.model = config[`sentence.vector.${provider}.model`];
+
+			// 接続・動作確認
+			await this.getCalibration();
+			config['sentence.vector.error'] = false;
+		} catch (error) {
+			config['sentence.vector.error'] = true;
+			log.error({ error }, 'failed to initialize sentence vector');
+		}
 	},
 
 	async getDimension() {
@@ -268,15 +278,15 @@ const vector = {
 			return this._calibration;
 
 		const dot = (a, b) => a.reduce((sum, v, i) => sum + v * b[i], 0);
-		const vecs = await Promise.all([
-			this.embedQuery('cat'),
+		const vecs = [await this.embedQuery('cat')];
+		vecs.push(...await Promise.all([
 			this.embedDocument({ title: 'Animal', text: 'kitten' }),
 			this.embedQuery('A round fruit with red, yellow, or green skin and a whitish inside.'),
 			this.embedDocument({
 				title: 'Space exploration',
 				text: 'The exploration of outer space using spacecraft, with or without a human crew.',
 			}),
-		]);
+		]));
 
 		const near = 1 - dot(vecs[0], vecs[1][0]);
 		const far = 1 - dot(vecs[2], vecs[3][0]);
