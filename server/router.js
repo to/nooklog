@@ -211,17 +211,17 @@ export const router = {
 
 	config: {
 		get: orpc
-			.output(z.unknown())
+			.route({ tags: ['internal'] })
 			.handler(async () => nooklog.getConfig()),
 
 		save: orpc
+			.route({ tags: ['internal'] })
 			.input(z.unknown())
-			.output(z.unknown())
 			.handler(async ({ input }) => nooklog.saveConfig(input)),
 	},
 
 	status: orpc
-		.route({ method: 'GET', path: '/status', tags: ['internal'] })
+		.route({ method: 'GET', path: '/status' })
 		.output(z.object({
 			uptime: z.number(),
 			memory: z.object({

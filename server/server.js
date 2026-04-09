@@ -202,10 +202,7 @@ server.get('/openapi.json', async (req, res) => {
 				version: '1.0.0',
 			},
 			servers: [{ url: '/api' }],
-			filter: ({ contract }) => {
-				const route = contract['~orpc'].route;
-				return !!route && !route.tags?.includes('internal');
-			},
+			filter: ({ contract }) => !contract['~orpc'].route.tags?.includes('internal'),
 		});
 	}
 	res.json(cachedOpenAPI);
