@@ -197,14 +197,11 @@ const store = {
 	},
 
 	async delete(id) {
-		const batch = [];
-		if (!config['sentence.vector.disabled']) {
-			batch.push({
+		await db.client.batch([
+			{
 				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [id],
-			});
-		}
-		batch.push(
+			},
 			{
 				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
 				args: [id],
@@ -213,8 +210,7 @@ const store = {
 				sql: 'DELETE FROM bookmark WHERE id = ?',
 				args: [id],
 			},
-		);
-		await db.client.batch(batch, 'write');
+		], 'write');
 	},
 
 	async getTags() {

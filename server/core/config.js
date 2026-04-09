@@ -1,4 +1,4 @@
-export default {
+const config = {
 	'client.theme': 'system', // 'light', 'dark', 'system'
 	'client.tint': 'cyan', // 'red', 'pink', etc.
 	'client.windowPosition': 'bottom-right', // 'top-right', 'bottom-right'
@@ -30,3 +30,18 @@ export default {
 	'database.saveHTML': false,
 	'database.turso.replica': false,
 };
+
+Object.defineProperty(config, 'sentence.vector.disabled', {
+	enumerable: false,
+	configurable: true,
+	get() {
+		// 低メモリ環境を考慮し埋め込みの利用を判断する
+		return this['sentence.vector.provider'] === 'none' || (
+			this['sentence.vector.provider'] === 'openai'
+				? false
+				: !!this['server.readonly']);
+	},
+	set() { },
+});
+
+export default config;

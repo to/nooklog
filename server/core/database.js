@@ -98,10 +98,6 @@ const database = {
 		config['server.mode'] = process.env.NOOKLOG_READONLY ? 'readonly' :
 			(process.env.NOOKLOG_DEMO ? 'demo' : 'normal');
 		config['server.readonly'] = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
-		config['sentence.vector.disabled'] = config['sentence.vector.provider'] === 'none' || (
-			config['sentence.vector.provider'] === 'openapi'
-				? false
-				: config['server.readonly']);
 		config['server.data.path'] = dataPath;
 		config['sentence.cachePath'] = path.join(dataPath, '.cache');
 		this.saveConfig(config);
@@ -169,33 +165,34 @@ const database = {
 	},
 
 	async initializeVectorTable() {
-		if (config['sentence.vector.disabled'])
+		if (config['server.readonly'])
 			return;
 
-		const current = sentence.model;
+		const provider = config['sentence.vector.provider'];
+		const current = provider === 'none' ? 'none' : sentence.model;
 		const old = await this.getMeta('vector_model');
 		if (old !== current) {
-			const dimension = await sentence.getDimension();
-			log.info({
-				from: old || 'none',
-				to: current,
-				dimension,
-			}, 'model changed, re-initializing vector table');
-
-			await this.client.batch([
-				'DROP TABLE IF EXISTS bookmark_vector',
-				`CREATE TABLE bookmark_vector (
-					row_id INTEGER PRIMARY KEY,
-					bookmark_id INTEGER,
-					chunk_index INTEGER,
-					field TEXT,
-					content TEXT,
-					position INTEGER,
-					vector F32_BLOB(${dimension}),
-					FOREIGN KEY (bookmark_id) REFERENCES bookmark(row_id) ON DELETE CASCADE
-				)`,
-				'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
-			], 'write');
+			const batch = ['DROP TABLE IF EXISTS bookmark_vector'];
+			if (provider === 'none') {
+				log.info('initializing vector stub table');
+				batch.push('CREATE TABLE bookmark_vector (bookmark_id INTEGER)');
+			} else {
+				const dimension = await sentence.getDimension();
+				log.info({ from: old, to: current, dimension }, 'model changed, re-initializing vector table');
+				batch.push(
+					`CREATE TABLE bookmark_vector (
+						row_id INTEGER PRIMARY KEY,
+						bookmark_id INTEGER,
+						chunk_index INTEGER,
+						field TEXT,
+						content TEXT,
+						position INTEGER,
+						vector F32_BLOB(${dimension}),
+						FOREIGN KEY (bookmark_id) REFERENCES bookmark(row_id) ON DELETE CASCADE
+					)`,
+					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
+			}
+			await this.client.batch(batch, 'write');
 
 			await this.setMeta('vector_model', current);
 		}
