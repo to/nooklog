@@ -175,6 +175,21 @@ header {
 	}
 }
 
+.select-flat label input,
+.radio-flat label input,
+.toggle input{
+	/* 不可視状態にする */
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	white-space: nowrap;
+	border-width: 0;
+	clip: rect(0, 0, 0, 0);
+}
+
 /* ---- Select/Radio ---- */
 .select-flat,
 .radio-flat {
@@ -188,19 +203,6 @@ header {
 		line-height: 1;
 		cursor: pointer;
 		user-select: none;
-
-		& input {
-			/* 不可視状態にする */
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			padding: 0;
-			margin: -1px;
-			overflow: hidden;
-			white-space: nowrap;
-			border-width: 0;
-			clip: rect(0, 0, 0, 0);
-		}
 	}
 }
 
@@ -263,7 +265,7 @@ header {
 		}
 
 		&:has(input:focus-visible) {
-			filter: brightness(var(--hover-up));
+			text-decoration: double underline;
 		}
 	}
 }
@@ -272,10 +274,6 @@ header {
 .toggle {
 	display: inline-flex;
 	cursor: pointer;
-
-	input {
-		display: none;
-	}
 
 	span {
 		position: relative;
@@ -302,6 +300,16 @@ header {
 
 	input:checked+span::after {
 		transform: translateX(14px);
+	}
+
+	span:hover,
+	&:has(input:focus-visible) span {
+		background-color: oklch(from var(--ink-3) calc(l * var(--hover-on)) c h);
+	}
+
+	input:checked+span:hover,
+	&:has(input:checked:focus-visible) span {
+		background-color: oklch(from var(--ink-5) calc(l * var(--hover-off)) c h);
 	}
 }
 
