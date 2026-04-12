@@ -77,12 +77,12 @@ export const router = {
 	save: orpc
 		.route({ method: 'POST', path: '/save' })
 		.input(z.object({
-			title: z.string().default(''),
-			memo: z.string().default(''),
-			rating: z.number().int().min(0).max(5).default(0),
+			title: z.string(),
+			memo: z.string(),
+			rating: z.number().int().min(0).max(5),
 			tags: inputArrayField,
-			markdown: z.string().default(''),
-			html: z.string().default(''),
+			markdown: z.string(),
+			html: z.string(),
 		}).partial().and(idOrUrlSchema))
 		.output(bookmarkSchema)
 		.handler(async ({ input }) => {

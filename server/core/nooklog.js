@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import db from './database.js';
 import store from './store.js';
 import config from './config.js';
@@ -49,17 +50,27 @@ const nooklog = {
 	},
 
 	getConfig() {
-		return config;
+		const res = { ...config };
+		if (res['server.password'])
+			res['server.password'] = '********';
+		return res;
 	},
 
 	async saveConfig(input) {
 		if (config.runtime['server.readonly'])
 			return config;
 
+		const password = input['server.password'];
+		if (password === '********')
+			delete input['server.password'];
+		else if (password)
+			input['server.password'] = crypto.createHash('sha256').update(password).digest('hex');
+
 		const oldProvider = config['sentence.vector.provider'];
 		const oldModel = config[`sentence.vector.${oldProvider}.model`];
 		const oldTokenizer = config['database.tokenizer'];
 
+		delete input.runtime;
 		await db.saveConfig(input);
 
 		// プロバイダー、モデル、トークナイザーのいずれかが変更されたら初期化（バックフィル等）をやり直す
@@ -67,6 +78,8 @@ const nooklog = {
 		const newModel = config[`sentence.vector.${newProvider}.model`];
 		const newTokenizer = config['database.tokenizer'];
 		if (newProvider !== oldProvider || newModel !== oldModel || newTokenizer !== oldTokenizer) {
+			console.log(newProvider);
+
 			await store.dispose();
 			await sentence.dispose();
 
@@ -158,7 +171,7 @@ const nooklog = {
 		else
 			bookmark.updated_at = Date.now();
 
-		if (this.isEdited(markdown) || !this.isEdited(bookmark.markdown))
+		if (this.isEdited(markdown) || (markdown != null && !this.isEdited(bookmark.markdown)))
 			bookmark.markdown = markdown || '';
 
 		if (html) {

@@ -13,12 +13,8 @@ class SettingForm {
 
 	async _init() {
 		this.config = (await chrome.storage.local.get('config')).config || {};
-
-		const address = this.config['extension.serverAddress'];
-		if (address && await this._alive(address))
-			location.href = address.replace(/\/$/, '') + '/?setting=true';
-
-		this.els.form['extension.serverAddress'].value = address || '';
+		this.els.form['extension.serverAddress'].value =
+			this.config['extension.serverAddress'] || '';
 	}
 
 	_bindEvents() {

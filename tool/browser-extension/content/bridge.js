@@ -47,7 +47,7 @@ globalThis.bridge = bridge;
 
 	bridge.on('Content:initialize', msg => sessionId = msg.sessionId);
 
-	bridge.on('Nooklog:saveConfig', msg => {
+	bridge.on('Nooklog:updateConfig', msg => {
 		chrome.storage.local.set({ config: msg.config });
 	});
 

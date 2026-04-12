@@ -3,32 +3,34 @@ const Nooklog = {
 
 	async load() {
 		const values = await this.rpc('config/get');
-		this._saveConfig(values);
+		this._updateConfig(values);
 		hub.emit('Nooklog:load', values);
 	},
 
 	async saveConfig(input) {
-		this._saveConfig(input);
-		await this.rpc('config/save', input);
+		Object.assign(config, input);
+
+		const values = await this.rpc('config/save', config);
+		this._updateConfig(values);
 	},
 
-	_saveConfig(input) {
-		Object.assign(config, input);
+	_updateConfig(values) {
+		Object.assign(config, values);
 		localStorage.config = JSON.stringify(config);
-		bridge.emit('Nooklog:saveConfig', { config });
-		hub.emit('Nooklog:saveConfig', config);
+		bridge.emit('Nooklog:updateConfig', { config });
+		hub.emit('Nooklog:updateConfig', config);
 	},
 
 	async find(ps) {
-		return await this.rpc('find', ps);
+		return this._populate(await this.rpc('find', ps));
 	},
 
 	async pop(ps) {
-		return await this.rpc('pop', ps);
+		return this._populate(await this.rpc('pop', ps));
 	},
 
 	async stash(ps) {
-		return await this.rpc('stash', ps);
+		await this.rpc('stash', ps);
 	},
 
 	async search(ps = {}) {
@@ -37,7 +39,7 @@ const Nooklog = {
 			...ps,
 			...(ps.tags ? this.separateRating(ps.tags) : {}),
 		};
-		return await this.rpc('search', data);
+		return this._populate(await this.rpc('search', data));
 	},
 
 	async save(bookmark) {
@@ -45,11 +47,11 @@ const Nooklog = {
 			...bookmark,
 			...(bookmark.tags ? this.separateRating(bookmark.tags, bookmark.rating) : {}),
 		};
-		return await this.rpc('save', data, null);
+		return this._populate(await this.rpc('save', data, null));
 	},
 
 	async delete(id) {
-		return await this.rpc('delete', { id });
+		return this._populate(await this.rpc('delete', { id }));
 	},
 
 	async getTags() {
@@ -65,7 +67,7 @@ const Nooklog = {
 
 	async rpc(path, data = {}, def = undefined) {
 		const res = await this.net.post('/rpc/' + path, { json: data }, def);
-		return this._populate(res?.json ?? res);
+		return res?.json ?? res;
 	},
 
 	_populate(r) {

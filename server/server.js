@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import crypto from 'node:crypto';
 import express, { response } from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -59,7 +60,15 @@ const authLimiter = rateLimit({
 
 // Basic認証ミドルウェア
 const basicAuthenticator = basicAuth({
-	authorizer: (user, pass) => pass === config['server.password'],
+	authorizer: (user, pass) => {
+		const stored = config['server.password'];
+		const hash = crypto.createHash('sha256').update(pass).digest('hex');
+
+		// タイミング攻撃を防いで比較する
+		const a = Buffer.from(hash);
+		const b = Buffer.from(stored);
+		return a.length === b.length && crypto.timingSafeEqual(a, b);
+	},
 	challenge: true,
 	realm: 'Nooklog',
 });

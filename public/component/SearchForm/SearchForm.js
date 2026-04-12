@@ -23,7 +23,7 @@ class SearchForm extends Component {
 	}
 
 	bindEvents() {
-		hub.on('Nooklog:saveConfig', () => this._updateVectorVisibility());
+		hub.on('Nooklog:updateConfig', () => this._updateVectorVisibility());
 		hub.on('ResultTable:selectTag', tag => {
 			this.els.tags.tagify.addTags([tag]);
 		});

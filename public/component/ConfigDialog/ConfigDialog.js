@@ -6,8 +6,11 @@ class ConfigDialog extends Component {
 			open: this.$('button.open'),
 			close: this.$('button.close'),
 			import: this.$('button.import'),
+			submit: this.$('button[type="submit"]'),
 		};
 		this.results = null;
+
+		this._setSubmitting(false);
 
 		// SearchFormで変更される前の値を保存する
 		this.autoOpen = getSearchParams().setting;
@@ -149,18 +152,30 @@ class ConfigDialog extends Component {
 	}
 
 	async _save() {
-		const config = {};
+		if (this.isSubmitting)
+			return;
+
+		this._setSubmitting(true);
+		const values = {};
 		for (const el of this.els.form.elements) {
 			if (!el.name || (el.type === 'radio' && !el.checked))
 				continue;
 
-			config[el.name] = this._getValue(el);
+			values[el.name] = this._getValue(el);
 		}
 
-		await Nooklog.saveConfig(config);
-		this.$$('.error').forEach($.hide);
+		try {
+			await Nooklog.saveConfig(values);
+			this.$$('.error').forEach($.hide);
+			this.els.dialog.close();
+		} finally {
+			this._setSubmitting(false);
+		}
+	}
 
-		this.els.dialog.close();
+	_setSubmitting(active) {
+		this.isSubmitting = active;
+		this.els.submit.disabled = active;
 	}
 
 	_updateSentenceProviderVisibility() {

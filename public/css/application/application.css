@@ -87,6 +87,7 @@ select,
 
 ::picker(select) {
 	position: relative;
+	color: var(--ink-5);
 	background: var(--ink-0);
 	border: 1px solid var(--ink-2);
 	border-radius: var(--radius-m);
@@ -102,7 +103,7 @@ select{
 
 	option:checked {
 		color: var(--ink-0);
-		background-color: var(--ink-3);
+		background-color: var(--ink-4);
 	}
 
 	option:hover,

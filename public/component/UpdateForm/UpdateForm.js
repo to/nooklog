@@ -32,7 +32,7 @@ class UpdateForm extends Component {
 		this.mode = app.get('UpdateForm.mode', 'memo');
 		this.isMini = null;
 
-		this.setSubmitting(false);
+		this._setSubmitting(false);
 
 		this.setBookmark(getSearchParams());
 
@@ -204,7 +204,7 @@ class UpdateForm extends Component {
 			(bookmark[k] ? `${bookmark[k]}` : ''));
 	}
 
-	setSubmitting(active) {
+	_setSubmitting(active) {
 		this.isSubmitting = active;
 		this.els.submit.disabled = active;
 	}
@@ -227,7 +227,7 @@ class UpdateForm extends Component {
 		if (this.isSubmitting || config['server.mode'] === 'readonly')
 			return;
 
-		this.setSubmitting(true);
+		this._setSubmitting(true);
 
 		const data = this.getBookmark();
 
@@ -236,7 +236,7 @@ class UpdateForm extends Component {
 			data.markdown = this.setEdited(data.markdown);
 
 		const bookmark = await Nooklog.save(data);
-		this.setSubmitting(false);
+		this._setSubmitting(false);
 
 		if (!bookmark)
 			return;
