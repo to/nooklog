@@ -37,6 +37,10 @@
 	},
 	"commands": {
 		"open-update-page": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+E",
+				"mac": "Command+Shift+E"
+			},
 			"description": "Open update page"
 		}
 	},
