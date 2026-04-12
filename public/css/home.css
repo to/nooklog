@@ -16,7 +16,10 @@ body {
 .area-main {
 	flex: 1;
 	min-width: 0;
-	padding: 0 0 var(--_page-margin) 0;
+	padding-block-end: var(--_page-margin);
+	container-type: inline-size;
+	--_content-margin: max(var(--_page-margin), calc((100cqw - 76rem) / 2));
+
 	overflow-y: auto;
 
 	.ConfigDialog {
@@ -107,7 +110,7 @@ body {
 
 	form {
 		gap: var(--_page-margin);
-		padding: 0 var(--_page-margin);
+		padding-inline: var(--_content-margin);
 		margin-bottom: var(--space-s);
 
 		input[name="url"]{
@@ -122,6 +125,18 @@ body {
 
 		.icon{
 			font-size: var(--font-size-2s);
+		}
+	}
+}
+
+.ResultTable {
+	.td {
+		&:first-child {
+			padding-left: var(--_content-margin);
+		}
+
+		&:last-child {
+			padding-right: var(--_content-margin);
 		}
 	}
 }

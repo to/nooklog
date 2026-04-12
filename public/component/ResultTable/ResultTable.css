@@ -30,14 +30,6 @@
 		padding: var(--space-s) 0 var(--space-s) var(--space-m);
 		vertical-align: top;
 		border: none;
-
-		&:first-child {
-			padding-left: var(--space-2l);
-		}
-
-		&:last-child {
-			padding-right: var(--space-2l);
-		}
 	}
 
 	.col-rating {
