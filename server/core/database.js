@@ -95,17 +95,19 @@ const database = {
 		Object.assign(config, JSON.parse(await this.getMeta('config') || '{}'));
 		if (process.env.PORT)
 			config['server.port'] = parseInt(process.env.PORT, 10);
-		config['server.mode'] = process.env.NOOKLOG_READONLY ? 'readonly' :
+		config.runtime['server.mode'] = process.env.NOOKLOG_READONLY ? 'readonly' :
 			(process.env.NOOKLOG_DEMO ? 'demo' : 'normal');
-		config['server.readonly'] = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
+		config.runtime['server.readonly'] = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
 		config['server.data.path'] = dataPath;
-		config['sentence.cachePath'] = path.join(dataPath, '.cache');
+		config.runtime['sentence.cachePath'] = path.join(dataPath, '.cache');
 		this.saveConfig(config);
 	},
 
 	async saveConfig(input) {
 		Object.assign(config, input);
-		await this.setMeta('config', JSON.stringify(config));
+		const toSave = { ...config };
+		delete toSave.runtime;
+		await this.setMeta('config', JSON.stringify(toSave));
 	},
 
 	async initializeSearch() {
@@ -165,7 +167,7 @@ const database = {
 	},
 
 	async initializeVectorTable() {
-		if (config['server.readonly'] || config['sentence.vector.error'])
+		if (config.runtime['server.readonly'] || config.runtime['sentence.vector.error'])
 			return;
 
 		const provider = config['sentence.vector.provider'];

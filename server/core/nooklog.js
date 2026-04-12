@@ -6,7 +6,7 @@ import baseLog from './log.js';
 import sentence from './sentence/index.js';
 
 let ingest;
-if (!config['server.readonly'])
+if (!config.runtime['server.readonly'])
 	ingest = (await import('./ingest/index.js')).default;
 
 const log = baseLog.child({ module: 'nooklog' });
@@ -53,7 +53,7 @@ const nooklog = {
 	},
 
 	async saveConfig(input) {
-		if (config['server.readonly'])
+		if (config.runtime['server.readonly'])
 			return config;
 
 		const oldProvider = config['sentence.vector.provider'];
@@ -122,7 +122,7 @@ const nooklog = {
 	},
 
 	async delete(id) {
-		if (config['server.readonly'])
+		if (config.runtime['server.readonly'])
 			return;
 
 		const bookmark = await store.find({ id });
@@ -142,7 +142,7 @@ const nooklog = {
 	},
 
 	async save({ id, url, title, memo, rating, tags, html, markdown }) {
-		if (config['server.readonly'])
+		if (config.runtime['server.readonly'])
 			return await this.find({ id, url });
 
 		if (!id && !url)
@@ -187,7 +187,7 @@ const nooklog = {
 	},
 
 	async _syncTagCache(oldTags, newTags) {
-		if (config['server.readonly'])
+		if (config.runtime['server.readonly'])
 			return;
 
 		for (const tag of newTags)
@@ -200,7 +200,7 @@ const nooklog = {
 	},
 
 	async import(content, options = {}) {
-		if (config['server.readonly'])
+		if (config.runtime['server.readonly'])
 			return { count: 0 };
 
 		const bookmarks = ingest.bookmark.process(content, options);

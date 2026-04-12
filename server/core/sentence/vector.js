@@ -101,7 +101,7 @@ const vector = {
 		} = {}) {
 			const { pipeline, env } = await import('@huggingface/transformers');
 
-			env.cacheDir = config['sentence.cachePath'];
+			env.cacheDir = config.runtime['sentence.cachePath'];
 			env.logLevel = 'error';
 			env.backends.onnx.logLevel = 'error';
 
@@ -169,7 +169,7 @@ const vector = {
 			const reporter = vector._createProgressReporter();
 			const downloader = await createModelDownloader({
 				modelUri: model,
-				dirPath: config['sentence.cachePath'],
+				dirPath: config.runtime['sentence.cachePath'],
 				onProgress: ({ downloadedSize, totalSize }) => {
 					reporter(model, (downloadedSize / totalSize) * 100);
 				},
@@ -235,8 +235,8 @@ const vector = {
 	},
 
 	async initialize() {
-		config['sentence.vector.error'] = false;
-		if (config['sentence.vector.disabled'])
+		config.runtime['sentence.vector.error'] = false;
+		if (config.runtime['sentence.vector.disabled'])
 			return;
 
 		try {
@@ -258,9 +258,9 @@ const vector = {
 
 			// 接続・動作確認
 			await this.getCalibration();
-			config['sentence.vector.error'] = false;
+			config.runtime['sentence.vector.error'] = false;
 		} catch (error) {
-			config['sentence.vector.error'] = true;
+			config.runtime['sentence.vector.error'] = true;
 			log.error({ error }, 'failed to initialize sentence vector');
 		}
 	},

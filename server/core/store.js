@@ -83,7 +83,7 @@ const store = {
 	},
 
 	embed(bookmarks, { priority = 10 } = {}) {
-		if (config['sentence.vector.disabled'])
+		if (config.runtime['sentence.vector.disabled'])
 			return;
 
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
@@ -147,7 +147,7 @@ const store = {
 	},
 
 	async reembed() {
-		if (config['sentence.vector.disabled'])
+		if (config.runtime['sentence.vector.disabled'])
 			return;
 
 		await this.reembedJob?.abort();

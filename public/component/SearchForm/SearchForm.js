@@ -154,8 +154,8 @@ class SearchForm extends Component {
 
 	_updateVectorVisibility() {
 		this.$('input[name=mode]').parentElement.parentElement.classList.toggle(
-			'invisible', config['sentence.vector.disabled']);
-		if (config['sentence.vector.disabled'])
+			'invisible', config.runtime['sentence.vector.disabled']);
+		if (config.runtime['sentence.vector.disabled'])
 			$.check(this.els.mode, 'fts');
 	}
 }

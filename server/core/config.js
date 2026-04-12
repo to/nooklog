@@ -25,22 +25,22 @@ const config = {
 	'sentence.vector.openai.url': 'http://localhost:11434/v1/embeddings',
 	'sentence.vector.openai.apiKey': '',
 	'sentence.vector.contextSize': 2048,
-	'sentence.vector.error': null,
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
 	'database.saveHTML': false,
 	'database.turso.replica': false,
+	runtime: {},
 };
 
-Object.defineProperty(config, 'sentence.vector.disabled', {
-	enumerable: false,
+Object.defineProperty(config.runtime, 'sentence.vector.disabled', {
+	enumerable: true,
 	configurable: true,
 	get() {
-		if (this['sentence.vector.error'] || this['sentence.vector.provider'] === 'none')
+		if (this['sentence.vector.error'] || config['sentence.vector.provider'] === 'none')
 			return true;
 
 		// 低メモリ環境を考慮し埋め込みの利用を判断する
-		return this['sentence.vector.provider'] === 'openai'
+		return config['sentence.vector.provider'] === 'openai'
 			? false
 			: !!this['server.readonly'];
 	},
