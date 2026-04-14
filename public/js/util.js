@@ -89,4 +89,20 @@ const throttleAndDebounce = (f, ms = 100, ...args) => {
 	};
 };
 
+const beforeHook = (target, name, fn) => {
+	const original = target[name];
+	target[name] = function (...args) {
+		fn.apply(this, args);
+		return original.apply(this, args);
+	};
+};
+
+const afterHook = (target, name, fn) => {
+	const original = target[name];
+	target[name] = function (...args) {
+		const result = original.apply(this, args);
+		return fn.call(this, result, ...args) ?? result;
+	};
+};
+
 const isEmpty = obj => !obj || Object.keys(obj).length === 0;

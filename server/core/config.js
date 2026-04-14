@@ -14,7 +14,6 @@ const config = {
 	'client.tagMatchMode': 'smart', // 'smart' (subsequence), 'contains', 'starts-with'
 	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both'
 	'client.autoCompleteTags': false, // Auto-confirm when narrowed down enough
-	'client.normalizeFullWidth': false, // Auto-convert full-width brackets/slashes to half-width
 	'extension.serverAddress': 'http://localhost:5050',
 	'extension.selectionDelimiter': '/',
 	'extension.autoAppendSelection': true,

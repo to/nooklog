@@ -187,9 +187,7 @@ class UpdateForm extends Component {
 			id: this.els.id.value,
 			url: this.els.url.value,
 			title: this.els.title.value,
-			memo: config['client.normalizeFullWidth']
-				? this._normalizeText(this.els.memo.value)
-				: this.els.memo.value,
+			memo: this.els.memo.value,
 			rating: this.els.rating.value,
 			tags: this.els.tags.getTags(),
 			markdown: this.els.markdown.value,
@@ -254,14 +252,6 @@ class UpdateForm extends Component {
 		return markdown.replace(
 			new RegExp(`${UpdateForm.USER_MARK}?$`),
 			UpdateForm.USER_MARK);
-	}
-
-	_normalizeText(text) {
-		return text
-			.replace(/[ 　]+/g, ' ')
-			.replace(/（/g, '(')
-			.replace(/）/g, ')')
-			.replace(/／/g, '/');
 	}
 }
 
