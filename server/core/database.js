@@ -2,34 +2,27 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { createClient } from '@libsql/client';
-import os from 'os';
-
 import config from './config.js';
 import baseLog from './log.js';
 import sentence from './sentence/index.js';
 
 const log = baseLog.child({ module: 'database' });
 
-const dataPath = process.env.NOOKLOG_DATA_PATH || (
-	process.platform === 'linux'
-		? path.join(process.cwd(), 'data')
-		: path.join(os.homedir(), '.nooklog', 'data'));
-
 const database = {
 	client: null,
 
 	async initialize() {
-		const isReadOnly = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
+		const isReadOnly = config['server.readonly'];
 
-		const dbDir = path.join(dataPath, 'database');
+		const dbDir = path.join(config['server.data.path'], 'database');
 		if (!fs.existsSync(dbDir))
 			fs.mkdirSync(dbDir, { recursive: true });
 		const localDbUrl = `file:${path.join(dbDir, 'nooklog.db')}`;
 
-		const tursoUrl = process.env.TURSO_DATABASE_URL;
-		const authToken = process.env.TURSO_AUTH_TOKEN;
+		const tursoUrl = config['database.turso.url'];
+		const authToken = config['database.turso.token'];
 		if (tursoUrl && authToken) {
-			if (process.env.TURSO_REPLICA === 'true') {
+			if (config['database.turso.replica']) {
 				// Turso Embedded Replica Mode (Local Cache + Sync)
 				log.info({ path: localDbUrl, sync: tursoUrl }, 'opening libsql database with Turso sync');
 				this.client = createClient({
@@ -59,14 +52,14 @@ const database = {
 			});
 		}
 
-		// パフォーマンス設定 (純粋なローカルモード かつ 書き込み可能なときだけ実行)
+		// Performance settings (Execute only in pure local mode and when writable)
 		if (!tursoUrl && !isReadOnly) {
 			await this.client.execute('PRAGMA journal_mode = WAL');
 			await this.client.execute('PRAGMA synchronous = NORMAL');
 			await this.client.execute('PRAGMA foreign_keys = ON');
 		}
 
-		// デモモード（リードオンリー）対策：書き込み禁止エラーを無視するラッパーを被せる
+		// Read-only mode handling: wrap with a proxy that ignores write-blocked errors
 		if (isReadOnly) {
 			for (const m of ['execute', 'batch']) {
 				const origin = this.client[m].bind(this.client);
@@ -88,31 +81,19 @@ const database = {
 		await this.createTables();
 		await this.loadConfig();
 
+		await this.initializeFtsTable();
+
 		log.info('database initialized and config restored');
 	},
 
 	async loadConfig() {
-		Object.assign(config, JSON.parse(await this.getMeta('config') || '{}'));
-		if (process.env.PORT)
-			config['server.port'] = parseInt(process.env.PORT, 10);
-		config.runtime['server.mode'] = process.env.NOOKLOG_READONLY ? 'readonly' :
-			(process.env.NOOKLOG_DEMO ? 'demo' : 'normal');
-		config.runtime['server.readonly'] = !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY);
-		config['server.data.path'] = dataPath;
-		config.runtime['sentence.cachePath'] = path.join(dataPath, '.cache');
+		config.setConfig(JSON.parse(await this.getMeta('config') || '{}'));
 		this.saveConfig(config);
 	},
 
 	async saveConfig(input) {
-		Object.assign(config, input);
-		const toSave = { ...config };
-		delete toSave.runtime;
-		await this.setMeta('config', JSON.stringify(toSave));
-	},
-
-	async initializeSearch() {
-		await this.initializeFtsTable();
-		await this.initializeVectorTable();
+		config.setConfig(input);
+		await this.setMeta('config', JSON.stringify(config.getConfig()));
 	},
 
 	async createTables() {
@@ -139,6 +120,7 @@ const database = {
 			'CREATE INDEX IF NOT EXISTS bookmark_updated_at_idx ON bookmark (updated_at DESC)',
 			'CREATE INDEX IF NOT EXISTS bookmark_created_at_idx ON bookmark (created_at DESC)',
 			'CREATE INDEX IF NOT EXISTS bookmark_rating_idx ON bookmark (rating)',
+			'CREATE TABLE IF NOT EXISTS bookmark_vector (bookmark_id INTEGER)',
 		], 'write');
 	},
 
@@ -167,15 +149,15 @@ const database = {
 	},
 
 	async initializeVectorTable() {
-		if (config.runtime['server.readonly'] || config.runtime['sentence.vector.error'])
+		if (config['server.readonly'])
 			return;
 
-		const provider = config['sentence.vector.provider'];
-		const current = provider === 'none' ? 'none' : sentence.model;
+		const enabled = config['sentence.vector.enabled'];
+		const current = config['sentence.vector.model'];
 		const old = await this.getMeta('vector_model');
-		if (old !== current) {
+		if (enabled && old !== current) {
 			const batch = ['DROP TABLE IF EXISTS bookmark_vector'];
-			if (provider === 'none') {
+			if (current === '') {
 				log.info('initializing vector stub table');
 				batch.push('CREATE TABLE bookmark_vector (bookmark_id INTEGER)');
 			} else {

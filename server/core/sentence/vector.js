@@ -1,10 +1,11 @@
+import ky from 'ky';
 import config from '../config.js';
 import baseLog from '../log.js';
-import { retry } from '../util.js';
+import hub from '../hub.js';
+import { Warning } from '../util.js';
 
 const log = baseLog.child({ module: 'vector' });
 
-// モデルごとのプリセット設定 (Asymmetric Embedding用)
 const PRESET_MAP = {
 	'gemma': {
 		queryPrefix: 'task: search result | query: ',
@@ -27,253 +28,112 @@ const PRESET_MAP = {
 	},
 };
 
-// モデルに適したプリフィックスを設定し埋め込みを実行する
-function wrapWithPrefix(model, options, execute) {
-	const key = Object.keys(PRESET_MAP).find(key => new RegExp(key, 'i').test(model));
-	const presets = PRESET_MAP[key];
-	const queryPrefix = options.queryPrefix || presets?.queryPrefix || '';
-	const titlePrefix = options.documentTitlePrefix || presets?.documentTitlePrefix || '';
-	const textPrefix = options.documentTextPrefix || presets?.documentTextPrefix || '';
+const getPresets = () => PRESET_MAP[
+	Object.keys(PRESET_MAP).find(k => new RegExp(k, 'i').test(config['sentence.vector.model']))];
 
-	const embed = async inputs => {
-		const isArray = Array.isArray(inputs);
-		inputs = [].concat(inputs).map(s => s.trim());
+const vector = {
+	_dimension: 0,
+	_calibration: null,
+	_lastModel: '',
+	hasError: false,
 
-		// 偶発的なエラー(メモリ割り当て失敗など)に対処するため縮小リトライする
-		const results = [];
-		const batchSizes = [16, 8, 1];
-		let i = 0;
-		while (i < inputs.length) {
-			let batchSize = batchSizes[0];
-			results.push(...(await retry(
-				() => execute(inputs.slice(i, i + batchSize)),
-				{
-					maxAttempts: 3,
-					module: 'vector',
-					onRetry: (e, c) => batchSize = batchSizes[c],
-				},
-			)));
-			i += batchSize;
+	async getModels(url) {
+		const configUrl = url || config['sentence.vector.url'];
+		try {
+			const data = await this._fetch(configUrl.replace(/\/embeddings\/?$/, '/models'));
+			return data.map(m => m.id);
+		} catch (e) {
+			log.warn({ url: configUrl, cause: e.message }, 'failed to fetch vector models');
+			return [];
 		}
+	},
 
-		return isArray ? results : results[0];
-	};
+	async embedQuery(query) {
+		const ps = getPresets();
+		const prefix = config['sentence.vector.queryPrefix'] || ps?.queryPrefix || '';
 
-	return {
-		embedQuery: query => embed(queryPrefix + query, 'query'),
-		embedDocument: documents => embed([].concat(documents).map(d => {
-			const title = d.title;
+		return this._embed(prefix + query);
+	},
+
+	async embedDocument(docs) {
+		const ps = getPresets();
+		const titlePrefix = config['sentence.vector.documentTitlePrefix'] || ps?.documentTitlePrefix || '';
+		const textPrefix = config['sentence.vector.documentTextPrefix'] || ps?.documentTextPrefix || '';
+
+		const inputs = [].concat(docs).map(d => {
+			const title = typeof d === 'object' ? d.title : '';
 			const text = typeof d === 'object' ? d.text : d;
 			return [
 				title && (titlePrefix + title),
 				text && (textPrefix + text),
 			].filter(Boolean).join('\n');
-		})),
-	};
-}
+		});
 
-const vector = {
-	engine: null,
-	model: '',
-	contextSize: config['sentence.vector.contextSize'] || 2048,
-	_dimension: 0,
-	_calibration: null,
-
-	_createProgressReporter() {
-		const logged = {};
-		return (file, progress) => {
-			const step = Math.floor(progress / 20) * 20;
-			if (logged[file] === undefined || step > logged[file]) {
-				logged[file] = step;
-				log.info({ file, progress: step }, 'loading model file');
-			}
-		};
+		return this._embed(inputs);
 	},
 
-	providers: {
-		// Transformers.js(ONNX)
-		async transformers({
-			model = 'onnx-community/embeddinggemma-300m-ONNX',
-			dtype = 'q8',
-			device,
-			contextSize = 2048,
-			...options
-		} = {}) {
-			const { pipeline, env } = await import('@huggingface/transformers');
+	async _embed(inputs) {
+		const isArray = Array.isArray(inputs);
+		const items = [].concat(inputs).map(s => (s || '').trim());
+		const results = [];
+		const batchSize = 32;
+		for (let i = 0; i < items.length; i += batchSize)
+			results.push(...await this._request(items.slice(i, i + batchSize)));
 
-			env.cacheDir = config.runtime['sentence.cachePath'];
-			env.logLevel = 'error';
-			env.backends.onnx.logLevel = 'error';
-
-			const targetDevice = device || { win32: 'dml', darwin: 'coreml' }[process.platform] || 'cpu';
-			const reporter = vector._createProgressReporter();
-			const onProgress = p => {
-				if (p.status === 'progress')
-					reporter(p.file, p.progress);
-			};
-
-			const extractor = await pipeline('feature-extraction', model, {
-				dtype,
-				device: targetDevice,
-				progress_callback: onProgress,
-				session_options: {
-					execution_providers: [targetDevice, 'cpu'],
-					enable_cpu_mem_arena: true,
-					enable_mem_reuse: true,
-					enable_mem_pattern: false,
-					execution_mode: 'sequential',
-					log_severity_level: 4,
-					extra: {
-						'session.set_denormal_as_zero': '1',
-						'session.disable_metacommands': '1',
-					},
-				},
-			});
-
-			const engine = wrapWithPrefix(model, options, async inputs => {
-				const out = await extractor(inputs, { pooling: 'mean', normalize: true, truncation: true });
-				return out.tolist();
-			});
-			engine.contextSize = Math.min(contextSize,
-				extractor.tokenizer?.model_max_length ||
-				extractor.model?.config?.max_position_embeddings ||
-				Infinity);
-
-			engine.dispose = async () => {
-				log.info('disposing transformers (onnx) context');
-				await extractor.dispose();
-			};
-
-			return engine;
-		},
-
-		// node-llama-cpp(GGUF/Native)
-		async llama({
-			model = 'hf:ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf',
-			device = 'auto',
-			contextSize = 2048,
-			...options
-		} = {}) {
-			const { getLlama, createModelDownloader, LlamaLogLevel } = await import('node-llama-cpp');
-
-			const llama = await getLlama({
-				gpu: device,
-				build: 'never',
-				logLevel: LlamaLogLevel.error,
-				gpuOptions: { vmm: false },
-			});
-
-			if (device !== 'cpu' && llama.gpu === false)
-				log.warn({ requestedDevice: device }, 'GPU acceleration not available, falling back to CPU');
-
-			const reporter = vector._createProgressReporter();
-			const downloader = await createModelDownloader({
-				modelUri: model,
-				dirPath: config.runtime['sentence.cachePath'],
-				onProgress: ({ downloadedSize, totalSize }) => {
-					reporter(model, (downloadedSize / totalSize) * 100);
-				},
-			});
-			const modelPath = await downloader.download();
-			const llamaModel = await llama.loadModel({ modelPath });
-
-			let context;
-			contextSize = Math.min(contextSize, llamaModel.trainContextSize || Infinity);
-			try {
-				context = await llamaModel.createEmbeddingContext({ contextSize, flashAttention: true });
-			} catch (e) {
-				context = await llamaModel.createEmbeddingContext({ contextSize });
-			}
-
-			const normalize = v => {
-				const norm = Math.sqrt(v.reduce((sum, x) => sum + x * x, 0));
-				return v.map(x => x / (norm || 1));
-			};
-
-			const engine = wrapWithPrefix(model, options, async inputs => {
-				const vecs = await Promise.all(inputs.map(t => {
-					const tokens = llamaModel.tokenize(t);
-					if (tokens.length > contextSize)
-						t = llamaModel.detokenize(tokens.slice(0, contextSize - 16));
-					return context.getEmbeddingFor(t);
-				}));
-				return vecs.map(v => normalize(Array.from(v.vector)));
-			});
-			engine.contextSize = contextSize;
-
-			engine.dispose = async () => {
-				log.info('disposing llama context');
-				await context?.dispose();
-				await llamaModel?.dispose();
-				await llama?.dispose();
-			};
-
-			return engine;
-		},
-
-		// OpenAI Compatible API (Ollama, vLLM, OpenAI, etc.)
-		async openai({
-			model = 'embeddinggemma',
-			url = 'http://localhost:11434/v1/embeddings',
-			apiKey = '',
-			...options
-		} = {}) {
-			return wrapWithPrefix(model, options, async inputs => {
-				const headers = { 'Content-Type': 'application/json' };
-				if (apiKey)
-					headers['Authorization'] = `Bearer ${apiKey}`;
-
-				const res = await fetch(url, {
-					method: 'POST',
-					headers,
-					body: JSON.stringify({ model, input: inputs }),
-				});
-				const data = await res.json();
-				return data.data.map(d => d.embedding);
-			});
-		},
+		return isArray ? results : results[0];
 	},
 
-	async initialize() {
-		config.runtime['sentence.vector.error'] = false;
-		if (config.runtime['sentence.vector.disabled'])
-			return;
+	async _request(inputs) {
+		if (!config['sentence.vector.enabled'])
+			return [];
+
+		const model = config['sentence.vector.model'];
+		const url = config['sentence.vector.url'];
 
 		try {
-			const provider = config['sentence.vector.provider'];
-			this.engine = await this.providers[provider].call(this.providers, {
-				model: config[`sentence.vector.${provider}.model`],
-				dtype: config[`sentence.vector.${provider}.dtype`],
-				url: config[`sentence.vector.${provider}.url`],
-				apiKey: config[`sentence.vector.${provider}.apiKey`],
-				device: config['sentence.vector.device'] === 'auto' ? undefined : config['sentence.vector.device'],
-				queryPrefix: config['sentence.vector.queryPrefix'],
-				documentTitlePrefix: config['sentence.vector.documentTitlePrefix'],
-				documentTextPrefix: config['sentence.vector.documentTextPrefix'],
-				contextSize: this.contextSize,
+			const data = await this._fetch(url, {
+				method: 'POST',
+				json: { model, input: inputs },
 			});
+			const results = data.map(d => d.embedding);
 
-			this.contextSize = this.engine.contextSize || this.contextSize;
-			this.model = config[`sentence.vector.${provider}.model`];
+			if (this.hasError) {
+				this.hasError = false;
+				log.info('embedding service recovered');
+				hub.emit('vector.ready');
+			}
 
-			// 接続・動作確認
-			await this.getCalibration();
-			config.runtime['sentence.vector.error'] = false;
-		} catch (error) {
-			config.runtime['sentence.vector.error'] = true;
-			log.error({ error }, 'failed to initialize sentence vector');
+			return results;
+		} catch (e) {
+			this.hasError = true;
+			const code = e.cause?.code || e.cause?.cause?.code || e.data?.error?.code || e.data?.error?.type;
+			const detail = `${e.message}${code ? ` > ${code}` : ''}`;
+			throw new Warning(`Embedding service failed [${detail}]`, e);
 		}
 	},
 
+	async _fetch(url, options = {}) {
+		const apiKey = config['sentence.vector.apiKey'];
+		if (apiKey)
+			options.headers = { ...options.headers, Authorization: `Bearer ${apiKey}` };
+
+		const res = await ky(url, options).json();
+		return res.data;
+	},
+
 	async getDimension() {
+		this._checkModel();
+
 		if (this._dimension)
 			return this._dimension;
 
-		const [sample] = await this.engine.embedDocument([{ title: '', text: ' ' }]);
+		const [sample] = await this.embedDocument([{ title: '', text: ' ' }]);
 		return this._dimension = sample.length;
 	},
 
 	async getCalibration() {
+		this._checkModel();
+
 		if (this._calibration)
 			return this._calibration;
 
@@ -296,24 +156,13 @@ const vector = {
 		return this._calibration = { near, far, threshold };
 	},
 
-	async embedQuery(query) {
-		if (!this.engine)
-			throw new Error('Sentence Vector engine not initialized. Call initialize() first.');
-		return this.engine.embedQuery(query);
-	},
-
-	async embedDocument(docs) {
-		if (!this.engine)
-			throw new Error('Sentence Vector engine not initialized. Call initialize() first.');
-		return this.engine.embedDocument(docs);
-	},
-
-	async dispose() {
-		this._dimension = 0;
-		this._calibration = null;
-
-		await this.engine?.dispose?.();
-		this.engine = null;
+	_checkModel() {
+		const model = config['sentence.vector.model'];
+		if (this._lastModel !== model) {
+			this._dimension = 0;
+			this._calibration = null;
+			this._lastModel = model;
+		}
 	},
 };
 

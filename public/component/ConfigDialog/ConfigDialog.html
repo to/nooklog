@@ -193,65 +193,38 @@
 					Requires page reload to prompt.</span>
 			</div>
 
-			<h2>Embedding</h2>
+			<h2>Vector Search</h2>
 
 			<div>
-				<label>Provider</label>
-				<div class="radio-flat">
-					<label><input type="radio" name="sentence.vector.provider" value="none">None</label>
-					<label><input type="radio" name="sentence.vector.provider" value="llama">Llama</label>
-					<label><input type="radio" name="sentence.vector.provider" value="transformers">Transformers</label>
-					<label><input type="radio" name="sentence.vector.provider" value="openai">OpenAI</label>
-				</div>
+				<label>Enable Vector Search</label>
+				<label class="toggle">
+					<input type="checkbox" name="sentence.vector.enabled">
+					<span></span>
+				</label>
+				<span class="description">Enables searching for similar concepts and synonyms (e.g., matching 'cat',
+					'feline', and 'kitten') beyond exact keyword matches.</span>
+				<span class="description error none">Enabling this or changing the model will cause background
+					re-indexing.</span>
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>OpenAI (Ollama) URL</label>
+				<input type="text" name="sentence.vector.url" placeholder="http://localhost:11434/v1/embeddings">
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Vector API Key</label>
+				<input type="password" name="sentence.vector.apiKey" placeholder="sk-...">
+			</div>
+
+			<div data-vector-enabled="true">
+				<label>Vector Model</label>
+				<select name="sentence.vector.model"></select>
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
 			</div>
 
-			<div data-provider="llama,transformers">
-				<label>Device</label>
-				<div class="radio-flat">
-					<label><input type="radio" name="sentence.vector.device" value="auto"> Auto</label>
-					<label><input type="radio" name="sentence.vector.device" value="cpu"> CPU</label>
-					<label><input type="radio" name="sentence.vector.device" value="gpu"> GPU</label>
-				</div>
-				<span class="description">Select the device for calculation (Auto is recommended).</span>
-			</div>
-
-			<div data-provider="llama">
-				<label>Llama Model</label>
-				<input type="text" name="sentence.vector.llama.model" placeholder="hf:ggml-org/...">
-				<span class="description">HuggingFace URI or local path to GGUF model.</span>
-				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
-					background re-indexing.</span>
-			</div>
-
-			<div data-provider="transformers">
-				<label>Transformers Model</label>
-				<input type="text" name="sentence.vector.transformers.model" placeholder="onnx-community/...">
-				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
-					background re-indexing.</span>
-			</div>
-			<div data-provider="transformers">
-				<label>Transformers DType</label>
-				<input type="text" name="sentence.vector.transformers.dtype" placeholder="q8">
-			</div>
-
-			<div data-provider="openai">
-				<label>OpenAI Model</label>
-				<input type="text" name="sentence.vector.openai.model" placeholder="embeddinggemma">
-				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
-					background re-indexing.</span>
-			</div>
-			<div data-provider="openai">
-				<label>OpenAI URL</label>
-				<input type="text" name="sentence.vector.openai.url" placeholder="http://localhost:11434/v1/embeddings">
-			</div>
-			<div data-provider="openai">
-				<label>OpenAI API Key</label>
-				<input type="password" name="sentence.vector.openai.apiKey" placeholder="sk-...">
-			</div>
-
-			<div data-provider="llama,transformers,openai">
+			<div data-vector-enabled="true">
 				<label>Query Prefix</label>
 				<input type="text" name="sentence.vector.queryPrefix" placeholder="Default">
 				<span class="description">Empty to use preset defaults based on model name:</span>
@@ -267,7 +240,7 @@
 				</span>
 			</div>
 
-			<div data-provider="llama,transformers,openai">
+			<div data-vector-enabled="true">
 				<label>Document Title Prefix</label>
 				<input type="text" name="sentence.vector.documentTitlePrefix" placeholder="Default">
 				<span class="description">Empty to use preset defaults.</span>
@@ -278,7 +251,7 @@
 				</span>
 			</div>
 
-			<div data-provider="llama,transformers,openai">
+			<div data-vector-enabled="true">
 				<label>Document Text Prefix</label>
 				<input type="text" name="sentence.vector.documentTextPrefix" placeholder="Default">
 				<span class="description">Separator between title and text (default: <code>\n</code>).</span>

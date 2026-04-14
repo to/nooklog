@@ -165,6 +165,14 @@ export const router = {
 			res.writeHead = () => res;
 			res.end = () => res;
 		}),
+ 
+	getVectorModels: orpc
+		.route({ tags: ['internal'] })
+		.input(z.string().optional())
+		.output(z.array(z.string()))
+		.handler(async ({ input }) => {
+			return await nooklog.getVectorModels(input);
+		}),
 
 	getTags: orpc
 		.route({ method: 'GET', path: '/tags' })

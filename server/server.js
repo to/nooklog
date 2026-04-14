@@ -8,17 +8,17 @@ import AssetCache from 'express-asset-file-cache-middleware';
 import { rateLimit } from 'express-rate-limit';
 import basicAuth from 'express-basic-auth';
 
-// 最初にデータベースからcofigを読み込む
+// データベースから設定値をロードする
 import database from './core/database.js';
 import config from './core/config.js';
 
 import nooklog from './core/nooklog.js';
 import baseLog from './core/log.js';
-import _ from './core/util.js';
+import _, { Warning } from './core/util.js';
 import { router } from './router.js';
 import { RPCHandler } from '@orpc/server/node';
 import { OpenAPIHandler } from '@orpc/openapi/node';
-import { onError } from '@orpc/server';
+import { onError, ORPCError } from '@orpc/server';
 import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodToJsonSchemaConverter, experimental_ZodSmartCoercionPlugin as ZodSmartCoercionPlugin } from '@orpc/zod/zod4';
 
@@ -157,11 +157,27 @@ server.get('/api/alive', (req, res) => res.end());
 
 const sharedInterceptors = [
 	onError((error, { request }) => {
-		log.error({
-			method: request.method,
-			url: request.url,
-			error,
-		}, 'API request failed');
+		if (error instanceof Warning) {
+			// errorというプロパティ名を避けてシンプルな出力にする
+			log.warn({
+				method: request.method,
+				url: request.url,
+				cause: error.message,
+			}, 'API request warning');
+		} else {
+			log.error({
+				method: request.method,
+				url: request.url,
+				error,
+			}, 'API request failed');
+		}
+
+		// クライアントへエラー詳細を送信する
+		if (!(error instanceof ORPCError)) {
+			throw new ORPCError(error.message, {
+				cause: error,
+			});
+		}
 	}),
 ];
 

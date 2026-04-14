@@ -39,7 +39,8 @@ const Nooklog = {
 			...ps,
 			...(ps.tags ? this.separateRating(ps.tags) : {}),
 		};
-		return this._populate(await this.rpc('search', data));
+		return this._populate(await this.rpc('search', data,
+			{ bookmarks: [], count: 0, totalCount: 0 }));
 	},
 
 	async save(bookmark) {
@@ -59,6 +60,10 @@ const Nooklog = {
 		return config['client.ratingInputMode'] !== 'stars'
 			? tags.concat(['5', '4', '3', '2', '1', '0'])
 			: tags;
+	},
+
+	async getVectorModels(url) {
+		return await this.rpc('getVectorModels', url, []);
 	},
 
 	async import(file, options = {}) {

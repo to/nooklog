@@ -62,6 +62,13 @@ export const groupBy = (list, keyGetter) => {
 	return map;
 };
 
+export class Warning extends Error {
+	constructor(message, cause) {
+		super(message, { cause });
+		this.name = 'Warning';
+	}
+}
+
 export default {
 	merge,
 	bench,
@@ -69,4 +76,5 @@ export default {
 	retry,
 	wait,
 	groupBy,
+	Warning,
 };

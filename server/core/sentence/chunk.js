@@ -3,10 +3,10 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
-import vector from './vector.js';
+import config from '../config.js';
 
 export const chunkMarkdown = (md, {
-	limitSize = vector.contextSize,
+	limitSize = config['sentence.vector.limitSize'],
 	targetSize = Math.min(1024, Math.max(512, Math.floor(limitSize / 2))),
 	overlapSize = 50,
 } = {}) => {

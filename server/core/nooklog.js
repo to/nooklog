@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 import db from './database.js';
 import store from './store.js';
 import config from './config.js';
+import vector from './sentence/vector.js';
 import _ from './util.js';
 import baseLog from './log.js';
-import sentence from './sentence/index.js';
 
 let ingest;
-if (!config.runtime['server.readonly'])
+if (!config['server.readonly'])
 	ingest = (await import('./ingest/index.js')).default;
 
 const log = baseLog.child({ module: 'nooklog' });
@@ -17,6 +17,7 @@ const stashMap = new Map();
 let tagCache = null;
 
 const USER_MARK = '\u200B';
+const SECRET_MASK = '********';
 const DEFAULT_COLUMNS = [
 	'id', 'url', 'title', 'memo',
 	'tags', 'rating',
@@ -28,73 +29,56 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
-		await sentence.initialize();
-		await db.initializeSearch();
-
-		store.reembed();
-		store.reindexFts();
-
 		// タグキャッシュの構築
 		if (!tagCache) {
 			tagCache = new Set(await store.getTags());
 			log.info({ count: tagCache.size }, 'tags loaded');
 		}
+
+		store.reindexFts();
+		store.reembed();
 	},
 
 	async dispose() {
 		log.info('disposing nooklog');
 		await ingest?.browser.dispose();
 		await store.dispose();
-		await sentence.dispose();
 		db.close();
 	},
 
 	getConfig() {
 		const res = { ...config };
+
 		if (res['server.password'])
-			res['server.password'] = '********';
+			res['server.password'] = SECRET_MASK;
+
+		if (res['sentence.vector.apiKey'])
+			res['sentence.vector.apiKey'] = SECRET_MASK;
+
 		return res;
 	},
 
+	async getVectorModels(url) {
+		return await vector.getModels(url);
+	},
+
 	async saveConfig(input) {
-		if (config.runtime['server.readonly'])
+		if (config['server.readonly'])
 			return config;
 
 		const password = input['server.password'];
-		if (password === '********')
+		if (password === SECRET_MASK)
 			delete input['server.password'];
 		else if (password)
 			input['server.password'] = crypto.createHash('sha256').update(password).digest('hex');
 
-		const oldProvider = config['sentence.vector.provider'];
-		const oldModel = config[`sentence.vector.${oldProvider}.model`];
-		const oldTokenizer = config['database.tokenizer'];
+		if (input['sentence.vector.apiKey'] === SECRET_MASK)
+			delete input['sentence.vector.apiKey'];
 
-		delete input.runtime;
 		await db.saveConfig(input);
 
-		// プロバイダー、モデル、トークナイザーのいずれかが変更されたら初期化（バックフィル等）をやり直す
-		const newProvider = config['sentence.vector.provider'];
-		const newModel = config[`sentence.vector.${newProvider}.model`];
-		const newTokenizer = config['database.tokenizer'];
-		if (newProvider !== oldProvider || newModel !== oldModel || newTokenizer !== oldTokenizer) {
-			console.log(newProvider);
-
-			await store.dispose();
-			await sentence.dispose();
-
-			await sentence.initialize();
-
-			if (newTokenizer !== oldTokenizer) {
-				await db.initializeFtsTable();
-				store.reindexFts();
-			}
-
-			if (newProvider !== oldProvider || newModel !== oldModel) {
-				await db.initializeVectorTable();
-				store.reembed();
-			}
-		}
+		store.reindexFts();
+		store.reembed();
 
 		return config;
 	},
@@ -135,7 +119,7 @@ const nooklog = {
 	},
 
 	async delete(id) {
-		if (config.runtime['server.readonly'])
+		if (config['server.readonly'])
 			return;
 
 		const bookmark = await store.find({ id });
@@ -155,7 +139,7 @@ const nooklog = {
 	},
 
 	async save({ id, url, title, memo, rating, tags, html, markdown }) {
-		if (config.runtime['server.readonly'])
+		if (config['server.readonly'])
 			return await this.find({ id, url });
 
 		if (!id && !url)
@@ -200,7 +184,7 @@ const nooklog = {
 	},
 
 	async _syncTagCache(oldTags, newTags) {
-		if (config.runtime['server.readonly'])
+		if (config['server.readonly'])
 			return;
 
 		for (const tag of newTags)
@@ -213,7 +197,7 @@ const nooklog = {
 	},
 
 	async import(content, options = {}) {
-		if (config.runtime['server.readonly'])
+		if (config['server.readonly'])
 			return { count: 0 };
 
 		const bookmarks = ingest.bookmark.process(content, options);

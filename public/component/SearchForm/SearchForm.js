@@ -111,11 +111,8 @@ class SearchForm extends Component {
 		this.els.query.value = ps.query || '';
 		this.els.url.value = ps.url || '';
 
-		this.els.tags.tagify.removeAllTags();
-		if (ps.tags) {
-			const tags = typeof ps.tags === 'string' ? ps.tags.split(',') : ps.tags;
-			this.els.tags.tagify.addTags(tags);
-		}
+		// イベントを抑制する
+		this.els.tags.tagify.loadOriginalValues(ps.tags);
 
 		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);
 		$.check(this.els.fields, ps.fields);
@@ -154,8 +151,8 @@ class SearchForm extends Component {
 
 	_updateVectorVisibility() {
 		this.$('input[name=mode]').parentElement.parentElement.classList.toggle(
-			'invisible', config.runtime['sentence.vector.disabled']);
-		if (config.runtime['sentence.vector.disabled'])
+			'invisible', !config['sentence.vector.enabled']);
+		if (!config['sentence.vector.enabled'])
 			$.check(this.els.mode, 'fts');
 	}
 }

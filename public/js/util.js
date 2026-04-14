@@ -47,7 +47,10 @@ const html = (texts, ...values) => {
 		acc + texts[i] + sanitize(v), texts[0]) + texts.at(-1);
 };
 
-const throttle = (f, ms = 100) => {
+const throttle = (f, ms = 100, ...args) => {
+	if (typeof f !== 'function')
+		return f[ms] = throttle(f[ms].bind(f), args[0]);
+
 	let last = 0;
 	return function (...args) {
 		const now = Date.now();
@@ -58,21 +61,27 @@ const throttle = (f, ms = 100) => {
 	};
 };
 
-const debounce = (f, ms = 100) => {
-	let t;
+const debounce = (f, ms = 100, ...args) => {
+	if (typeof f !== 'function')
+		return f[ms] = debounce(f[ms].bind(f), args[0]);
+
+	let timer;
 	return function (...args) {
-		clearTimeout(t);
-		t = setTimeout(() => f.apply(this, args), ms);
+		clearTimeout(timer);
+		timer = setTimeout(() => f.apply(this, args), ms);
 	};
 };
 
-const throttleAndDebounce = (f, ms = 100) => {
-	let last = 0, t;
+const throttleAndDebounce = (f, ms = 100, ...args) => {
+	if (typeof f !== 'function')
+		return f[ms] = throttleAndDebounce(f[ms].bind(f), args[0]);
+
+	let last = 0, timer;
 	return function (...args) {
 		const now = Date.now();
-		clearTimeout(t);
+		clearTimeout(timer);
 		if (now - last < ms) {
-			t = setTimeout(() => (last = now, f.apply(this, args)), ms);
+			timer = setTimeout(() => (last = now, f.apply(this, args)), ms);
 		} else {
 			last = now;
 			f.apply(this, args);

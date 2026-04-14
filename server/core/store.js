@@ -4,6 +4,7 @@ import config from './config.js';
 import baseLog from './log.js';
 import _, { bench } from './util.js';
 import queue from './queue.js';
+import hub from './hub.js';
 
 const log = baseLog.child({ module: 'store' });
 
@@ -83,7 +84,7 @@ const store = {
 	},
 
 	embed(bookmarks, { priority = 10 } = {}) {
-		if (config.runtime['sentence.vector.disabled'])
+		if (!config['sentence.vector.enabled'])
 			return;
 
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
@@ -147,8 +148,15 @@ const store = {
 	},
 
 	async reembed() {
-		if (config.runtime['sentence.vector.disabled'])
+		if (!config['sentence.vector.enabled'])
 			return;
+
+		try {
+			await db.initializeVectorTable();
+		} catch (error) {
+			log.warn({ cause: error.message }, 'failed to initialize sentence vector');
+			return;
+		}
 
 		await this.reembedJob?.abort();
 
@@ -167,6 +175,8 @@ const store = {
 	},
 
 	async reindexFts() {
+		await db.initializeFtsTable();
+
 		await this.reindexJob?.abort();
 
 		const rs = await db.client.execute(`
@@ -304,7 +314,7 @@ const store = {
 		columns = ['*'], query = '', url = '', fields = [], limit = 50, sortBy = 'relevance',
 		tags = [], rating,
 	}) {
-		if (!query?.trim())
+		if (!query?.trim() || !config['sentence.vector.enabled'])
 			return { count: 0, totalCount: await db.getTotalCount(), bookmarks: [] };
 
 		const qVec = await sentence.embedQuery(query);
@@ -490,5 +500,8 @@ const store = {
 		return row;
 	},
 };
+
+// 埋め込みエンジンの準備(エラー復帰)ができたらバックフィルする
+hub.on('vector.ready', () => store.reembed());
 
 export default store;

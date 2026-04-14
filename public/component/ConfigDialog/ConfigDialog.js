@@ -12,6 +12,8 @@ class ConfigDialog extends Component {
 
 		this._setSubmitting(false);
 
+		debounce(this, '_fetchVectorModels', 800);
+
 		// SearchFormで変更される前の値を保存する
 		this.autoOpen = getSearchParams().setting;
 	}
@@ -39,8 +41,10 @@ class ConfigDialog extends Component {
 			this.els.dialog.showModal();
 
 		bridge.emit('ConfigDialog:shortcuts', {}, true);
+
 		this._updateBookmarklet();
-		this._updateSentenceProviderVisibility();
+		this._updateEmbeddingVisibility();
+		this._fetchVectorModels();
 	}
 
 	bindEvents() {
@@ -69,8 +73,11 @@ class ConfigDialog extends Component {
 				updateTint();
 			}
 
-			if (name === 'sentence.vector.provider')
-				this._updateSentenceProviderVisibility();
+			if (name === 'sentence.vector.enabled')
+				this._updateEmbeddingVisibility();
+
+			if (name === 'sentence.vector.url')
+				this._fetchVectorModels();
 
 			if (name === 'client.windowPosition' || name === 'extension.serverAddress')
 				this._updateBookmarklet();
@@ -178,9 +185,27 @@ class ConfigDialog extends Component {
 		this.els.submit.disabled = active;
 	}
 
-	_updateSentenceProviderVisibility() {
-		const provider = this.$('input[name="sentence.vector.provider"]:checked')?.value;
-		this.$$('[data-provider]').forEach(el => $.toggle(el, el.dataset.provider.split(',').includes(provider)));
+	_updateEmbeddingVisibility() {
+		const enabled = this.$('input[name="sentence.vector.enabled"]')?.checked;
+		this.$$('[data-vector-enabled]').forEach(el => $.toggle(el, el.dataset.vectorEnabled === String(enabled)));
+	}
+
+	async _fetchVectorModels() {
+		const url = this.$('input[name="sentence.vector.url"]')?.value;
+		const models = await Nooklog.getVectorModels(url);
+		const el = this.$('select[name="sentence.vector.model"]');
+		const current = config['sentence.vector.model'];
+		const options = Array.from(new Set([current, ...models].filter(Boolean)))
+			.sort((a, b) => {
+				const aE = /embed/i.test(a);
+				const bE = /embed/i.test(b);
+				if (aE !== bE)
+					return bE - aE;
+				return a.localeCompare(b);
+			});
+
+		el.innerHTML = options.map(m => `<option value="${m}">${m}</option>`).join('');
+		el.value = current;
 	}
 
 	_updateBookmarklet() {

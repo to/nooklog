@@ -4,7 +4,7 @@ import { process } from '../../server/core/ingest/html.js';
 
 test('ingest/html.js - process', async t => {
 
-	await t.test('横方向テーブル (th td td) が Markdown のフォールバック形式に変換されること', () => {
+	await t.test('Horizontal table (th td td) should be converted to fallback Markdown format', () => {
 		const html = `
 			<!DOCTYPE html>
 			<html>
@@ -26,9 +26,8 @@ test('ingest/html.js - process', async t => {
 			</html>
 		`;
 		const url = 'https://example.com/test';
-		const title = 'Test Page';
 
-		const result = process(url, title, html);
+		const result = process(url, html);
 
 		assert.ok(result.markdown.includes('| | | |'), 'Should include dummy header with 3 columns');
 		assert.ok(result.markdown.includes('|---|---|---|'), 'Should include dummy header separator with 3 columns');
@@ -37,7 +36,7 @@ test('ingest/html.js - process', async t => {
 		assert.ok(result.markdown.includes('| **Name** | John | Jane |'), 'Second row should be converted correctly');
 	});
 
-	await t.test('通常のテーブル (1行目がすべて th) はデフォルトの挙動になること', () => {
+	await t.test('Standard table (first row all th) should use default GFM behavior', () => {
 		const html = `
 			<!DOCTYPE html>
 			<html>
@@ -53,10 +52,10 @@ test('ingest/html.js - process', async t => {
 			</body>
 			</html>
 		`;
-		const result = process('https://example.com', 'Standard Table', html);
+		const result = process('https://example.com', html);
 
-		// 通常のテーブル（GFM）はダミーヘッダを挿入しないはず
-		assert.strictEqual(result.markdown.includes('| | |'), false, '通常テーブルにダミーヘッダが含まれないこと');
-		assert.ok(result.markdown.includes('| Header 1 | Header 2 |'), 'ヘッダが正しく出力されていること');
+		// Standard tables (GFM) should not have dummy headers inserted
+		assert.strictEqual(result.markdown.includes('| | |'), false, 'Standard table should not include dummy header');
+		assert.ok(result.markdown.includes('| Header 1 | Header 2 |'), 'Headers should be output correctly');
 	});
 });

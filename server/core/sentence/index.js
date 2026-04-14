@@ -1,7 +1,7 @@
 import config from '../config.js';
 
 let chunk = {};
-if (!config.runtime['server.readonly'])
+if (!config['server.readonly'])
 	chunk = await import('./chunk.js');
 
 import vector from './vector.js';
