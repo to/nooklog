@@ -33,6 +33,9 @@ class PreviewPanel extends Component {
 
 	bindEvents() {
 		hub.on('ResultTable:select', bookmark => {
+			if (!bookmark)
+				return this.hide();
+
 			this._render(bookmark);
 
 			this.show();

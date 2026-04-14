@@ -1,7 +1,21 @@
 {
 	"name": "nooklog",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"description": "Local-first bookmark & search system",
+	"license": "PolyForm NonCommercial 1.0.0",
+	"author": "quoposk, Gemini 3 Flash",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/to/nooklog.git"
+	},
+	"keywords": [
+		"bookmark",
+		"bookmark-manager",
+		"self-hosted"
+	],
+	"engines": {
+		"node": ">=22.0.0"
+	},
 	"type": "module",
 	"main": "server/server.js",
 	"scripts": {

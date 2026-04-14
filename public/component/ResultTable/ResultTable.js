@@ -83,9 +83,11 @@ class ResultTable extends Component {
 	}
 
 	async _select(row) {
+		const isSelected = row?.classList.contains('is-selected');
 		this.$('.tr.is-selected')?.classList.remove('is-selected');
-		if (!row) {
+		if (!row || isSelected) {
 			app.set('ResultTable.select', false);
+			hub.emit('ResultTable:select', null);
 			return;
 		}
 

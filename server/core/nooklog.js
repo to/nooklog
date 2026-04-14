@@ -67,10 +67,13 @@ const nooklog = {
 			return config;
 
 		const password = input['server.password'];
-		if (password === SECRET_MASK)
+		if (password === SECRET_MASK) {
 			delete input['server.password'];
-		else if (password)
-			input['server.password'] = crypto.createHash('sha256').update(password).digest('hex');
+		} else if (password) {
+			const salt = crypto.randomBytes(16).toString('hex');
+			const hash = crypto.createHash('sha256').update(password + salt).digest('hex');
+			input['server.password'] = `${salt}:${hash}`;
+		}
 
 		if (input['sentence.vector.apiKey'] === SECRET_MASK)
 			delete input['sentence.vector.apiKey'];

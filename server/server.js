@@ -62,12 +62,13 @@ const authLimiter = rateLimit({
 const basicAuthenticator = basicAuth({
 	authorizer: (user, pass) => {
 		const stored = config['server.password'];
-		const hash = crypto.createHash('sha256').update(pass).digest('hex');
+		if (!stored)
+			return true;
 
 		// タイミング攻撃を防いで比較する
-		const a = Buffer.from(hash);
-		const b = Buffer.from(stored);
-		return a.length === b.length && crypto.timingSafeEqual(a, b);
+		const [salt, storedHash] = stored.split(':');
+		const hash = crypto.createHash('sha256').update(pass + salt).digest('hex');
+		return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(storedHash));
 	},
 	challenge: true,
 	realm: 'Nooklog',
@@ -131,6 +132,11 @@ server.get('/api/favicon',
 
 server.get('/component/:component/:name.html.js', async (req, res) => {
 	const { component, name } = req.params;
+
+	// ファイル名に使用可能な文字（完全にアルファベットのみ）を許可する
+	if (!/^[a-z]+$/i.test(component) || !/^[a-z]+$/i.test(name))
+		return res.status(400).send('Invalid component name');
+
 	const filePath = path.join(__dirname, '../public/component', component, `${name}.html`);
 
 	const stat = await fs.promises.stat(filePath);

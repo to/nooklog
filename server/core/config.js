@@ -42,9 +42,10 @@ export const env = {
 	'server.data.path': dataPath,
 	'server.port': process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
 	'server.password': process.env.NOOKLOG_PASSWORD
-		? crypto.createHash('sha256').update(process.env.NOOKLOG_PASSWORD).digest('hex')
+		? `env-salt:${crypto.createHash('sha256').update(process.env.NOOKLOG_PASSWORD + 'env-salt').digest('hex')}`
 		: undefined,
-	'sentence.vector.apiKey': process.env.NOOKLOG_VECTOR_API_KEY,
+	'sentence.vector.url': process.env.NOOKLOG_VECTOR_URL || process.env.OPENAI_BASE_URL,
+	'sentence.vector.apiKey': process.env.NOOKLOG_VECTOR_API_KEY || process.env.OPENAI_API_KEY,
 	'database.turso.url': process.env.TURSO_DATABASE_URL,
 	'database.turso.token': process.env.TURSO_AUTH_TOKEN,
 	'database.turso.replica': process.env.TURSO_REPLICA === 'true',
