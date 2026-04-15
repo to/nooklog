@@ -20,8 +20,10 @@ const app = {
 		return this.notify(e?.message || e, 'error');
 	},
 
-	renderMarkdown(markdown = '') {
+	renderMarkdown(b = {}) {
+		let markdown = b.markdown || '';
 		let frontmatterHtml = '';
+		const headers = [];
 		const match = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---\s*(\r?\n|$)/);
 
 		if (match) {
@@ -29,17 +31,32 @@ const app = {
 			markdown = markdown.slice(match[0].length);
 
 			const meta = {};
+			let key;
 			content.split('\n').forEach(line => {
-				const parts = line.match(/^([^:]+):\s*(.*)$/);
-				if (parts)
-					meta[parts[1].trim()] = parts[2].trim().replace(/^["'](.*)["']$/, '$1');
+				const parts = line.match(/^([^:\s]+):\s*(.*)$/);
+				if (parts) {
+					key = parts[1];
+					const val = parts[2].trim();
+					meta[key] = val === '|-' ? '' : val.replace(/^["'](.*)["']$/, '$1');
+				} else if (key && line.startsWith('  ')) {
+					meta[key] += (meta[key] ? '\n' : '') + line.slice(2);
+				}
 			});
 
 			if (meta.title) {
 				const text = meta.site ? `${meta.title} - ${meta.site}` : meta.title;
 				const inner = meta.url ? `<a href="${sanitize(meta.url)}" target="_blank">${sanitize(text)}</a>` : sanitize(text);
-				frontmatterHtml = `<h1>${inner}</h1>`;
+				headers.push(`<h1>${inner}</h1>`);
 			}
+
+			['description', 'summary'].forEach(k => {
+				const val = meta[k] || b[k];
+				if (val)
+					headers.push(`<p>${sanitize(val).replace(/\n/g, '<br>')}</p>`);
+			});
+
+			if (headers.length > 0)
+				frontmatterHtml = `<div class="frontmatter">${headers.join('')}</div>`;
 		}
 
 		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(markdown))}</div>`;

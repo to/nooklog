@@ -37,6 +37,7 @@ const bookmarkSchema = z.object({
 	url: z.string(),
 	title: z.string(),
 	memo: z.string(),
+	summary: z.string(),
 	tags: z.array(z.string()),
 	rating: z.number().int().min(0).max(5),
 	markdown: z.string(),
@@ -79,6 +80,7 @@ export const router = {
 		.input(z.object({
 			title: z.string(),
 			memo: z.string(),
+			summary: z.string(),
 			rating: z.number().int().min(0).max(5),
 			tags: inputArrayField,
 			markdown: z.string(),

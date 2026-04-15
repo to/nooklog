@@ -11,6 +11,7 @@ class UpdateForm extends Component {
 			id: this.$('[name=id]'),
 			url: this.$('[name=url]'),
 			title: this.$('[name=title]'),
+			summary: this.$(':has(> [name=summary])'),
 			rating: this.$('nl-rating'),
 			memo: this.$('[name=memo]'),
 			markdown: this.$('[name=markdown]'),
@@ -21,10 +22,16 @@ class UpdateForm extends Component {
 			submit: this.$('button[type=submit]'),
 		};
 
-		this.resizeHandle = new ResizeHandle(this.els.memo, {
+		this.memoResizeHandle = new ResizeHandle(this.els.memo, {
 			min: 48,
 			key: 'UpdateForm.memoHeight',
 			size: '3lh',
+		});
+
+		new ResizeHandle(this.els.summary.input, {
+			min: 24,
+			key: 'UpdateForm.summaryHeight',
+			size: '4lh',
 		});
 
 		this.bookmark = {};
@@ -140,7 +147,7 @@ class UpdateForm extends Component {
 			.forEach(mode => $.toggle(this.els[mode], mode === to));
 		$.check(this.els.modes, to);
 
-		this.resizeHandle.toggle(!this.isMini);
+		this.memoResizeHandle.toggle(!this.isMini);
 
 		if (to === 'preview')
 			this.updatePreview();
@@ -150,11 +157,11 @@ class UpdateForm extends Component {
 	}
 
 	updatePreview() {
-		this.els.preview.innerHTML = app.renderMarkdown(this.els.markdown.value);
+		this.els.preview.innerHTML = app.renderMarkdown(this.getBookmark());
 	}
 
 	clear() {
-		['id', 'url', 'title', 'rating', 'memo', 'markdown', 'html'].forEach(k => {
+		['id', 'url', 'title', 'rating', 'summary', 'memo', 'markdown', 'html'].forEach(k => {
 			this.els[k].value = '';
 		});
 		this.els.tags.setTags([]);
@@ -166,7 +173,7 @@ class UpdateForm extends Component {
 		if (!bookmark)
 			return;
 
-		['id', 'url', 'title', 'rating', 'memo', 'html', 'markdown'].forEach(k => {
+		['id', 'url', 'title', 'rating', 'summary', 'memo', 'html', 'markdown'].forEach(k => {
 			if (bookmark[k] != null)
 				this.els[k].value = bookmark[k];
 		});
@@ -190,6 +197,7 @@ class UpdateForm extends Component {
 			memo: this.els.memo.value,
 			rating: this.els.rating.value,
 			tags: this.els.tags.getTags(),
+			summary: this.els.summary.value,
 			markdown: this.els.markdown.value,
 			html: this.els.html.value,
 		};
@@ -197,7 +205,7 @@ class UpdateForm extends Component {
 
 	isChanged() {
 		const bookmark = this.getBookmark();
-		return this.bookmark && ['memo', 'markdown', 'tags', 'title'].some(k =>
+		return this.bookmark && ['memo', 'summary', 'markdown', 'tags', 'title'].some(k =>
 			(this.bookmark[k] ? `${this.bookmark[k]}` : '') !==
 			(bookmark[k] ? `${bookmark[k]}` : ''));
 	}

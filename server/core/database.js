@@ -138,6 +138,7 @@ const database = {
 				`CREATE VIRTUAL TABLE bookmark_fts USING fts5(
 					title,
 					memo,
+					summary,
 					markdown,
 					url,
 					tokenize="${tokenizerString}"

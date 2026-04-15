@@ -106,6 +106,7 @@
 		white-space: pre-wrap;
 	}
 
+	.summary,
 	.chunk {
 		padding: var(--space-s);
 		margin: var(--space-2s) 0;

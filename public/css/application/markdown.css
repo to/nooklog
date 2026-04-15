@@ -6,6 +6,26 @@
 	word-break: break-all;
 	overflow-wrap: break-word;
 
+	.frontmatter {
+		padding: var(--space-m);
+		margin-bottom: var(--space-m);
+		background-color: var(--ink-1);
+		border-left: var(--space-2s) solid var(--color-1);
+		border-radius: 0 var(--radius-m) var(--radius-m) 0;
+
+		h1 {
+			padding: 0;
+			margin: 0;
+			background: none;
+			border: none;
+		}
+
+		p {
+			margin: var(--space-s) 0 0 var(--space-s);
+			color: oklch(from var(--ink-5) calc(l * var(--hover-off)) c h);
+		}
+	}
+
 	h1, h2, h3, h4, h5, h6 {
 		margin-top: var(--space-l);
 		margin-bottom: var(--space-m);
@@ -33,6 +53,15 @@
 
 	h4 {
 		font-size: calc(var(--font-size-m) * 0.9);
+	}
+
+	.summary {
+		padding: var(--space-m);
+		margin-inline: var(--space-l);
+		margin-bottom: var(--space-m);
+		color: var(--ink-5);
+		background-color: var(--ink-1);
+		border-radius: var(--radius-m);
 	}
 
 	p {
@@ -122,42 +151,6 @@
 
 		tr:nth-child(2n) {
 			background-color: var(--ink-1);
-		}
-	}
-
-	.table-frontmatter {
-		display: table;
-		width: 100%;
-		margin-bottom: var(--space-l);
-		overflow: hidden; /* 角丸のクリッピング */
-		table-layout: fixed ;
-		border-spacing: 0;
-		border-collapse: separate; /* 角丸を綺麗に */
-		border: 1px solid var(--ink-2);
-		border-radius: var(--radius-m);
-
-		th, td {
-			padding: var(--space-s) var(--space-m);
-			text-align: left;
-			word-break: break-word;
-			overflow-wrap: anywhere;
-			border: none;
-			border-bottom: 1px solid var(--ink-2);
-		}
-
-		tr:last-child > * {
-			border-bottom: none;
-		}
-
-		th {
-			width: 9.4em;
-			color: var(--ink-4);
-			white-space: nowrap;
-			background-color: var(--ink-1);
-		}
-
-		td {
-			background-color: var(--ink-0);
 		}
 	}
 

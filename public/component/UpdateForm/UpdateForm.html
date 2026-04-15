@@ -7,6 +7,9 @@
 	<input type="hidden" name="id">
 	<input type="text" name="url" required>
 	<input type="text" name="title" placeholder="Title" required>
+	<nl-optional-field>
+		<textarea name="summary" placeholder="Summary" class="flex-none"></textarea>
+	</nl-optional-field>
 	<div class="flex items-center">
 		<nl-rating name="rating"></nl-rating>
 		<nl-tag-input name="tags" placeholder="Tags" class="flex-1"></nl-tag-input>

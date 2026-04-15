@@ -119,6 +119,7 @@ class ResultTable extends Component {
 					<div>
 						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${sanitize(r.title)}</a>
 					</div>
+					${r.summary ? `<div class="summary">${sanitize(r.summary)}</div>` : ''}
 					<div class="memo">${sanitize(r.memo || '')}</div>
 					${r.chunk && r.chunkField == 'markdown' ?
 				`<div class="chunk">${sanitize(r.chunk.replace(/\n\n+/g, '\n')

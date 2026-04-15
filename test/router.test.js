@@ -21,14 +21,17 @@ test('router integration verification', async t => {
 			const rating = (i % 5) + 1;
 
 			// 1. Initial save
+			const initialSummary = `Summary ${i}`;
 			const saved = await call(router.save, {
 				url,
 				title: initialTitle,
+				summary: initialSummary,
 				markdown: 'Hello!',
 				tags: ['test'],
 				rating: 0,
 			});
 			assert.strictEqual(saved.title, initialTitle);
+			assert.strictEqual(saved.summary, initialSummary);
 			const id = saved.id;
 
 			// 2. Update title and find by URL

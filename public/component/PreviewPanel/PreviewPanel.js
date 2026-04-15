@@ -93,7 +93,7 @@ class PreviewPanel extends Component {
 
 	_render(bookmark) {
 		this.els.panel.scrollTop = 0;
-		this.els.content.innerHTML = app.renderMarkdown(bookmark.markdown);
+		this.els.content.innerHTML = app.renderMarkdown(bookmark);
 	}
 }
 

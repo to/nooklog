@@ -19,7 +19,7 @@ let tagCache = null;
 const USER_MARK = '\u200B';
 const SECRET_MASK = '********';
 const DEFAULT_COLUMNS = [
-	'id', 'url', 'title', 'memo',
+	'id', 'url', 'title', 'memo', 'summary',
 	'tags', 'rating',
 	'updated_at', 'created_at',
 ];
@@ -141,7 +141,7 @@ const nooklog = {
 		});
 	},
 
-	async save({ id, url, title, memo, rating, tags, html, markdown }) {
+	async save({ id, url, title, memo, summary, rating, tags, html, markdown }) {
 		if (config['server.readonly'])
 			return await this.find({ id, url });
 
@@ -178,7 +178,7 @@ const nooklog = {
 			bookmark.html = '';
 
 		// データベースに保存または更新
-		_.merge(bookmark, { url, title, memo, rating, tags });
+		_.merge(bookmark, { url, title, memo, summary, rating, tags });
 		await store.save(bookmark);
 
 		await this._syncTagCache(oldTags, bookmark.tags);
@@ -303,18 +303,20 @@ const nooklog = {
 
 			let content = b.markdown;
 			if (options.exportMeta === 'full') {
-				const [, frontmatter, body] = content.match(/^(?:---\s+(.*?)\s+---\s+)?(.+)$/us) || [null, null, content];
+				const [, frontmatter, body] =
+					content.match(/^(?:---\s+(.*?)\s+---\s+)?(.+)$/us) || [null, null, content];
 				content = [
 					'---',
 					frontmatter || (
 						`url: ${b.url}\n` +
 						`title: "${(b.title || '').replace(/"/g, '\\"')}"`),
+					b.summary ? `summary: |-\n  ${b.summary.trim().replace(/\n/g, '\n  ')}` : '',
 					`rating: ${b.rating || 0}`,
 					`tags: [${(b.tags || []).join(', ')}]`,
 					`memo: "${(b.memo || '').replace(/"/g, '\\"')}"`,
 					`date: ${createdDate.toISOString()}`,
 					'---',
-				].join('\n') + '\n\n' + body;
+				].filter(Boolean).join('\n') + '\n\n' + body;
 			}
 
 			archive.append(content, {

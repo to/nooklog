@@ -23,7 +23,7 @@ primary_region = 'iad' # Change to your preferred region (e.g., iad for Ashburn,
 [[vm]]
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256
+  memory_mb = 512
 
 # If you need persistent storage, create a volume and uncomment these lines.
 # For example: fly volumes create nooklog_data --region iad --size 1

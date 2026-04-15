@@ -67,12 +67,13 @@ const store = {
 				},
 				{
 					sql: `
-						INSERT INTO bookmark_fts(rowid, title, memo, markdown, url)
-						VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?)`,
+						INSERT INTO bookmark_fts(rowid, title, memo, summary, markdown, url)
+						VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, ?)`,
 					args: [
 						data.id,
 						useUnigram ? sentence.segment(data.title) : sentence.normalizeJp(data.title),
 						useUnigram ? sentence.segment(data.memo) : sentence.normalizeJp(data.memo),
+						useUnigram ? sentence.segment(data.summary) : sentence.normalizeJp(data.summary),
 						useUnigram ? sentence.segmentMarkdown(data.markdown) : sentence.cleanMarkdown(data.markdown),
 						useUnigram ? sentence.segmentUrl(data.url) : sentence.cleanUrl(data.url),
 					],
@@ -101,6 +102,7 @@ const store = {
 
 				let targets = [
 					{ field: 'title', title: data.title, position: 0 },
+					{ field: 'summary', text: data.summary, position: 0 },
 					{ field: 'memo', text: data.memo, position: 0 },
 				];
 
@@ -115,13 +117,15 @@ const store = {
 					position: c.position.offset,
 				})));
 
-				const memoChunks = sentence.split(data.memo);
-				if (memoChunks.length > 1) {
-					targets.push(...memoChunks.map(c => ({
-						field: 'memo',
-						text: c.text,
-						position: c.position,
-					})));
+				for (const field of ['summary', 'memo']) {
+					const chunks = sentence.split(data[field]);
+					if (chunks.length > 1) {
+						targets.push(...chunks.map(c => ({
+							field,
+							text: c.text,
+							position: c.position,
+						})));
+					}
 				}
 
 				targets = targets.filter(t => t.text?.trim() || t.title?.trim());
@@ -161,7 +165,7 @@ const store = {
 		await this.reembedJob?.abort();
 
 		const rs = await db.client.execute(`
-			SELECT id, title, memo, markdown FROM bookmark
+			SELECT id, title, memo, summary, markdown FROM bookmark
 			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
 			ORDER BY updated_at DESC`);
 		const bookmarks = rs.rows;
@@ -180,7 +184,7 @@ const store = {
 		await this.reindexJob?.abort();
 
 		const rs = await db.client.execute(`
-			SELECT id, title, memo, markdown, url FROM bookmark
+			SELECT id, title, memo, summary, markdown, url FROM bookmark
 			WHERE row_id NOT IN (SELECT rowid FROM bookmark_fts)`);
 		const bookmarks = rs.rows;
 		if (bookmarks.length === 0)
