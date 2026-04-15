@@ -2,13 +2,14 @@
 // @name         Save to Nooklog
 // @description  Quickly save current page URL and title to Nooklog
 // @namespace    https://github.com/to
-// @version      1.2
-// @author       to
+// @version      0.1
+// @author       to, mii
 //
 // @match        *://*/*
+// @noframes
+//
 // @connect      localhost
 // @connect      *
-// @noframes
 //
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand

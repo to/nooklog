@@ -1,9 +1,9 @@
 {
 	"name": "nooklog",
-	"version": "0.1.0",
+	"version": "0.5.0",
 	"description": "Local-first bookmark & search system",
 	"license": "PolyForm NonCommercial 1.0.0",
-	"author": "quoposk, Gemini 3 Flash",
+	"author": "quoposk, mii",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/to/nooklog.git"

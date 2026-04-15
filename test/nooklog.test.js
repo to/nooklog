@@ -42,11 +42,17 @@ test('nooklog.js functional verification', async t => {
 
 		await t.test('server.password should be hashed and masked', async () => {
 			const password = 'my-secret-password';
-			const expectedHash = crypto.createHash('sha256').update(password).digest('hex');
 
 			// Save new password
 			await nooklog.saveConfig({ 'server.password': password });
-			assert.strictEqual(configProxy['server.password'], expectedHash, 'Password must be hashed in internal config');
+
+			// Verify salted hash
+			const stored = configProxy['server.password'];
+			const [salt, storedHash] = stored.split(':');
+			const expectedHash = crypto.createHash('sha256').update(password + salt).digest('hex');
+
+			assert.ok(salt && salt.length === 32, 'Salt should be 32 characters hex');
+			assert.strictEqual(storedHash, expectedHash, 'Password must be hashed with salt in internal config');
 
 			// Check masking in result of getConfig
 			const masked = nooklog.getConfig();
@@ -54,7 +60,7 @@ test('nooklog.js functional verification', async t => {
 
 			// Send back the mask - it should NOT overwrite the real password
 			await nooklog.saveConfig({ 'server.password': SECRET_MASK, 'client.theme': 'dark' });
-			assert.strictEqual(configProxy['server.password'], expectedHash, 'Real password must be preserved when SECRET_MASK is sent');
+			assert.strictEqual(configProxy['server.password'], stored, 'Real password must be preserved when SECRET_MASK is sent');
 			assert.strictEqual(configProxy['client.theme'], 'dark', 'Other values should still be updated');
 		});
 
