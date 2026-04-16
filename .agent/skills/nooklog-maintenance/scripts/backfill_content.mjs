@@ -1,8 +1,9 @@
-import db from '../server/core/database.js';
-import nooklog from '../server/core/nooklog.js';
-import { env } from '../server/core/config.js';
-import { batch } from '../server/core/queue.js';
-import * as browser from '../server/core/ingest/browser.js';
+import db from '#server/core/database';
+import nooklog from '#server/core/nooklog';
+import { env } from '#server/core/config';
+import store from '#server/core/store';
+import { batch } from '#server/core/queue';
+import * as browser from '#server/core/ingest/browser';
 
 // env['server.data.path'] = './custom-data'; // Override data path if needed
 
@@ -10,15 +11,13 @@ await db.initialize();
 await nooklog.initialize();
 
 // Fetch bookmarks with missing content (Skip if already failed)
-const rs = await db.client.execute(`
+const bookmarks = await store.query(`
 	SELECT id, url, title FROM bookmark
 	WHERE (markdown IS NULL OR markdown = '')
 	AND json_extract(meta, '$._fetch_error') IS NULL
 	ORDER BY created_at DESC
 	LIMIT 100
 `);
-
-const bookmarks = rs.rows;
 console.log(`\nStarting backfill for ${bookmarks.length} bookmarks...\n`);
 
 // Use the standard queue.batch for cooperative processing
@@ -26,6 +25,7 @@ await batch(bookmarks, async slice => {
 	const b = slice[0];
 	console.log(`Fetching: ${b.url}`);
 	try {
+		// Fetch web content
 		const { html, title } = await browser.fetch(b.url);
 
 		await nooklog.save({
@@ -36,16 +36,20 @@ await batch(bookmarks, async slice => {
 			meta: { _fetch_error: null },
 		});
 
-		console.log(`   OK: ${title || b.title}`);
+		console.log(`[  OK  ] ${title || b.title}`);
 	} catch (e) {
-		console.error(`   FAILED: ${b.url} - ${e.message}`);
+		console.error(`[FAILED] ${b.url} - ${e.message}`);
 
+		// Record failure reason
 		await nooklog.save({
 			id: b.id,
 			meta: { _fetch_error: e.status || e.message },
 		});
 	}
-}, { size: 1, interval: 2 * 1000, label: 'Backfilling missing content' });
+}, {
+	// Use a polite interval between requests
+	size: 1, interval: 2 * 1000, label: 'Backfilling missing content',
+});
 
 console.log('\nAll done! ✨');
 

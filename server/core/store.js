@@ -27,6 +27,11 @@ const store = {
 		return this._parse(rs.rows[0]);
 	},
 
+	async query(sql, args = []) {
+		const rs = await db.client.execute({ sql, args });
+		return rs.rows.map(r => this._parse(r));
+	},
+
 	async save(bookmarks, { fts = true, embed = true, embedFields = null } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
@@ -85,7 +90,7 @@ const store = {
 		}, { priority, size: 50, label: 'FTS Indexing' });
 	},
 
-	embed(bookmarks, { priority = 10, fields = [] } = {}) {
+	embed(bookmarks, { priority = 10, fields = null } = {}) {
 		if (!config['sentence.vector.enabled'])
 			return;
 

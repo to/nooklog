@@ -17,6 +17,9 @@
 		"node": ">=22.0.0"
 	},
 	"type": "module",
+	"imports": {
+		"#server/*": "./server/*.js"
+	},
 	"main": "server/server.js",
 	"scripts": {
 		"start": "node server/server.js",

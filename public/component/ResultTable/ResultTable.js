@@ -105,6 +105,7 @@ class ResultTable extends Component {
 
 	_getRowHTML(r) {
 		const updatedAt = r.updated_at.toISOString().split('T')[0];
+		const createdAt = r.created_at.toISOString().split('T')[0];
 		const host = this._getHostname(r.url);
 		return /* html */`
 		<div class="tr" data-id="${r.id}">
@@ -130,7 +131,7 @@ class ResultTable extends Component {
 						</div>
 						${r.score !== undefined ?
 				`<span class="score hidden">${r.score.toFixed(2)}</span>` : ''}
-						<span class="dates">${updatedAt}</span>
+						<span class="dates" title="Created: ${createdAt}">${updatedAt}</span>
 						<button class="delete flat icon ${config['server.mode'] === 'readonly' ? 'none' : ''}">delete</button>
 					</div>
 				</div>

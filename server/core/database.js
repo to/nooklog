@@ -97,7 +97,6 @@ const database = {
 	},
 
 	async createTables() {
-		// Avoid CASCADE to prevent child vector loss on REPLACE
 		await this.client.batch([
 			`CREATE TABLE IF NOT EXISTS bookmark (
 				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,6 +162,7 @@ const database = {
 				log.info('initializing vector stub table');
 				batch.push('CREATE TABLE bookmark_vector (bookmark_id INTEGER)');
 			} else {
+				// Avoid CASCADE to prevent child vector loss on REPLACE
 				const dimension = await sentence.getDimension();
 				log.info({ from: old, to: current, dimension }, 'model changed, re-initializing vector table');
 				batch.push(
