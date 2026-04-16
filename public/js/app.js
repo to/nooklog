@@ -85,7 +85,7 @@ const bridge = {
 const eventSource = new EventSource('/api/event');
 eventSource.onmessage = event => {
 	const msg = JSON.parse(event.data);
-	hub.emit(`Server.${msg.type}`, msg);
+	hub.emit(`server:${msg.type}`, msg);
 };
 eventSource.onerror = error => eventSource.close();
 

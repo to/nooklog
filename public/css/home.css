@@ -31,6 +31,10 @@ body {
 	}
 
 	.ProgressBar {
+		position: relative;
+		top: calc(var(--space-2s) * -0.75);
+		left: calc(var(--space-2s) * 0.5);
+
 		/* アイコンの高さに合わせる */
 		height: var(--font-size-l);
 		margin-bottom: var(--space-2s);

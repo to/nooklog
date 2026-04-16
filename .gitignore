@@ -12,6 +12,7 @@ data/
 public/work/
 dist/
 work/
+scratch/
 /work
 memo/
 .geminiignore

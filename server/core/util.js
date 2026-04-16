@@ -69,6 +69,38 @@ export class Warning extends Error {
 	}
 }
 
+export const parseFrontmatter = (text = '') => {
+	const end = text.startsWith('---') ? text.indexOf('\n---', 3) : -1;
+	if (end === -1)
+		return { body: text.trim(), meta: {} };
+
+	const meta = {};
+	let last;
+	text.slice(0, end).split('\n').slice(1).forEach(l => {
+		const [k, v] = l.split(/:\s*(.*)/);
+		if (v != null) {
+			last = k.trim();
+			meta[last] = v.trim().replace(/^["']|["']$/g, '');
+		} else if (l.trim().startsWith('-')) {
+			const val = l.trim().slice(1).trim().replace(/^["']|["']$/g, '');
+			meta[last] = [].concat(meta[last] || [], val).filter(Boolean);
+		}
+	});
+
+	// Normalize
+	['created', 'published'].forEach(k => {
+		if (meta[k])
+			meta[k] = new Date(meta[k]).getTime();
+	});
+
+	if (typeof meta.tags === 'string')
+		meta.tags = meta.tags.split(',').map(s => s.trim()).filter(Boolean);
+	else if (meta.tags)
+		meta.tags = [].concat(meta.tags);
+
+	return { meta, body: text.slice(end + 4).trim() };
+};
+
 export default {
 	merge,
 	bench,
@@ -77,4 +109,5 @@ export default {
 	wait,
 	groupBy,
 	Warning,
+	parseFrontmatter,
 };

@@ -98,7 +98,8 @@ const database = {
 
 	async createTables() {
 		await this.client.batch([
-			`CREATE TABLE IF NOT EXISTS bookmark (
+			`-- Main table for storing bookmarks
+			CREATE TABLE IF NOT EXISTS bookmark (
 				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
 				id TEXT UNIQUE NOT NULL,
 				url TEXT,
@@ -113,7 +114,8 @@ const database = {
 				summary TEXT,
 				meta TEXT DEFAULT '{}' -- JSON object for management
 			)`,
-			`CREATE TABLE IF NOT EXISTS meta (
+			`-- Internal metadata and configuration
+			CREATE TABLE IF NOT EXISTS meta (
 				id TEXT PRIMARY KEY,
 				value TEXT
 			)`,
@@ -135,7 +137,8 @@ const database = {
 				: 'porter unicode61';
 			await this.client.batch([
 				'DROP TABLE IF EXISTS bookmark_fts',
-				`CREATE VIRTUAL TABLE bookmark_fts USING fts5(
+				`-- Full-Text Search (FTS5)
+				CREATE VIRTUAL TABLE bookmark_fts USING fts5(
 					title,
 					memo,
 					summary,
@@ -166,14 +169,15 @@ const database = {
 				const dimension = await sentence.getDimension();
 				log.info({ from: old, to: current, dimension }, 'model changed, re-initializing vector table');
 				batch.push(
-					`CREATE TABLE bookmark_vector (
+					`-- Vector Search
+					CREATE TABLE bookmark_vector (
 						row_id INTEGER PRIMARY KEY AUTOINCREMENT,
 						bookmark_id INTEGER,
 						chunk_index INTEGER,
 						field TEXT,
 						content TEXT,
 						position INTEGER,
-						vector F32_BLOB(${dimension})
+						vector F32_BLOB(${dimension}) -- dimension depends on the model
 					)`,
 					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
 			}

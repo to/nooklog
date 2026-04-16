@@ -12,11 +12,11 @@ await nooklog.initialize();
 
 // Fetch bookmarks with missing content (Skip if already failed)
 const bookmarks = await store.query(`
-	SELECT id, url, title FROM bookmark
+	SELECT id, url, title, updated_at FROM bookmark
 	WHERE (markdown IS NULL OR markdown = '')
 	AND json_extract(meta, '$._fetch_error') IS NULL
 	ORDER BY created_at DESC
-	LIMIT 100
+	LIMIT 500
 `);
 console.log(`\nStarting backfill for ${bookmarks.length} bookmarks...\n`);
 
@@ -33,6 +33,7 @@ await batch(bookmarks, async slice => {
 			url: b.url,
 			title: title || b.title, // Prioritize newly fetched title
 			html,
+			updated_at: b.updated_at,
 			meta: { _fetch_error: null },
 		});
 
@@ -43,6 +44,7 @@ await batch(bookmarks, async slice => {
 		// Record failure reason
 		await nooklog.save({
 			id: b.id,
+			updated_at: b.updated_at,
 			meta: { _fetch_error: e.status || e.message },
 		});
 	}

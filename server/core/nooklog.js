@@ -141,7 +141,7 @@ const nooklog = {
 		});
 	},
 
-	async save({ id, url, title, memo, summary, rating, tags, html, markdown, meta }) {
+	async save({ id, url, title, memo, summary, rating, tags, html, markdown, meta, created_at, updated_at }) {
 		if (config['server.readonly'])
 			return await this.find({ id, url });
 
@@ -150,11 +150,13 @@ const nooklog = {
 
 		let bookmark = await store.find({ id, url });
 		const isNew = !bookmark;
+		const now = Date.now();
 
-		if (isNew)
+		if (isNew) {
 			bookmark = db.createBookmark();
-		else
-			bookmark.updated_at = Date.now();
+			bookmark.created_at = created_at ?? now;
+		}
+		bookmark.updated_at = updated_at ?? now;
 
 		// 判定用に古い値を保持しておく
 		const original = { ...bookmark };

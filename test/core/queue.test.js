@@ -59,4 +59,36 @@ test('Core Queue - batch() function', async t => {
 		});
 		assert.strictEqual(called, false);
 	});
+
+	await t.test('should serialize batches of the same priority', async () => {
+		const result = [];
+		const b1 = batch([1, 2], async slice => {
+			result.push('A' + slice[0]);
+		}, { size: 1, interval: 10 });
+		const b2 = batch([1, 2], async slice => {
+			result.push('B' + slice[0]);
+		}, { size: 1, interval: 10 });
+
+		await Promise.all([b1, b2]);
+		// Sequential within same priority
+		assert.deepStrictEqual(result, ['A1', 'A2', 'B1', 'B2']);
+	});
+
+	await t.test('should allow high-priority tasks to preempt', async () => {
+		const result = [];
+		const low = batch([1, 2], async slice => {
+			result.push('L' + slice[0]);
+		}, { size: 1, interval: 50, priority: 0 });
+
+		// Wait slightly for L1 to finish execution and enter its interval wait
+		await new Promise(r => setTimeout(r, 20));
+
+		const high = batch([1], async slice => {
+			result.push('H' + slice[0]);
+		}, { size: 1, priority: 1 });
+
+		await Promise.all([low, high]);
+		// H1 should jump in between L1 and L2
+		assert.deepStrictEqual(result, ['L1', 'H1', 'L2']);
+	});
 });
