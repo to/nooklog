@@ -42,3 +42,32 @@ test('Markdown Chunking Logic - Snapshot Consistency', async t => {
 		assert.ok(!last.text.includes('https://www1.example.com'), 'Long URL should be removed from the chunk text');
 	});
 });
+
+test('Markdown Chunking - Orphan Thematic Break handled', () => {
+	const md = [
+		'---',
+		'title: Orphan test',
+		'---',
+		'',
+		'---',
+		'',
+		'# Actual Content',
+		'This should be merged with the HR above.',
+	].join('\n');
+
+	const chunks = sentence.chunkMarkdown(md, {
+		targetSize: 400,
+		limitSize: 1200,
+		overlapSize: 30,
+	});
+
+	// YAML is filtered.
+	// The standalone HR (---) should be merged into "# Actual Content"
+	assert.strictEqual(
+		chunks.length,
+		1,
+		`Should have exactly 1 chunk (found ${chunks.length}).
+Chunks: ${JSON.stringify(chunks.map(c => c.text), null, 2)}`,
+	);
+	assert.ok(chunks[0].text.startsWith('***\n\n# Actual Content'), 'Chunk should contain prepended HR');
+});

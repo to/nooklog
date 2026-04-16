@@ -27,14 +27,17 @@ export const chunkMarkdown = (md, {
 
 	// 構造的に分割する
 	let chunks = [clean(engine.parse(md))];
-	for (const test of tests) {
+	tests.forEach((test, i) => {
 		chunks = chunks.flatMap(c => {
 			c._text ??= engine.stringify(c);
-			if (c._text.length <= targetSize)
+
+			// YAMLはサイズに関わらず必ず分割する (i=0)
+			if (i > 0 && c._text.length <= targetSize)
 				return c;
+
 			return slice(c, test);
 		});
-	}
+	});
 
 	// コードブロックとテーブルを分割する
 	chunks = chunks.flatMap(c => {
@@ -136,15 +139,23 @@ export const chunkMarkdown = (md, {
 	}
 
 	// 残存フラグメントを強制統合する
-	for (let i = 1; i < chunks.length; i++) {
+	for (let i = 0; i < chunks.length; i++) {
 		const self = chunks[i];
 		if (self.text.length >= minSize)
 			continue;
 
 		const prev = chunks[i - 1];
-		chunks.splice(i, 1);
-		prev.text += '\n\n' + self.text;
-		i -= 1;
+		const next = chunks[i + 1];
+		if (prev) {
+			chunks.splice(i, 1);
+			prev.text += '\n\n' + self.text;
+			i -= 1;
+		} else if (next) {
+			chunks.splice(i, 1);
+			next.text = self.text + '\n\n' + next.text;
+			next.position = self.position;
+			i -= 1;
+		}
 	}
 
 	// オーバーラップ
@@ -160,7 +171,7 @@ export const chunkMarkdown = (md, {
 		};
 	});
 
-	return chunks;
+	return chunks.filter(c => /[\p{L}\p{N}]/u.test(c.text));
 };
 
 const engine = unified()
