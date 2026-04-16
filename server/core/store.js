@@ -27,7 +27,7 @@ const store = {
 		return this._parse(rs.rows[0]);
 	},
 
-	async save(bookmarks) {
+	async save(bookmarks, { fts = true, embed = true, embedFields = null } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
 		const batch = [];
@@ -36,12 +36,10 @@ const store = {
 			batch.push({
 				sql: `
 					INSERT OR REPLACE INTO bookmark (
-						id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary, meta
-					) VALUES (
-						?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-					)`,
+						row_id, id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary, meta
+					) VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				args: [
-					b.id, b.url, b.title, b.memo, b.rating,
+					b.id, b.id, b.url, b.title, b.memo, b.rating,
 					JSON.stringify(b.tags || []),
 					b.created_at, b.updated_at, b.html, b.markdown, b.summary,
 					JSON.stringify(b.meta || {}),
@@ -51,8 +49,11 @@ const store = {
 
 		await db.client.batch(batch, 'write');
 
-		this.indexFts(bookmarks);
-		this.embed(bookmarks);
+		if (fts)
+			this.indexFts(bookmarks);
+
+		if (embed)
+			this.embed(bookmarks, { fields: embedFields });
 	},
 
 	indexFts(bookmarks, { priority = 20 } = {}) {
@@ -60,22 +61,22 @@ const store = {
 
 		const useUnigram = config['database.tokenizer'] === 'unigram';
 		return queue.batch(bookmarks, async slice => {
-			const batch = slice.flatMap(data => [
+			const batch = slice.flatMap(b => [
 				{
 					sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
-					args: [data.id],
+					args: [b.id],
 				},
 				{
 					sql: `
 						INSERT INTO bookmark_fts(rowid, title, memo, summary, markdown, url)
 						VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, ?)`,
 					args: [
-						data.id,
-						useUnigram ? sentence.segment(data.title) : sentence.normalizeJp(data.title),
-						useUnigram ? sentence.segment(data.memo) : sentence.normalizeJp(data.memo),
-						useUnigram ? sentence.segment(data.summary) : sentence.normalizeJp(data.summary),
-						useUnigram ? sentence.segmentMarkdown(data.markdown) : sentence.cleanMarkdown(data.markdown),
-						useUnigram ? sentence.segmentUrl(data.url) : sentence.cleanUrl(data.url),
+						b.id,
+						useUnigram ? sentence.segment(b.title) : sentence.normalizeJp(b.title),
+						useUnigram ? sentence.segment(b.memo) : sentence.normalizeJp(b.memo),
+						useUnigram ? sentence.segment(b.summary) : sentence.normalizeJp(b.summary),
+						useUnigram ? sentence.segmentMarkdown(b.markdown) : sentence.cleanMarkdown(b.markdown),
+						useUnigram ? sentence.segmentUrl(b.url) : sentence.cleanUrl(b.url),
 					],
 				},
 			]);
@@ -84,41 +85,68 @@ const store = {
 		}, { priority, size: 50, label: 'FTS Indexing' });
 	},
 
-	embed(bookmarks, { priority = 10 } = {}) {
+	embed(bookmarks, { priority = 10, fields = [] } = {}) {
 		if (!config['sentence.vector.enabled'])
 			return;
 
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
-		return queue.batch(bookmarks, async (slice, i, signal) => {
+		return queue.batch(bookmarks, async slice => {
 			const batch = [];
-			for (const b of slice) {
-				const data = { ...db.createBookmark(), ...b };
 
-				batch.push({
-					sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
-					args: [data.id],
-				});
+			// Fetch row_ids for all bookmarks in the slice
+			const ids = slice.map(b => b.id);
+			const idMap = new Map((await db.client.execute({
+				sql: `SELECT id, row_id FROM bookmark WHERE id IN (${ids.map(() => '?').join(',')})`,
+				args: ids,
+			})).rows.map(r => [r.id, r.row_id]));
 
-				let targets = [
-					{ field: 'title', title: data.title, position: 0 },
-					{ field: 'summary', text: data.summary, position: 0 },
-					{ field: 'memo', text: data.memo, position: 0 },
-				];
+			for (let b of slice) {
+				const rowId = idMap.get(b.id);
+				if (rowId == null)
+					continue;
+
+				b = { ...db.createBookmark(), ...b };
+
+				if (fields) {
+					batch.push({
+						sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND field IN (${fields.map(() => '?').join(',')})`,
+						args: [rowId, ...fields],
+					});
+				} else {
+					batch.push({
+						sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = ?',
+						args: [rowId],
+					});
+				}
+
+				let targets = [];
+
+				if (!fields || fields.includes('title'))
+					targets.push({ field: 'title', title: b.title, position: 0 });
+				if (!fields || fields.includes('summary'))
+					targets.push({ field: 'summary', text: b.summary, position: 0 });
+				if (!fields || fields.includes('memo'))
+					targets.push({ field: 'memo', text: b.memo, position: 0 });
 
 				// H2以上の見出しをタイトルにする
-				targets.push(...sentence.chunkMarkdown(data.markdown).map(c => ({
-					field: 'markdown',
-					title: c.titles
-						.filter(t => t.startsWith('##'))
-						.map(t => t.replace(/^#+\s*/, ''))
-						.join(' > '),
-					text: c.text,
-					position: c.position.offset,
-				})));
+				if (!fields || fields.includes('markdown')) {
+					targets.push(...sentence.chunkMarkdown(b.markdown).map(c => ({
+						field: 'markdown',
+						title: c.titles
+							.filter(t => t.startsWith('##'))
+							.map(t => t.replace(/^#+\s*/, ''))
+							.join(' > '),
+						text: c.text,
+						position: c.position.offset,
+					})));
+				}
 
 				for (const field of ['summary', 'memo']) {
-					const chunks = sentence.split(data[field]);
+					if (fields && !fields.includes(field))
+						continue;
+
+					const chunks = sentence.split(b[field]);
 					if (chunks.length > 1) {
 						targets.push(...chunks.map(c => ({
 							field,
@@ -139,9 +167,9 @@ const store = {
 					sql: `
 					INSERT INTO bookmark_vector (
 						bookmark_id, chunk_index, field, content, position, vector
-					) VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, vector32(?))`,
+					) VALUES (?, ?, ?, ?, ?, vector32(?))`,
 					args: [
-						data.id, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
+						rowId, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
 						JSON.stringify(vectors[i]),
 					],
 				})));
@@ -499,6 +527,8 @@ const store = {
 			const parsed = { ...row };
 			if (parsed.tags)
 				parsed.tags = JSON.parse(parsed.tags);
+			if (parsed.meta)
+				parsed.meta = JSON.parse(parsed.meta);
 			return parsed;
 		}
 		return row;

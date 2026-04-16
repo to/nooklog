@@ -141,7 +141,7 @@ const nooklog = {
 		});
 	},
 
-	async save({ id, url, title, memo, summary, rating, tags, html, markdown }) {
+	async save({ id, url, title, memo, summary, rating, tags, html, markdown, meta }) {
 		if (config['server.readonly'])
 			return await this.find({ id, url });
 
@@ -149,14 +149,15 @@ const nooklog = {
 			throw new Error('Missing id or url');
 
 		let bookmark = await store.find({ id, url });
-
-		const oldTags = bookmark?.tags || [];
 		const isNew = !bookmark;
 
 		if (isNew)
 			bookmark = db.createBookmark();
 		else
 			bookmark.updated_at = Date.now();
+
+		// 判定用に古い値を保持しておく
+		const original = { ...bookmark };
 
 		if (this.isEdited(markdown) || (markdown != null && !this.isEdited(bookmark.markdown)))
 			bookmark.markdown = markdown || '';
@@ -177,11 +178,23 @@ const nooklog = {
 		if (!config['database.saveHTML'])
 			bookmark.html = '';
 
-		// データベースに保存または更新
-		_.merge(bookmark, { url, title, memo, summary, rating, tags });
-		await store.save(bookmark);
+		// データベースに反映
+		_.merge(bookmark, { url, title, memo, summary, rating, tags, meta });
 
-		await this._syncTagCache(oldTags, bookmark.tags);
+		// 変更があったカラムを特定する (埋め込みやFTSの対象)
+		const ftsColumns = ['url', 'title', 'memo', 'summary', 'markdown'];
+		const embedColumns = ['title', 'summary', 'memo', 'markdown'];
+
+		const changed = ftsColumns.filter(f => bookmark[f] !== original[f]);
+		const embedFields = changed.filter(f => embedColumns.includes(f));
+
+		await store.save(bookmark, {
+			fts: changed.length > 0,
+			embed: embedFields.length > 0,
+			embedFields,
+		});
+
+		await this._syncTagCache(original.tags || [], bookmark.tags);
 
 		return bookmark;
 	},

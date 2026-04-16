@@ -4,6 +4,8 @@ import assert from 'node:assert';
 import { env } from '../server/core/config.js';
 import db from '../server/core/database.js';
 import nooklog from '../server/core/nooklog.js';
+import sentence from '../server/core/sentence/index.js';
+import { wait } from '../server/core/util.js';
 
 const USER_MARK = '\u200B';
 
@@ -114,5 +116,67 @@ test('nooklog.js functional verification', async t => {
 		const searchB = await nooklog.search({ query: 'Site B' });
 		const siteB = searchB.bookmarks[0];
 		assert.ok(siteB.tags.includes('project-b'));
+	});
+
+	await t.test('Selective vector updates (pinpoint embedding)', async () => {
+		// Enable vector search and mock the embedding backend
+		env['sentence.vector.enabled'] = true;
+		await db.initializeVectorTable();
+		const originalRequest = sentence._request;
+
+		// Mock embedding to return a fixed vector
+		sentence._request = async input => (Array.isArray(input) ? input : [input]).map(() => new Array(768).fill(0));
+
+		try {
+			const b = await nooklog.save({
+				url: 'https://test.com',
+				title: 'Original Title',
+				memo: 'Original Memo',
+			});
+
+			await wait(50);
+
+			// Helper to get vector info from DB
+			const getVectors = async id => (await db.client.execute({
+				sql: 'SELECT row_id, field FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
+				args: [id],
+			})).rows;
+
+			const v1 = await getVectors(b.id);
+			assert.strictEqual(v1.length, 2, 'Initial save should create 2 vectors (title, memo)');
+			
+			const titleVector = v1.find(v => v.field === 'title');
+			const memoVector = v1.find(v => v.field === 'memo');
+
+			assert.ok(titleVector, 'Title vector should exist in V1');
+			assert.ok(memoVector, 'Memo vector should exist in V1');
+
+			const titleVectorRowId = titleVector.row_id;
+			const memoVectorRowId = memoVector.row_id;
+
+			// Update ONLY memo
+			await nooklog.save({ id: b.id, memo: 'Updated Memo' });
+
+			await wait(50);
+
+			const v2 = await getVectors(b.id);
+			const newTitleVector = v2.find(v => v.field === 'title');
+			const newMemoVector = v2.find(v => v.field === 'memo');
+
+			assert.ok(newTitleVector, 'Title vector MUST exist in V2');
+			assert.strictEqual(newTitleVector.row_id, titleVectorRowId, 'Title vector MUST be preserved (row_id same)');
+			assert.notStrictEqual(newMemoVector.row_id, memoVectorRowId, 'Memo vector MUST be re-created (row_id changed)');
+
+			// Update ONLY tags (should NOT trigger any re-embedding)
+			const memoRowIdBeforeTags = newMemoVector.row_id;
+			await nooklog.save({ id: b.id, tags: ['new-tag'] });
+
+			const v3 = await getVectors(b.id);
+			assert.strictEqual(v3.find(v => v.field === 'memo').row_id, memoRowIdBeforeTags, 'Tags update must NOT trigger re-embedding');
+
+		} finally {
+			sentence._request = originalRequest;
+			env['sentence.vector.enabled'] = false;
+		}
 	});
 });

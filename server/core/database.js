@@ -97,6 +97,7 @@ const database = {
 	},
 
 	async createTables() {
+		// Avoid CASCADE to prevent child vector loss on REPLACE
 		await this.client.batch([
 			`CREATE TABLE IF NOT EXISTS bookmark (
 				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,14 +167,13 @@ const database = {
 				log.info({ from: old, to: current, dimension }, 'model changed, re-initializing vector table');
 				batch.push(
 					`CREATE TABLE bookmark_vector (
-						row_id INTEGER PRIMARY KEY,
+						row_id INTEGER PRIMARY KEY AUTOINCREMENT,
 						bookmark_id INTEGER,
 						chunk_index INTEGER,
 						field TEXT,
 						content TEXT,
 						position INTEGER,
-						vector F32_BLOB(${dimension}),
-						FOREIGN KEY (bookmark_id) REFERENCES bookmark(row_id) ON DELETE CASCADE
+						vector F32_BLOB(${dimension})
 					)`,
 					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
 			}
