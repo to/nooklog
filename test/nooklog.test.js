@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
+
 import { env } from '../server/core/config.js';
+import db from '../server/core/database.js';
+import nooklog from '../server/core/nooklog.js';
 
 const USER_MARK = '\u200B';
 
@@ -8,7 +11,7 @@ test('nooklog.js functional verification', async t => {
 	env['database.turso.url'] = ':memory:';
 	env['database.turso.token'] = 'dummy';
 
-	const { default: nooklog } = await import('../server/core/nooklog.js');
+	await db.initialize();
 	await nooklog.initialize();
 
 	await t.test('Markdown should not be overwritten if USER_MARK is present', async () => {

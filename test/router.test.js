@@ -1,16 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { call } from '@orpc/server';
+
 import { env } from '../server/core/config.js';
+import db from '../server/core/database.js';
+import nooklog from '../server/core/nooklog.js';
+import { router } from '../server/router.js';
 
 test('router integration verification', async t => {
 	// Set database to in-memory mode
 	env['database.turso.url'] = ':memory:';
 	env['database.turso.token'] = 'dummy';
 
-	// Import router and core
-	const { router } = await import('../server/router.js');
-	const { default: nooklog } = await import('../server/core/nooklog.js');
+	await db.initialize();
 	await nooklog.initialize();
 
 	await t.test('Scenario: save -> find by url -> update by id -> find by id', async () => {

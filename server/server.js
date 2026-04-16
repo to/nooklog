@@ -245,6 +245,7 @@ server.get('/openapi.json', async (req, res) => {
 if (process.env.restart_time > 0)
 	await _.wait(2000);
 
+await database.initialize();
 await nooklog.initialize();
 
 const instance = server.listen(config['server.port'], '::', async () => {

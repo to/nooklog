@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import config, { env } from '../server/core/config.js';
+
+import { env } from '../server/core/config.js';
+import db from '../server/core/database.js';
+import store from '../server/core/store.js';
+import queue from '../server/core/queue.js';
 
 test('SQLite FTS Uni-gram Search Verification', async t => {
 	// Set database to in-memory and use unigram tokenizer
@@ -8,9 +12,7 @@ test('SQLite FTS Uni-gram Search Verification', async t => {
 	env['database.turso.token'] = 'dummy';
 	env['database.tokenizer'] = 'unigram';
 
-	const { default: db } = await import('../server/core/database.js');
-	const { default: store } = await import('../server/core/store.js');
-	const { default: queue } = await import('../server/core/queue.js');
+	await db.initialize();
 
 	const testData = [
 		{ id: '1', url: 'https://google.com', title: 'Google検索', memo: '便利な検索エンジン', tags: ['IT', 'Search'], rating: 5 },

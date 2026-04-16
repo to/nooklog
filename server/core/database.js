@@ -233,6 +233,4 @@ const database = {
 	},
 };
 
-await database.initialize();
-
 export default database;
