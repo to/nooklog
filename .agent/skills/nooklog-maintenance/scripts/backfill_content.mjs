@@ -31,13 +31,13 @@ await batch(bookmarks, async slice => {
 		await nooklog.save({
 			id: b.id,
 			url: b.url,
-			title: title || b.title, // Prioritize newly fetched title
+			title: b.title || title,
 			html,
 			updated_at: b.updated_at,
 			meta: { _fetch_error: null },
 		});
 
-		console.log(`[  OK  ] ${title || b.title}`);
+		console.log(`[  OK  ] ${b.title || title}`);
 	} catch (e) {
 		console.error(`[FAILED] ${b.url} - ${e.message}`);
 
