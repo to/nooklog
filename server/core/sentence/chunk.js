@@ -10,7 +10,7 @@ export const chunkMarkdown = (md, {
 	targetSize = Math.min(1024, Math.max(512, Math.floor(limitSize / 2))),
 	overlapSize = 50,
 } = {}) => {
-	// パラグラフ内にあるURLを除去する
+	// パラグラフ内にあるURLテキストを除去する
 	md = md
 		.replace(/\r\n?/g, '\n')
 		.replace(/https?:\/\/[\w./\-?&=%#]+/g, '').trim();
@@ -117,6 +117,9 @@ export const chunkMarkdown = (md, {
 			.trim();
 	});
 
+	// 意味のないチャンク（記号のみなど）を除去する
+	chunks = chunks.filter(c => /[\p{L}\p{N}]/u.test(c.text));
+
 	// フラグメントを統合する
 	const minSize = targetSize / 3;
 	for (let i = 0; i < chunks.length; i++) {
@@ -139,23 +142,15 @@ export const chunkMarkdown = (md, {
 	}
 
 	// 残存フラグメントを強制統合する
-	for (let i = 0; i < chunks.length; i++) {
+	for (let i = 1; i < chunks.length; i++) {
 		const self = chunks[i];
 		if (self.text.length >= minSize)
 			continue;
 
 		const prev = chunks[i - 1];
-		const next = chunks[i + 1];
-		if (prev) {
-			chunks.splice(i, 1);
-			prev.text += '\n\n' + self.text;
-			i -= 1;
-		} else if (next) {
-			chunks.splice(i, 1);
-			next.text = self.text + '\n\n' + next.text;
-			next.position = self.position;
-			i -= 1;
-		}
+		chunks.splice(i, 1);
+		prev.text += '\n\n' + self.text;
+		i -= 1;
 	}
 
 	// オーバーラップ
@@ -171,7 +166,7 @@ export const chunkMarkdown = (md, {
 		};
 	});
 
-	return chunks.filter(c => /[\p{L}\p{N}]/u.test(c.text));
+	return chunks;
 };
 
 const engine = unified()
