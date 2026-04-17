@@ -57,7 +57,7 @@ class UpdateForm extends Component {
 		}
 
 		this.els.rating.toggle(
-			config['client.ratingInputMode'] !== 'tags');
+			['stars', 'both'].includes(config['client.ratingInputMode']));
 		this.els.tags.focus();
 	}
 

@@ -12,7 +12,7 @@ const config = {
 	'client.tint': 'cyan', // 'red', 'pink', etc.
 	'client.windowPosition': 'bottom-right', // 'top-right', 'bottom-right'
 	'client.tagMatchMode': 'smart', // 'smart' (subsequence), 'contains', 'starts-with'
-	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both'
+	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both', 'none'
 	'client.autoCompleteTags': false, // Auto-confirm when narrowed down enough
 	'extension.serverAddress': 'http://localhost:5050',
 	'extension.selectionDelimiter': '/',

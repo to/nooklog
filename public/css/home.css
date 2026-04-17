@@ -135,7 +135,8 @@ body {
 
 .ResultTable {
 	.td {
-		&:first-child {
+		&:first-child:not(.none),
+		.td.none:first-child + &:not(.none) {
 			padding-left: var(--_content-margin);
 		}
 

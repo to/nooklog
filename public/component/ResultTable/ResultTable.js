@@ -1,5 +1,9 @@
 class ResultTable extends Component {
 	bindEvents() {
+		this._updateRatingVisibility();
+
+		hub.on('Nooklog:updateConfig', () => this._updateRatingVisibility());
+
 		hub.on('SearchForm:search', results => {
 			this._render(results.bookmarks);
 
@@ -109,7 +113,7 @@ class ResultTable extends Component {
 		const host = this._getHostname(r.url);
 		return /* html */`
 		<div class="tr" data-id="${r.id}">
-			<div class="td col-rating">
+			<div class="td col-rating ${config['client.ratingInputMode'] === 'none' ? 'none' : ''}">
 				<nl-rating data-rating="${r.rating}"></nl-rating>
 			</div>
 			<div class="td col-favicon">
@@ -166,6 +170,11 @@ class ResultTable extends Component {
 		} catch {
 			return '';
 		}
+	}
+
+	_updateRatingVisibility() {
+		const isNone = config['client.ratingInputMode'] === 'none';
+		this.$$('.col-rating').forEach(el => $.toggle(el, !isNone));
 	}
 }
 

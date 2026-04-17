@@ -57,7 +57,7 @@ const Nooklog = {
 
 	async getTags() {
 		const tags = await this.rpc('getTags');
-		return config['client.ratingInputMode'] !== 'stars'
+		return (config['client.ratingInputMode'] === 'tags' || config['client.ratingInputMode'] === 'both')
 			? tags.concat(['5', '4', '3', '2', '1', '0'])
 			: tags;
 	},

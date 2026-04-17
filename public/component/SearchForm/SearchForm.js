@@ -20,10 +20,14 @@ class SearchForm extends Component {
 
 	async ready() {
 		this._updateVectorVisibility();
+		this._updateRatingVisibility();
 	}
 
 	bindEvents() {
-		hub.on('Nooklog:updateConfig', () => this._updateVectorVisibility());
+		hub.on('Nooklog:updateConfig', () => {
+			this._updateVectorVisibility();
+			this._updateRatingVisibility();
+		});
 		hub.on('ResultTable:selectTag', tag => {
 			this.els.tags.tagify.addTags([tag]);
 		});
@@ -154,6 +158,15 @@ class SearchForm extends Component {
 			'invisible', !config['sentence.vector.enabled']);
 		if (!config['sentence.vector.enabled'])
 			$.check(this.els.mode, 'fts');
+	}
+ 
+	_updateRatingVisibility() {
+		const isNone = config['client.ratingInputMode'] === 'none';
+		const label = this.$('label:has([value=rating])');
+		$.toggle(label, !isNone);
+
+		if (isNone && label.querySelector('input').checked)
+			$.check(this.els.sortBy, 'relevance');
 	}
 }
 
