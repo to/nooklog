@@ -83,7 +83,7 @@ class TagInput extends Component {
 	}
 
 	setTags(...args) {
-		this.tagify.removeAllTags();
+		this.removeAllTags();
 
 		// 重複タグを取り除き適切なレートを決定する
 		// (別ウィンドウ切り離し時のデータ混合を修正する)
@@ -94,6 +94,10 @@ class TagInput extends Component {
 
 	getTags() {
 		return this.tagify.value.map(t => t.value);
+	}
+
+	removeAllTags() {
+		this.tagify.loadOriginalValues([]);
 	}
 
 	focus() {

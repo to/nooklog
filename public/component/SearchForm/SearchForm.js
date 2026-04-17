@@ -28,13 +28,16 @@ class SearchForm extends Component {
 			this._updateVectorVisibility();
 			this._updateRatingVisibility();
 		});
+
 		hub.on('ResultTable:selectTag', tag => {
 			this.els.tags.tagify.addTags([tag]);
 		});
+
 		hub.on('ResultTable:selectHost', host => {
 			this.els.url.value = host;
 			this._search();
 		});
+
 		hub.on('ConfigDialog:import', () => {
 			this.els.tags.refresh();
 			this.clear();
@@ -45,8 +48,15 @@ class SearchForm extends Component {
 		this.els.tags.on('remove', () => this._search());
 
 		$.on(this.els.form, 'keydown', e => {
-			if (e.target.tagName !== 'INPUT')
+			if (e.target.tagName !== 'INPUT' && !e.target.classList.contains('tagify__input'))
 				return;
+
+			if (e.key === 'Escape') {
+				this.els.query.value = '';
+				this.els.url.value = '';
+				this.els.tags.removeAllTags();
+				this._search();
+			}
 
 			if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 				e.preventDefault();
@@ -80,7 +90,7 @@ class SearchForm extends Component {
 	clear() {
 		this.els.query.value = '';
 		this.els.url.value = '';
-		this.els.tags.tagify.removeAllTags();
+		this.els.tags.removeAllTags();
 		this.els.fields.forEach(el => el.checked = el.value !== 'markdown');
 		const fts = this.els.mode.find(el => el.value === 'fts');
 		if (fts)
@@ -159,7 +169,7 @@ class SearchForm extends Component {
 		if (!config['sentence.vector.enabled'])
 			$.check(this.els.mode, 'fts');
 	}
- 
+
 	_updateRatingVisibility() {
 		const isNone = config['client.ratingInputMode'] === 'none';
 		const label = this.$('label:has([value=rating])');
