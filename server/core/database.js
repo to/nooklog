@@ -144,7 +144,7 @@ const database = {
 					summary,
 					markdown,
 					url,
-					tokenize="${tokenizerString}"
+					tokenize="${tokenizerString}" -- ${current}
 				)`,
 			], 'write');
 

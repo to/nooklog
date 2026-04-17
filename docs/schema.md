@@ -36,7 +36,7 @@ CREATE VIRTUAL TABLE bookmark_fts USING fts5(
     summary,
     markdown,
     url,
-    tokenize="unicode61 categories 'L* N* P* S*'"
+    tokenize="unicode61 categories 'L* N* P* S*'" -- unigram
 );
 
 -- Vector Search
