@@ -144,23 +144,26 @@ class SearchForm extends Component {
 		this._updateURL();
 
 		const query = this.getQuery();
-		const results = isEmpty(query)
+		const res = isEmpty(query)
 			? await Nooklog.search({
 				sortBy: this.els.sortBy.find(el => el.checked)?.value,
 				limit: 100,
 			})
 			: await Nooklog.search(query);
-		results.query = query;
+		if (!res)
+			return;
+
+		res.query = query;
 
 		this.els.count.innerHTML = '<span class="icon">bookmark</span>' + (
-			(results.count === 0) ? '0' :
-				(results.bookmarks.length !== results.count ?
-					`${results.bookmarks.length} / ${results.count}` : `${results.count}+`));
+			(res.count === 0) ? '0' :
+				(res.bookmarks.length !== res.count ?
+					`${res.bookmarks.length} / ${res.count}` : `${res.count}+`));
 
 		$.hide(this.els.loading);
 		$.show(this.els.count);
 
-		hub.emit('SearchForm:search', results);
+		hub.emit('SearchForm:search', res);
 	}
 
 	_updateVectorVisibility() {

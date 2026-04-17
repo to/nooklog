@@ -148,57 +148,57 @@ const nooklog = {
 		if (!id && !url)
 			throw new Error('Missing id or url');
 
-		let bookmark = await store.find({ id, url });
-		const isNew = !bookmark;
+		let b = await store.find({ id, url });
+		const isNew = !b;
 		const now = Date.now();
 
 		if (isNew) {
-			bookmark = db.createBookmark();
-			bookmark.created_at = created_at ?? now;
+			b = db.createBookmark();
+			b.created_at = created_at ?? now;
 		}
-		bookmark.updated_at = updated_at ?? now;
+		b.updated_at = updated_at ?? now;
 
 		// 判定用に古い値を保持しておく
-		const original = { ...bookmark };
+		const original = { ...b };
 
-		if (this.isEdited(markdown) || (markdown != null && !this.isEdited(bookmark.markdown)))
-			bookmark.markdown = markdown || '';
+		if (this.isEdited(markdown) || (markdown != null && !this.isEdited(b.markdown)))
+			b.markdown = markdown || '';
 
 		if (html) {
 			const processed = ingest.html.process(url, html);
-			bookmark.html = processed.html;
-			if (!this.isEdited(bookmark.markdown))
-				bookmark.markdown = processed.markdown;
+			b.html = processed.html;
+			if (!this.isEdited(b.markdown))
+				b.markdown = processed.markdown;
 		}
 
 		// ユーザーが空へ編集した場合 次回 フォームを開いた際に上書きするように弱める
 		// (空で保存するが上書きもされる特殊な状態)
-		if (bookmark.markdown === USER_MARK)
-			bookmark.markdown = '';
+		if (b.markdown === USER_MARK)
+			b.markdown = '';
 
 		// HTMLを切り捨てる
 		if (!config['database.saveHTML'])
-			bookmark.html = '';
+			b.html = '';
 
 		// データベースに反映
-		_.merge(bookmark, { url, title, memo, summary, rating, tags, meta });
+		_.merge(b, { url, title, memo, summary, rating, tags, meta });
 
 		// 変更があったカラムを特定する (埋め込みやFTSの対象)
 		const ftsColumns = ['url', 'title', 'memo', 'summary', 'markdown'];
 		const embedColumns = ['title', 'summary', 'memo', 'markdown'];
 
-		const changed = ftsColumns.filter(f => bookmark[f] !== original[f]);
+		const changed = ftsColumns.filter(f => b[f] !== original[f]);
 		const embedFields = changed.filter(f => embedColumns.includes(f));
 
-		await store.save(bookmark, {
+		await store.save(b, {
 			fts: changed.length > 0,
 			embed: embedFields.length > 0,
 			embedFields,
 		});
 
-		await this._syncTagCache(original.tags || [], bookmark.tags);
+		await this._syncTagCache(original.tags || [], b.tags);
 
-		return bookmark;
+		return b;
 	},
 
 	async _syncTagCache(oldTags, newTags) {

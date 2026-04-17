@@ -1,5 +1,6 @@
 const Nooklog = {
 	net: new Network(),
+	currentSearch: null,
 
 	async load() {
 		const values = await this.rpc('config/get');
@@ -39,8 +40,16 @@ const Nooklog = {
 			...ps,
 			...(ps.tags ? this.separateRating(ps.tags) : {}),
 		};
-		return this._populate(await this.rpc('search', data,
-			{ bookmarks: [], count: 0, totalCount: 0 }));
+
+		const task = this.rpc('search', data,
+			{ bookmarks: [], count: 0, totalCount: 0 });
+		this.currentSearch = task;
+
+		// 最終の検索以外は結果を返さない
+		const res = await task;
+		return this.currentSearch === task
+			? this._populate(res)
+			: null;
 	},
 
 	async save(bookmark) {
@@ -75,21 +84,21 @@ const Nooklog = {
 		return res?.json ?? res;
 	},
 
-	_populate(r) {
-		if (r == null)
-			return r;
+	_populate(b) {
+		if (b == null)
+			return b;
 
-		if (Array.isArray(r))
-			return r.map(i => this._populate(i));
+		if (Array.isArray(b))
+			return b.map(i => this._populate(i));
 
-		if (r.bookmarks) {
-			r.bookmarks = this._populate(r.bookmarks);
-			return r;
+		if (b.bookmarks) {
+			b.bookmarks = this._populate(b.bookmarks);
+			return b;
 		}
 
-		r.created_at = new Date(r.created_at);
-		r.updated_at = new Date(r.updated_at);
-		return r;
+		b.created_at = new Date(b.created_at);
+		b.updated_at = new Date(b.updated_at);
+		return b;
 	},
 
 	separateRating(tags, rating = 0) {

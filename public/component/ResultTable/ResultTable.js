@@ -4,10 +4,10 @@ class ResultTable extends Component {
 
 		hub.on('Nooklog:updateConfig', () => this._updateRatingVisibility());
 
-		hub.on('SearchForm:search', results => {
-			this._render(results.bookmarks);
+		hub.on('SearchForm:search', res => {
+			this._render(res.bookmarks);
 
-			if (results.bookmarks.length) {
+			if (res.bookmarks.length) {
 				if (app.get('ResultTable.select', false))
 					this._select(this.$('.tr'));
 			}
@@ -103,8 +103,8 @@ class ResultTable extends Component {
 		hub.emit('ResultTable:select', bookmark);
 	}
 
-	_render(results) {
-		this.innerHTML = results.map(r => this._getRowHTML(r)).join('');
+	_render(res) {
+		this.innerHTML = res.map(r => this._getRowHTML(r)).join('');
 	}
 
 	_getRowHTML(r) {
