@@ -1,17 +1,20 @@
 class TagInput extends Component {
+	static INPUT_LOCK_MS = 180;
+
 	initialize() {
 		this.innerHTML = `<input name="${this.getAttribute('name')}"
 			placeholder="${this.getAttribute('placeholder') || ''}" class="flex-1">`;
 		this.input = this.$('input');
 		this.style.display = 'contents';
 
-		this.maxWhitelist = 7;
+		this.maxWhitelist = 10;
 
 		const tagify = new Tagify(this.input, {
 			maxTags: 20,
 			delimiters: ',| ',
 			dropdown: {
 				enabled: 1, // フォーカス直後に表示しない(フォーカス移動に反応しないように)
+				placeAbove: false,
 				closeOnSelect: true,
 				searchKeys: ['value'],
 				fuzzySearch: config['client.tagMatchMode'] === 'contains',
@@ -20,14 +23,20 @@ class TagInput extends Component {
 			},
 		});
 		this.tagify = tagify;
+		this.lockInput = false;
 		this.refresh();
 
 		// IMEをオフにする
 		tagify.DOM.input.setAttribute('inputmode', 'url');
 
-		// タブキーで確定する
-		tagify.on('keydown', e => {
-			if (e.detail.event.key === 'Tab')
+		// キー入力を監視
+		tagify.DOM.input.addEventListener('keydown', e => {
+			// ナチュラルなイベントのみブロックする
+			if (this.lockInput && e.isTrusted) {
+				e.preventDefault();
+				return false;
+			}
+			if (e.key === 'Tab')
 				this.enter();
 		});
 
@@ -64,9 +73,14 @@ class TagInput extends Component {
 					.slice(0, this.maxWhitelist);
 
 				// 要素が十分に絞られたら自動的に確定して閉じる
-				if (config['client.autoCompleteTags'] &&
-					(whitelist.length == 1 || whitelist.filter(t => t.startsWith(value)).length == 1))
-					setTimeout(() => this.enter(), 16);
+				if (config['client.autoCompleteTags'] && !this.lockInput &&
+					(whitelist.length == 1 || whitelist.filter(t => t.startsWith(value)).length == 1)) {
+					this.lockInput = true;
+					setTimeout(() => this.lockInput = false, TagInput.INPUT_LOCK_MS);
+					setTimeout(() => {
+						this.enter();
+					}, 16);
+				}
 
 				return whitelist;
 			};

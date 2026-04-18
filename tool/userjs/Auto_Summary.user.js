@@ -18,7 +18,7 @@
 
 /* global beforeHook, UpdateForm */
 
-const serverUrl = 'http://localhost:11434';
+const serverUrl = 'http://localhost:11434/v1';
 const model = 'gemma3:4b';
 
 (() => {
@@ -41,9 +41,13 @@ Example Output:
 Text:
 ${content}`.trim();
 
-		const res = await request('POST', '/api/generate', { model, prompt, stream: false });
+		const res = await request('POST', '/chat/completions', {
+			model,
+			messages: [{ role: 'user', content: prompt }],
+			stream: false,
+		});
 		console.log(res);
-		return res?.response?.trim();
+		return res?.choices?.[0]?.message?.content?.trim();
 	};
 
 	beforeHook(UpdateForm.prototype, 'setBookmark', async function (bookmark) {
