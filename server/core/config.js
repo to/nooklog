@@ -25,7 +25,7 @@ const config = {
 	'sentence.vector.queryPrefix': '', // Use preset if empty
 	'sentence.vector.documentTitlePrefix': '', // Use preset if empty
 	'sentence.vector.documentTextPrefix': '', // Use preset if empty
-	'sentence.vector.url': 'http://localhost:11434/v1/embeddings',
+	'sentence.vector.baseUrl': 'http://localhost:11434/',
 	'sentence.vector.apiKey': '',
 	'sentence.vector.model': 'embeddinggemma',
 	'sentence.vector.limitSize': 2048,
@@ -43,7 +43,7 @@ export const env = {
 	'server.password': process.env.NOOKLOG_PASSWORD
 		? `env-salt:${crypto.createHash('sha256').update(process.env.NOOKLOG_PASSWORD + 'env-salt').digest('hex')}`
 		: undefined,
-	'sentence.vector.url': process.env.NOOKLOG_VECTOR_URL || process.env.OPENAI_BASE_URL,
+	'sentence.vector.baseUrl': process.env.NOOKLOG_VECTOR_URL || process.env.OPENAI_BASE_URL,
 	'sentence.vector.apiKey': process.env.NOOKLOG_VECTOR_API_KEY || process.env.OPENAI_API_KEY,
 	'database.turso.url': process.env.TURSO_DATABASE_URL,
 	'database.turso.token': process.env.TURSO_AUTH_TOKEN,

@@ -212,8 +212,9 @@
 			</div>
 
 			<div data-vector-enabled="true">
-				<label>OpenAI (Ollama) URL</label>
-				<input type="text" name="sentence.vector.url" placeholder="http://localhost:11434/v1/embeddings">
+				<label>OpenAI (Ollama) Base URL</label>
+				<input type="text" name="sentence.vector.baseUrl" placeholder="http://localhost:11434/">
+				<span class="description">Appends <code>/v1/embeddings</code> to the base URL.</span>
 			</div>
 
 			<div data-vector-enabled="true">

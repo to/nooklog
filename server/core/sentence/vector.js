@@ -38,12 +38,12 @@ const vector = {
 	hasError: false,
 
 	async getModels(url) {
-		const configUrl = url || config['sentence.vector.url'];
+		const baseUrl = (url || config['sentence.vector.baseUrl']).replace(/\/$/, '');
 		try {
-			const data = await this._fetch(configUrl.replace(/\/embeddings\/?$/, '/models'));
+			const data = await this._fetch(`${baseUrl}/v1/models`);
 			return data.map(m => m.id);
 		} catch (e) {
-			log.warn({ url: configUrl, cause: e.message }, 'failed to fetch vector models');
+			log.warn({ url: baseUrl, cause: e.message }, 'failed to fetch vector models');
 			return [];
 		}
 	},
@@ -88,10 +88,10 @@ const vector = {
 			return [];
 
 		const model = config['sentence.vector.model'];
-		const url = config['sentence.vector.url'];
+		const baseUrl = config['sentence.vector.baseUrl'].replace(/\/$/, '');
 
 		try {
-			const data = await this._fetch(url, {
+			const data = await this._fetch(`${baseUrl}/v1/embeddings`, {
 				method: 'POST',
 				json: { model, input: inputs },
 			});

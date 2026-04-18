@@ -76,7 +76,7 @@ class ConfigDialog extends Component {
 			if (name === 'sentence.vector.enabled')
 				this._updateEmbeddingVisibility();
 
-			if (name === 'sentence.vector.url')
+			if (name === 'sentence.vector.baseUrl')
 				this._fetchVectorModels();
 
 			if (name === 'client.windowPosition' || name === 'extension.serverAddress')
@@ -191,9 +191,21 @@ class ConfigDialog extends Component {
 	}
 
 	async _fetchVectorModels() {
-		const url = this.$('input[name="sentence.vector.url"]')?.value;
+		const elUrl = this.$('input[name="sentence.vector.baseUrl"]');
+		if (!elUrl)
+			return;
+
+		let url = elUrl.value.trim();
+		if (/\/v\d+(\/|$)/.test(url)) {
+			// v1以降を切り捨てて正規化する
+			url = url.split(/\/v\d+(\/|$)/)[0];
+			if (!url.endsWith('/'))
+				url += '/';
+			elUrl.value = url;
+		}
+
 		const models = await Nooklog.getVectorModels(url);
-		const el = this.$('select[name="sentence.vector.model"]');
+		const elSelect = this.$('select[name="sentence.vector.model"]');
 		const current = config['sentence.vector.model'];
 		const options = Array.from(new Set([current, ...models].filter(Boolean)))
 			.sort((a, b) => {
@@ -204,8 +216,8 @@ class ConfigDialog extends Component {
 				return a.localeCompare(b);
 			});
 
-		el.innerHTML = options.map(m => `<option value="${m}">${m}</option>`).join('');
-		el.value = current;
+		elSelect.innerHTML = options.map(m => `<option value="${m}">${m}</option>`).join('');
+		elSelect.value = current;
 	}
 
 	_updateBookmarklet() {
