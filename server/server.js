@@ -29,7 +29,7 @@ const server = express();
 /* ---- Server Framework Setup ---- */
 
 server.set('json spaces', '\t');
-server.set('trust proxy', true);
+server.set('trust proxy', 1);
 server.use(express.json({ limit: '500mb' }));
 
 server.use((req, res, next) => {
@@ -48,11 +48,11 @@ server.use((req, res, next) => {
 
 /* ---- Dynamic Basic Authentication ---- */
 
-// 失敗リクエスト（401）だけをカウントするレートリミッター
+// パスワード誤入力だけをカウントするレートリミッター
 const authLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
-	max: 10, // 15分間に10回失敗したらブロック
-	skipSuccessfulRequests: true, // 成功したリクエストはカウントしない
+	max: 100, // 必要なリソース(HTML/JS/CSS)分から算定(低速回線を考慮)
+	skipSuccessfulRequests: true, // 正しいパスワードはカウントしない
 	message: 'Too many failed login attempts. Please try again after 15 minutes.',
 	standardHeaders: true,
 	legacyHeaders: false,
@@ -79,7 +79,7 @@ server.use((req, res, next) => {
 	if (!password || req.path === '/api/alive' || req.path.startsWith('/api/favicon'))
 		return next();
 
-	// レートリミット（防御）を適用してから、認証を行う
+	// レートリミットを適用
 	authLimiter(req, res, () => {
 		basicAuthenticator(req, res, next);
 	});
