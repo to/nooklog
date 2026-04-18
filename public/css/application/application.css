@@ -74,44 +74,35 @@ input::-webkit-inner-spin-button {
 	appearance: none;
 }
 
-
 input[type='number'] {
 	/* Firefox */
 	appearance: textfield;
 }
 
-select,
-::picker(select) {
-	appearance: base-select;
-}
-
-::picker(select) {
-	position: relative;
-	color: var(--ink-5);
-	background: var(--ink-0);
-	border: 1px solid var(--ink-2);
-	border-radius: var(--radius-m);
-}
-
-select{
+select {
 	width: fit-content;
 	cursor: pointer;
 
-	option::checkmark {
+	& option::checkmark {
 		display: none;
 	}
 
-	option:checked {
+	& option:checked {
 		color: var(--ink-0);
 		background-color: var(--ink-4);
 	}
 
-	option:hover,
-	option:focus-visible {
+	& option:hover,
+	& option:focus-visible {
 		color: var(--ink-0);
 		outline: none;
 		background-color: var(--ink-5);
 	}
+}
+
+/* フォーム内のselect幅を調整 */
+form select {
+	width: 100%;
 }
 
 textarea {

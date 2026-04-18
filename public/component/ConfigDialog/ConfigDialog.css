@@ -6,6 +6,7 @@ html:has(dialog[open]) {
 	display: contents;
 
 	dialog {
+		top: 0;
 		height: 100vh;
 		max-height: 100vh;
 		padding: 0; /* paddingは内部要素で管理 */
@@ -23,6 +24,7 @@ html:has(dialog[open]) {
 	}
 
 	form {
+		position: relative;
 		gap: 0;
 
 		> header {
