@@ -3,7 +3,7 @@
 // @description  Automatically add tags based on URL patterns
 // @namespace    https://github.com/to
 // @version      0.1
-// @author       to, mii
+// @author       quoposk, mii(Gemini 3 Flash)
 //
 // @match        http://localhost:*/*
 // @match        http://127.0.0.1:*/*

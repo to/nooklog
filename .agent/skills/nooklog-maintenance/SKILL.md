@@ -3,12 +3,19 @@ name: nooklog-maintenance
 description: Maintenance procedures for bulk updates, database maintenance, schema changes, and data integrity preservation in the nooklog project. Covers synchronization management of primary entities and search indices (FTS/Vector) within LibSQL (SQLite).
 ---
 
+[🇯🇵](SKILL_ja.md)
+
 # nooklog-maintenance
 
 This skill provides guidelines for maintaining data integrity and safely executing large-scale transformations or database maintenance within the nooklog project.
 
+> [!INFO]
+> For retrieving or searching small amounts of data, you can also use the OpenAPI. Check `/openapi.html` on the running server.
+> URL or tag corrections on the edit screen can be patched using Greasemonkey. See `tool/userjs/*.js`.
+
 ## Core Maintenance Policies
 
+- **Safety Shutdown**: For safety, ensure that the running Nooklog instance is shut down before performing maintenance.
 - **Safety First (Backups)**: Before performing destructive operations (bulk transformations, deletions, etc.), always create a physical copy (backup) of the database files (e.g., `nooklog.db.bak`) to ensure a reliable rollback point.
 - **Fail Fast Principle**: Design maintenance scripts to log errors or terminate immediately upon encountering irregular data, rather than silently ignoring anomalies.
 - **Proper Resource Management**: Always call `nooklog.dispose()` at the end of a script to safely close database connections and release resources.
@@ -50,7 +57,7 @@ graph TD
   - Responsible for HTML-to-Markdown conversion, property auto-completion, and tag cache synchronization.
   - This is the top-level layer where the application's business logic resides.
   - **New Record Efficiency**: Ideal for adding new records as it automatically populates missing properties via `db.createBookmark()`.
-  - **Sub-components (ingest)**: 
+  - **Sub-components (ingest)**:
     - `ingest/browser`: Handles dynamic web page scraping using Playwright with the Stealth plugin.
     - `ingest/html`: Manages content extraction using Readability (removing headers/footers) and Markdown conversion via Turndown.
 - **store (Data Access/Search Layer)**
@@ -75,6 +82,7 @@ Observe the following guidelines when creating or running maintenance scripts:
 - **Dynamic Configuration and Environment Variables**
   - To control the execution environment from a script, import `#server/core/config` and overwrite `env` values (e.g., `env['server.data.path']`) before calling `db.initialize()`.
   - Refer to `.env.sample` in the root directory for detailed definitions and possible values for each environment variable.
+- **Custom Metadata Naming**: When adding your own data to the `meta` column (JSON object) of the `bookmark` table, always use a name starting with `_` (e.g., `_my_custom_field`).
 
 ## Included Maintenance Scripts (`scripts/`)
 

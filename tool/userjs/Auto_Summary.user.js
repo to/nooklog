@@ -3,7 +3,7 @@
 // @description  Summarize markdown content using Ollama
 // @namespace    https://github.com/to
 // @version      0.1
-// @author       to, mii
+// @author       quoposk, mii(Gemini 3 Flash)
 //
 // @match        http://localhost:*/update.html*
 // @match        http://127.0.0.1:*/update.html*

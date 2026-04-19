@@ -3,6 +3,8 @@ name: nooklog-installation
 description: Nooklogのインストール手順書。 クライアント(拡張機能)の導入から 構成パターンの選択。 サーバーの構築までを案内します。
 ---
 
+[🇺🇸](SKILL.md)
+
 ## クライアント(拡張機能)のインストール
 
 ブラウザ(Chrome)で動作する Nooklog拡張機能をインストールします。 \
@@ -265,9 +267,15 @@ Nooklog は Ollama / LM Studio / llama-server の OpenAI 互換 API で動作を
 [MTEB Leaderboard (Hugging Face)](https://huggingface.co/spaces/mteb/leaderboard)
 
 #### おすすめの埋め込みモデル例
-- [embeddinggemma-300m](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) (軽量かつ高性能)
-- [Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) (最新鋭のバランス)
-- [harrier-oss-v1-0.6b](https://huggingface.co/microsoft/harrier-oss-v1-0.6b) (多言語対応)
+
+```bash
+# 軽量かつ高性能
+ollama pull embeddinggemma:300m
+# 最新鋭のバランス
+ollama pull qwen3-embedding:0.6b
+# 多言語対応
+ollama pull leoipulsar/harrier-0.6b
+```
 
 > [!INFO]
 > **なぜ node-llama-cpp を採用しなかったのか**\

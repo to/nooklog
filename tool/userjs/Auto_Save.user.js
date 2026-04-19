@@ -3,7 +3,7 @@
 // @description  Automatically save the current page to Nooklog if it is not already bookmarked.
 // @namespace    https://github.com/to
 // @version      0.1
-// @author       to, mii
+// @author       quoposk, mii(Gemini 3 Flash)
 //
 // @connect      localhost
 // @connect      *

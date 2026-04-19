@@ -3,6 +3,8 @@ name: nooklog-installation
 description: Installation guide for Nooklog. Covers everything from browser extension setup to server configuration patterns.
 ---
 
+[🇯🇵](SKILL_ja.md)
+
 ## Client (Extension) Installation
 
 Install the Nooklog extension that runs in your browser.
@@ -12,12 +14,12 @@ Install the Nooklog extension that runs in your browser.
 - Click the **Load unpacked** button.
 - Select the `tool/browser-extension` folder within the repository.
 
-Once installed, the Nooklog icon will appear in your browser toolbar. 
+Once installed, the Nooklog icon will appear in your browser toolbar.
 Click the icon and register your server URL (default: `http://localhost:5050`) to complete the setup.
 
 ## System Configuration
 
-Nooklog consists of two components: the Browser Extension (Client) and the Nooklog Server. 
+Nooklog consists of two components: the Browser Extension (Client) and the Nooklog Server.
 You can choose where each component runs (Local PC or Cloud) based on your needs.
 
 ### Configuration Patterns
@@ -211,14 +213,21 @@ turso db create nooklog --from-file ./nooklog.db
 ```
 
 ### C1. LLM Server (OpenAI Compatible)
-Nooklog is tested with Ollama, LM Studio, and llama-server. 
+Nooklog is tested with Ollama, LM Studio, and llama-server.
 To enable vector search, you need an **Embedding Model** that fits your content and hardware.
 
 Check the [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard) for model performance, focusing on the **Retrieval** score.
 
 #### Recommended Embedding Models
-- [embeddinggemma-300m](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) (Lightweight & High performance)
-- [Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) (State-of-the-art balance)
+
+```bash
+# Lightweight & High performance
+ollama pull embeddinggemma:300m
+# State-of-the-art balance
+ollama pull qwen3-embedding:0.6b
+# Multilingual support
+ollama pull leoipulsar/harrier-0.6b
+```
 
 > [!INFO]
 > **Why we use external LLM servers instead of node-llama-cpp**

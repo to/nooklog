@@ -27,7 +27,7 @@ const config = {
 	'sentence.vector.documentTextPrefix': '', // Use preset if empty
 	'sentence.vector.baseUrl': 'http://localhost:11434/',
 	'sentence.vector.apiKey': '',
-	'sentence.vector.model': 'embeddinggemma',
+	'sentence.vector.model': 'embeddinggemma:300m',
 	'sentence.vector.limitSize': 2048,
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
