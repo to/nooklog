@@ -1,4 +1,4 @@
-// Chrome拡張ではセキュリティポリシーによりインラインスクリプトは使えない
+// Inline scripts are rejected by Chrome extension security policies
 const isFrame = window.parent !== window;
 if (isFrame)
 	document.documentElement.classList.add('frame');

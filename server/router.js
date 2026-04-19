@@ -163,7 +163,7 @@ export const router = {
 				await nooklog.exportMarkdown(archive, input);
 			}
 
-			// oRPCの出力を省略する(OpenAPIのアクセスのみを想定)
+			// Omit oRPC output (assuming OpenAPI access only)
 			res.writeHead = () => res;
 			res.end = () => res;
 		}),
@@ -260,7 +260,7 @@ export const router = {
 			};
 		}),
 
-	// 汎用的なSSEイベントストリーム
+	// Generic SSE Event Stream
 	event: orpc
 		.route({ method: 'GET', path: '/event', tags: ['internal'] })
 		.handler(async function* ({ signal }) {

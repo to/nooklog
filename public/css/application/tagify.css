@@ -21,7 +21,7 @@
 	}
 
 	&.tagify--focus{
-		/* 設定値で更新するために再宣言する */
+		/* Redeclare to refresh with settings */
 		--tags-border-color: var(--tags-focus-border-color);
 	}
 
@@ -60,7 +60,7 @@
 		}
 	}
 
-	/* 削除ボタンを非表示 */
+	/* Hide remove button */
 	.tagify__tag__removeBtn {
 		display: none !important;
 	}
@@ -71,7 +71,7 @@
 	--tagify-dd-text-color: var(--ink-5);
 	--tagify-dd-bg-color: var(--ink-0);
 
-	/* マウスイベントを無効化 (キーボード操作の妨げになるため) */
+	/* Disable mouse events (to avoid interfering with keyboard) */
 	&.is-inputting {
 		pointer-events: none;
 	}
@@ -82,10 +82,10 @@
 	}
 
 	.tagify__dropdown__item {
-		/* 左側の余白を無くす */
+		/* Remove left margin */
 		text-indent: 0 !important;
 
-		/* チェックマーク(✓)を非表示 */
+		/* Hide checkmark (✓) */
 		&::before {
 			display: none !important;
 		}

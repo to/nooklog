@@ -76,7 +76,7 @@ class SearchForm extends Component {
 		$.on(this.els.form, 'change', e => {
 			this._updateURL();
 
-			// 条件が空で検索対象を変更した場合、検索をスキップする
+			// Skip search if changing search target with empty condition
 			if (e.target.name === 'field') {
 				if (isEmpty(this.getQuery()))
 					return;
@@ -125,7 +125,7 @@ class SearchForm extends Component {
 		this.els.query.value = ps.query || '';
 		this.els.url.value = ps.url || '';
 
-		// イベントを抑制する
+		// Suppress event
 		this.els.tags.tagify.loadOriginalValues(ps.tags);
 
 		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);

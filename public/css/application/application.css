@@ -1,6 +1,6 @@
 @charset "UTF-8";
 
-/* スクリプトから表示状態を変更する */
+/* Change display state from script */
 .none { display: none !important; }
 
 /* ---- Base ---- */
@@ -100,7 +100,7 @@ select {
 	}
 }
 
-/* フォーム内のselect幅を調整 */
+/* Adjust select width in forms */
 form select {
 	width: 100%;
 }
@@ -110,11 +110,11 @@ textarea {
 }
 
 button {
-	/* 派生スタイルはCSS変数で色を変更する */
+	/* Derived styles change color via CSS variables */
 	--color: var(--ink-0);
 	--background-color: var(--ink-5);
 
-	display: flex; /* 僅かな行の余白を除去する */
+	display: flex; /* Remove minor line margins */
 	padding: var(--space-2s) var(--space-s);
 	font-weight: bold;
 	color: var(--color);
@@ -169,7 +169,7 @@ header {
 .select-flat label input,
 .radio-flat label input,
 .toggle input{
-	/* 不可視状態にする */
+	/* Make invisible */
 	position: absolute;
 	width: 1px;
 	height: 1px;

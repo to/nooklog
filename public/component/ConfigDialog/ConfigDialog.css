@@ -9,7 +9,7 @@ html:has(dialog[open]) {
 		top: 0;
 		height: 100vh;
 		max-height: 100vh;
-		padding: 0; /* paddingは内部要素で管理 */
+		padding: 0; /* padding is managed by inner elements */
 		margin-right: auto;
 		margin-left: 0;
 		color: var(--ink-5);

@@ -18,18 +18,18 @@ export default [
 			'indent': ['error', 'tab', { 'ignoredNodes': ['TemplateLiteral *'] }],
 			'semi': ['error', 'always'],
 			'comma-dangle': ['error', 'always-multiline'],
-			'no-unused-vars': 'off', // 自由に使いたい
-			'no-useless-escape': 'off', // 正規表現のエスケープは安全側に倒したい
+			'no-unused-vars': 'off', // Allow free usage
+			'no-useless-escape': 'off', // Lean towards safety for regex escapes
 			'no-console': 'off',
-			'no-undef': 'off', // いちいち定義するのが面倒なのでオフ！
-			'no-multiple-empty-lines': ['error', { 'max': 1, 'maxEOF': 0 }], // 空行は1行まで！
-			'arrow-parens': ['error', 'as-needed'], // 1つならカッコは書かない！
-			'curly': ['error', 'multi-or-nest', 'consistent'], // 1行なら省略OK、でもif-elseで片方にあるなら揃える！
-			'nonblock-statement-body-position': ['error', 'below'], // カッコなしの時は必ず改行する！
-			'dot-location': ['error', 'property'], // ドットはプロパティと同じ行（ドット始まり）！
+			'no-undef': 'off', // Disable because defining everything is tedious!
+			'no-multiple-empty-lines': ['error', { 'max': 1, 'maxEOF': 0 }], // Max 1 empty line!
+			'arrow-parens': ['error', 'as-needed'], // Omit parentheses if only one arg!
+			'curly': ['error', 'multi-or-nest', 'consistent'], // Can omit for 1 line, but keep consistent for if-else!
+			'nonblock-statement-body-position': ['error', 'below'], // Always break line when no brace!
+			'dot-location': ['error', 'property'], // Dot on same line as property (dot starts line)!
 			'no-constant-condition': 'off',
 			'no-unreachable': 'off',
-			'no-empty': 'off', // 明示的に空にしたいときもある！
+			'no-empty': 'off', // Sometimes we explicitly want empty blocks!
 			'no-irregular-whitespace': ['error', {
 				'skipRegExps': true,
 				'skipTemplates': true,
@@ -38,7 +38,7 @@ export default [
 			}],
 		},
 	},
-	// Userscript 用に GM_ 関数の定義を許可する設定
+	// Allow GM_ functions for Userscript
 	{
 		files: ['*.user.js', 'userscript.js'],
 		languageOptions: {

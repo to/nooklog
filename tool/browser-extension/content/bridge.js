@@ -23,7 +23,7 @@ var sessionId = isWorker ?
 var bridge = {
 	on: (event, listner, useSession) => {
 		window.addEventListener(`Nooklog:${event}`, e => {
-			// 拡張が正常な状態か？
+			// Is the extension robust and ready?
 			if (chrome.runtime?.id && (!useSession || sessionId))
 				listner(e.detail);
 		});
@@ -39,7 +39,7 @@ var bridge = {
 globalThis.bridge = bridge;
 
 (() => {
-	// 二重実行を抑制する
+	// Prevent duplicate executions
 	if (globalThis.nooklogBridgeLoaded)
 		return;
 
@@ -51,15 +51,15 @@ globalThis.bridge = bridge;
 		chrome.storage.local.set({ config: msg.config });
 	});
 
-	// メッセージを転送する
+	// Forward message
 	bridge.on('Bridge:transfer', msg => {
 		chrome.storage.local.set({
 			[sessionId + 'message:' + Math.random().toString(36).slice(-8)]: msg,
 		});
 	}, true);
 
-	// メッセージを受信する
-	// (サービスワーカーも起動される)
+	// Receive message
+	// (Service worker also started)
 	chrome.storage.onChanged.addListener((changes, area) => {
 		if (area !== 'local' || !sessionId)
 			return;
@@ -68,7 +68,7 @@ globalThis.bridge = bridge;
 			if (!newValue || !key.includes(':message:'))
 				continue;
 
-			// ワーカーなら全て受信、そうでなければ自分宛のみ
+			// Intercept all if worker, otherwise only to myself
 			if (isWorker || key.startsWith(sessionId)) {
 				const { event, ...msg } = newValue;
 				bridge.emit(event, msg);

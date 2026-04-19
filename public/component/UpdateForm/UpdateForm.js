@@ -1,6 +1,6 @@
 class UpdateForm extends Component {
 
-	// ユーザー編集が行われたことを表すマーク
+	// Mark indicating user modification
 	static USER_MARK = '\u200B';
 
 	async initialize() {
@@ -72,7 +72,7 @@ class UpdateForm extends Component {
 		});
 
 		bridge.on('Content:select', msg => {
-			// 選択されたテキストをテキストエリアへ挿入する
+			// Insert selected text into text area
 			const { selectionStart: start, selectionEnd: end, value } = this.els.memo;
 
 			const delimiter = config['extension.selectionDelimiter'];
@@ -99,7 +99,7 @@ class UpdateForm extends Component {
 		if (!isFrame) {
 			$.on(window, 'beforeunload', e => {
 				if (this.isChanged()) {
-					// ブラウザのデフォルトメッセージが表示される
+					// Browser's default message is shown
 					e.returnValue = 'Changes you made may not be saved.';
 				}
 			});
@@ -110,7 +110,7 @@ class UpdateForm extends Component {
 		});
 
 		$.observeResize(this.els.form, entry => {
-			// 表示開始時に高さ0で呼び出される
+			// Called with height 0 when showing starts
 			const height = entry.contentRect.height;
 			const isMini = height <= 360;
 			if (!height || this.isMini === isMini)
@@ -168,7 +168,7 @@ class UpdateForm extends Component {
 		this.bookmark = {};
 	}
 
-	// リクエスト基本パラメーター/既存データ/編集途中データ
+	// Request base parameters / existing data / editing data
 	setBookmark(bookmark) {
 		if (!bookmark)
 			return;
@@ -224,7 +224,7 @@ class UpdateForm extends Component {
 	}
 
 	async detach() {
-		// 編集内容を保存する
+		// Save the edited content
 		await Nooklog.stash(this.getBookmark());
 		bridge.emit('UpdateForm:detach', {}, true);
 	}
@@ -237,7 +237,7 @@ class UpdateForm extends Component {
 
 		const data = this.getBookmark();
 
-		// ユーザーによる修正が行われたことを記録する
+		// Record that user modifications were made
 		if (data.markdown !== this.bookmark.markdown)
 			data.markdown = this.setEdited(data.markdown);
 
@@ -247,8 +247,8 @@ class UpdateForm extends Component {
 		if (!bookmark)
 			return;
 
-		// 保存内容を最新のオリジナルとする(beforeunloadでチェック)
-		// (サーバーからの戻り値はタグに差異が生じる)
+		// Set saved content as the latest original (checked by beforeunload)
+		// (Server response has tag differences)
 		this.bookmark = data;
 
 		hub.emit('UpdateForm:save', bookmark);

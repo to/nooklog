@@ -14,7 +14,7 @@ class ConfigDialog extends Component {
 
 		debounce(this, '_fetchVectorModels', 800);
 
-		// SearchFormで変更される前の値を保存する
+		// Save the value before changed by SearchForm
 		this.autoOpen = getSearchParams().setting;
 	}
 
@@ -130,7 +130,7 @@ class ConfigDialog extends Component {
 			const range = e.target.closest('.container').querySelector('.export-range').value;
 			const query = range === 'search' ? this.results?.query : {};
 
-			// OpenAPI経由でダイレクトにダウンロードを行う
+			// Download directly via OpenAPI
 			window.location.href = `${Network.baseUrl}/api/export?${qs({ ...options, ...query })}`;
 			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
 		};
@@ -205,7 +205,7 @@ class ConfigDialog extends Component {
 
 		let url = elUrl.value.trim();
 		if (/\/v\d+(\/|$)/.test(url)) {
-			// v1以降を切り捨てて正規化する
+			// Truncate path after v1 to normalize
 			url = url.split(/\/v\d+(\/|$)/)[0];
 			if (!url.endsWith('/'))
 				url += '/';

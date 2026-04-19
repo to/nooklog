@@ -6,31 +6,31 @@ if (!config['server.readonly'])
 
 import vector from './vector.js';
 
-// 日本語表記揺れの正規化 (全角空白/英数→半角、分離された濁点→合成など)
+// Normalize Japanese orthographical variants (Wide space/Alphanumeric to half-width, combined voiced marks, etc.)
 const normalizeJp = text => (text || '')
 	.normalize('NFKC')
 	.replace(/([ァ-ヶー]{2,})ー$/g, '$1');
 
-// 1文字 Uni-gram 分割
+// Uni-gram splitting
 const segment = text => [...normalizeJp(text)]
 	.join(' ')
 	.replace(/\s+/g, ' ')
 	.trim();
 
-// URL専用正規化 (プロトコルのみ除去して小文字化)
+// URL specific normalization (remove protocol and lowercase)
 const cleanUrl = url => (url || '')
 	.replace(/^https?:\/\//, '')
 	.toLowerCase();
 
-// URL専用セグメント (Uni-gram化)
+// URL specific segment (Uni-gram)
 const segmentUrl = url => segment(cleanUrl(url));
 
-// Markdown専用正規化 (記号やURLをスペースに置換)
+// Markdown specific normalization (replace symbols and URLs with space)
 const cleanMarkdown = text => (text || '')
-	.replace(/https?:\/\/[^\s]+/g, ' ') // URL自体はurlカラムにあるので除去
-	.replace(/[#*`_~[\]()>+-]/g, ' '); // 装飾記号をスペースへ
+	.replace(/https?:\/\/[^\s]+/g, ' ') // Remove URLs as they exist in url column
+	.replace(/[#*`_~[\]()>+-]/g, ' '); // Convert markup symbols to spaces
 
-// Markdown専用セグメント (Uni-gram化)
+// Markdown specific segment (Uni-gram)
 const segmentMarkdown = text => segment(cleanMarkdown(text));
 
 export default {

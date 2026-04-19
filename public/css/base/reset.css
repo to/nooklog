@@ -51,7 +51,7 @@ table {
 }
 
 td {
-	height: 1px; /* 高さを生成する */
+	height: 1px; /* Generate height */
 }
 
 :root {

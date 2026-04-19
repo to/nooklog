@@ -2,7 +2,7 @@ class RatingInput extends Component {
 	static HTML = [1, 2, 3, 4, 5].map(i =>
 		`<button type="button" class="flat icon" data-rating="${i}">star</button>`).join('');
 
-	// 1つのイベントハンドラで多数のインスタンスを処理する
+	// Handle multiple instances with one event handler
 	static {
 		hub.once('Nooklog:load', () => {
 			if (config['server.mode'] === 'readonly')

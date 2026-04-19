@@ -76,7 +76,7 @@
 			transform: translateY(calc(var(--font-size-m) * -0.1));
 
 			img {
-				/* 予めサイズを指定し画像枠を確保する */
+				/* Specify size in advance to reserve image space */
 				width: 16px;
 				height: 16px;
 				background-color: var(--color-bg-image);

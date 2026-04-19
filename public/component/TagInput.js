@@ -13,7 +13,7 @@ class TagInput extends Component {
 			maxTags: 20,
 			delimiters: ',| ',
 			dropdown: {
-				enabled: 1, // フォーカス直後に表示しない(フォーカス移動に反応しないように)
+				enabled: 1, // Do not show right after focus (ignore focus movement)
 				placeAbove: false,
 				closeOnSelect: true,
 				searchKeys: ['value'],
@@ -26,12 +26,12 @@ class TagInput extends Component {
 		this.lockInput = false;
 		this.refresh();
 
-		// IMEをオフにする
+		// Turn off IME
 		tagify.DOM.input.setAttribute('inputmode', 'url');
 
-		// キー入力を監視
+		// Monitor key input
 		tagify.DOM.input.addEventListener('keydown', e => {
-			// ナチュラルなイベントのみブロックする
+			// Block natural events only
 			if (this.lockInput && e.isTrusted) {
 				e.preventDefault();
 				return false;
@@ -40,7 +40,7 @@ class TagInput extends Component {
 				this.enter();
 		});
 
-		// 入力中はドロップダウンがマウスを無視するように
+		// Dropdown should ignore mouse while typing
 		const resetInputtingState = debounce(() => {
 			tagify.DOM.dropdown.classList.remove('is-inputting');
 		}, 500);
@@ -50,7 +50,7 @@ class TagInput extends Component {
 			resetInputtingState();
 		});
 
-		// タグをクリックして削除する
+		// Click tag to remove
 		tagify.on('click', e => {
 			tagify.removeTags(e.detail.tag);
 		});
@@ -72,7 +72,7 @@ class TagInput extends Component {
 					.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
 					.slice(0, this.maxWhitelist);
 
-				// 要素が十分に絞られたら自動的に確定して閉じる
+				// Emphasize and auto-close when items are sufficiently narrowed
 				if (config['client.autoCompleteTags'] && !this.lockInput &&
 					(whitelist.length == 1 || whitelist.filter(t => t.startsWith(value)).length == 1)) {
 					this.lockInput = true;
@@ -99,8 +99,8 @@ class TagInput extends Component {
 	setTags(...args) {
 		this.removeAllTags();
 
-		// 重複タグを取り除き適切なレートを決定する
-		// (別ウィンドウ切り離し時のデータ混合を修正する)
+		// Remove duplicate tags and determine appropriate string
+		// (Fix data mix-up when detaching window)
 		const { tags, rating } = Nooklog.separateRating(
 			[].concat(...args.filter(v => v)));
 		this.tagify.addTags([...new Set([].concat(rating || [], tags))]);

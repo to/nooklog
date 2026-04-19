@@ -117,7 +117,7 @@ const vector = {
 		if (apiKey)
 			options.headers = { ...options.headers, Authorization: `Bearer ${apiKey}` };
 
-		const res = await ky(url, options).json();
+		const res = await ky(url, { timeout: 60000, ...options }).json();
 		return res.data;
 	},
 

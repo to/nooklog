@@ -5,7 +5,7 @@ const { fork } = require('child_process');
 let tray;
 let serverProcess;
 
-// 二重起動防止
+// Prevent double launch
 const gotTheLock = app.requestSingleInstanceLock();
 console.log('Got the lock:', gotTheLock);
 
@@ -15,7 +15,7 @@ if (!gotTheLock) {
 } else {
 	console.log('Starting app...');
 	app.on('second-instance', () => {
-		// 既に起動していたらウィンドウを表示
+		// Bring window to front if already launched
 		if (mainWindow) {
 			if (mainWindow.isMinimized())
 				mainWindow.restore();
@@ -30,18 +30,18 @@ if (!gotTheLock) {
 		createTray();
 
 		app.on('activate', () => {
-			// Dockアイコンクリック時などの挙動（macOSなど）
-			// 必要ならここでブラウザを開く
+			// Behavior when clicking Dock icon (e.g. macOS)
+			// Open browser here if needed
 			shell.openExternal('http://localhost:5050');
 		});
 	});
 }
 
 function startServer() {
-	// Expressサーバーを別プロセスとして起動
+	// Launch Express server as a separate process
 	const serverPath = path.join(__dirname, '../server/server.js');
 	serverProcess = fork(serverPath, [], {
-		env: { ...process.env, PORT: 5050 }, // ポート指定など
+		env: { ...process.env, PORT: 5050 }, // Port specification, etc.
 	});
 
 	serverProcess.on('error', err => {
@@ -59,7 +59,7 @@ function createTray() {
 		{
 			label: 'Open Nooklog',
 			click: () => {
-				// デフォルトブラウザで開く
+				// Open with default browser
 				shell.openExternal('http://localhost:5050');
 			},
 		},
@@ -76,20 +76,20 @@ function createTray() {
 	tray.setToolTip('Nooklog');
 	tray.setContextMenu(contextMenu);
 
-	// トレイアイコンをクリックしたらブラウザを開く
+	// Open browser when tray icon is clicked
 	tray.on('click', () => {
 		shell.openExternal('http://localhost:5050');
 	});
 }
 
-// アプリ終了時の処理
+// Processing on app exit
 app.on('before-quit', () => {
 	app.isQuiting = true;
 	if (serverProcess)
 		serverProcess.kill();
 });
 
-// 全ウィンドウが閉じられても終了しない（トレイ常駐のため）
+// Do not exit when all windows are closed (for tray residence)
 app.on('window-all-closed', () => {
-	// macOS以外でも、ここでapp.quit()しないことで常駐を実現
+	// Ensure residence even outside macOS by skipping app.quit() here
 });

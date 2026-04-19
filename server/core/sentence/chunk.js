@@ -10,7 +10,7 @@ export const chunkMarkdown = (md, {
 	targetSize = Math.min(1024, Math.max(512, Math.floor(limitSize / 2))),
 	overlapSize = 50,
 } = {}) => {
-	// パラグラフ内にあるURLテキストを除去する
+	// Remove URL texts within paragraph
 	md = md
 		.replace(/\r\n?/g, '\n')
 		.replace(/https?:\/\/[\w./\-?&=%#]+/g, '').trim();
@@ -18,20 +18,20 @@ export const chunkMarkdown = (md, {
 	if (!md)
 		return [];
 
-	// CJK言語の場合チャンクサイズを半分にする
+	// Halve chunk size for CJK languages
 	if (/[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uff9f]/.test(md.slice(0, targetSize))) {
 		targetSize = Math.floor(targetSize / 2);
 		overlapSize = Math.floor(overlapSize / 2);
 	}
 	const allowanceSize = targetSize * 1.4;
 
-	// 構造的に分割する
+	// Semantically split
 	let chunks = [clean(engine.parse(md))];
 	tests.forEach((test, i) => {
 		chunks = chunks.flatMap(c => {
 			c._text ??= engine.stringify(c);
 
-			// YAMLはサイズに関わらず必ず分割する (i=0)
+			// Always split YAML regardless of size (i=0)
 			if (i > 0 && c._text.length <= targetSize)
 				return c;
 
@@ -39,13 +39,13 @@ export const chunkMarkdown = (md, {
 		});
 	});
 
-	// コードブロックとテーブルを分割する
+	// Split code blocks and tables
 	chunks = chunks.flatMap(c => {
 		const header = c.children[0];
 		if (header.type !== 'code')
 			return c;
 
-		// コードは限界まで長いチャンクにする
+		// Maximize chunk length for code
 		return subChunk(header.value, limitSize).map(text => {
 			return {
 				type: 'root',
@@ -54,7 +54,7 @@ export const chunkMarkdown = (md, {
 		});
 	});
 
-	// タイトルを設定する
+	// Set title
 	const breadcrumb = [];
 	chunks.forEach(c => {
 		const header = c.children[0];
@@ -76,9 +76,9 @@ export const chunkMarkdown = (md, {
 		}
 	});
 
-	// Markdownテキストを決定する
+	// Determine Markdown text
 	chunks = chunks.map(c => {
-		// YAMLフロントマターはタイトルと重複するため捨てる
+		// Discard YAML frontmatter as it overlaps with title
 		const header = c.children[0];
 		if (header.type === 'yaml')
 			return;
@@ -94,7 +94,7 @@ export const chunkMarkdown = (md, {
 		};
 	}).filter(Boolean);
 
-	// 大きすぎるチャンクを機械的に分割する
+	// Mechanically split chunks that are too large
 	chunks = chunks.flatMap(c => {
 		if (c.text.length <= targetSize || c.isCode)
 			return c;
@@ -106,7 +106,7 @@ export const chunkMarkdown = (md, {
 		}));
 	});
 
-	// ゴミを除去する
+	// Filter out garbage
 	chunks.forEach((c, i) => {
 		if (c.isCode)
 			return;
@@ -117,31 +117,31 @@ export const chunkMarkdown = (md, {
 			.trim();
 	});
 
-	// 意味のないチャンク（記号のみなど）を除去する
+	// Remove meaningless chunks (e.g. symbols only)
 	chunks = chunks.filter(c => /[\p{L}\p{N}]/u.test(c.text));
 
-	// フラグメントを統合する
+	// Merge fragments
 	const minSize = targetSize / 3;
 	for (let i = 0; i < chunks.length; i++) {
 		const self = chunks[i];
 		if (self.text.length >= minSize)
 			continue;
 
-		// 後続より同等か上位の見出しなら後続を取り込む
+		// Incorporate successor if it's equal or higher heading
 		const prev = chunks[i - 1];
 		const next = chunks[i + 1];
 		if (next && (self.text.length + next.text.length) < allowanceSize && self.isHeader && self.depth <= next.depth) {
 			chunks.splice(i + 1, 1);
 			self.text += '\n\n' + next.text;
-			i--;// 結合した後のチャンクを再チェック
+			i--; // Re-check chunk after merge
 		} else if (prev && (self.text.length + prev.text.length) < allowanceSize) {
 			chunks.splice(i, 1);
 			prev.text += '\n\n' + self.text;
-			i -= 2; // 結合した前のチャンクを再チェック
+			i -= 2; // Re-check earlier chunk after merge
 		}
 	}
 
-	// 残存フラグメントを強制統合する
+	// Forcefully merge remaining fragments
 	for (let i = 1; i < chunks.length; i++) {
 		const self = chunks[i];
 		if (self.text.length >= minSize)
@@ -153,7 +153,7 @@ export const chunkMarkdown = (md, {
 		i -= 1;
 	}
 
-	// オーバーラップ
+	// Overlap
 	chunks = chunks.map((c, i) => {
 		if (i === 0 || c.depth < 999 || c.isCode || c.isTable)
 			return c;
@@ -201,7 +201,7 @@ const tests = [
 	{ test: n => n.type === 'paragraph' },
 ];
 
-// 構造的にノードを分割する
+// Semantically split node
 const slice = (tree, test) => {
 	const chunks = [];
 	let current = [];
@@ -223,7 +223,7 @@ const slice = (tree, test) => {
 	});
 	flush();
 
-	// 分割されなかった場合 キャッシュを活かすため元のノードを返す
+	// Return original node to utilize cache if not split
 	return chunks.length === 1 ? [tree] : chunks;
 };
 
@@ -245,7 +245,7 @@ const subTests = [
 	t => t.match(/.*?\n|.+/gs) || [],
 	t => t.match(/.*?(?:[。．！？]\s*|[!?.](?:\s+|$))|.+/gs) || [],
 	t => t.match(/.*?(?:[、，]\s*|,(?:\s+|$))|.+/gs) || [],
-	// t => Array.from(t), // 価値が低いデータを切り捨てる
+	// t => Array.from(t), // Discard low value data
 ];
 
 export const split = text => {
@@ -260,7 +260,7 @@ export const split = text => {
 			});
 		});
 	}
-	// 記号だけのチャンクを除去する
+	// Remove chunks with symbols only
 	return chunks.filter(c => /[\p{L}\p{N}]/u.test(c.text));
 };
 
@@ -276,7 +276,7 @@ const subChunk = (text, limitSize, i = 0) => {
 		.flatMap(p => subChunk(p, limitSize, i + 1));
 };
 
-// 長い文字列を分割し適切な長さ毎にまとめる
+// Split long strings and group by appropriate lengths
 const bundle = (text, splitFn, limitSize) => {
 	const parts = splitFn(text);
 	if (parts.length <= 1)

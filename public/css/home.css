@@ -35,7 +35,7 @@ body {
 		top: calc(var(--space-2s) * -0.75);
 		left: calc(var(--space-2s) * 0.5);
 
-		/* アイコンの高さに合わせる */
+		/* Match icon height */
 		height: var(--font-size-l);
 		margin-bottom: var(--space-2s);
 	}
@@ -67,7 +67,7 @@ body {
 		}
 
 		&.horizontal::before {
-			/* 左側のスクロールバーに重ならないように */
+			/* Avoid overlapping left scrollbar */
 			transform: translate(-11%, -50%);
 		}
 	}
@@ -76,12 +76,12 @@ body {
 @media (aspect-ratio > 1 / 1.1) {
 	.area-sub {
 		aside {
-			height: auto !important; /* スクリプトで設定された値をクリアする */
+			height: auto !important; /* Clear value set by script */
 		}
 	}
 }
 
-/* 少し縦長でレイアウトを変更する */
+/* Change layout slightly taller */
 @media (aspect-ratio <= 1 / 1.1) {
 	body {
 		flex-direction: column;

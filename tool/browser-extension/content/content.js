@@ -1,11 +1,11 @@
 (async () => {
 	const { config = {} } = await chrome.storage.local.get('config');
-	// 二重実行を抑制する
+	// Prevent duplicate executions
 	const HOST_ID = 'nooklog-shadow-host';
 	if (document.getElementById(HOST_ID))
 		return;
 
-	// スクリプトコンテキストスコープのセッションIDを更新する
+	// Update session ID for the script context scope
 	let sessionId = 'session:' + Date.now() + ':';
 	bridge.emit('Content:initialize', { sessionId });
 
@@ -28,8 +28,8 @@
 		boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
 	});
 
-	// 拡張機能内のページを仲介しiframe埋め込み警告を回避する
-	// セッションIDを共有する
+	// Mediate extension pages to evade iframe embed warnings
+	// Broadcast session ID
 	const serverUrl = `${config['extension.serverAddress']}/update.html`
 		+ `?url=${encodeURIComponent(location.href)}`
 		+ `&title=${encodeURIComponent(document.title)}`
@@ -40,15 +40,15 @@
 	const shadow = host.attachShadow({ mode: 'open' });
 	shadow.appendChild(iframe);
 
-	// HTMLをサーバーへ保存する
-	// (セキュリティを回避するためバックグラウンドワーカーへ依頼する)
+	// Save HTML to server
+	// (Ask background worker to evade security)
 	bridge.emit('Content:stash', {
 		url: location.href,
 		title: document.title,
 		html: document.documentElement.outerHTML,
 	}, true);
 
-	// テキスト選択を監視する
+	// Monitor text selection
 	let previousSelection;
 	const handleSelection = e => {
 		if (e.button !== 0)
@@ -64,7 +64,7 @@
 	if (config['extension.autoAppendSelection'] !== false)
 		document.addEventListener('mouseup', handleSelection);
 
-	// 別ウィンドウが開く余裕を作る
+	// Allow adequate time for another window to open
 	const closeHost = () => setTimeout(() => host.remove(), 32);
 	bridge.on('UpdateForm:detach', closeHost);
 	bridge.on('UpdateForm:close', () => {

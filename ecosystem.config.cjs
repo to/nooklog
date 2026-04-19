@@ -2,7 +2,7 @@ module.exports = {
 	apps: [{
 		name: 'nooklog',
 		script: 'server/server.js',
-		// punycode(express-asset-file-cache-middleware)の警告を抑制
+		// Suppress punycode (express-asset-file-cache-middleware) warnings
 		node_args: ['--no-deprecation'],
 		watch: false,
 		autorestart: true,
@@ -14,16 +14,16 @@ module.exports = {
 			'work',
 			'logs',
 		],
-		// ログ出力先の設定
+		// Setting the log output destination
 		error_file: './logs/error.log',
 		out_file: './logs/out.log',
 		env: {
 			NODE_ENV: 'development',
 		},
-		// ネイティブモジュール(llama.cppなど)やバッチジョブチャンクの終了を待つ
+		// Wait for the termination of native modules (e.g. llama.cpp) and batch job chunks
 		kill_timeout: 5000,
-		shutdown_with_message: true, // 終了を受診する
-		restart_delay: 500, // 自動再起動の間隔
-		listen_timeout: 10000, // 正常起動とみなされるまでの時間
+		shutdown_with_message: true, // Receive shutdown
+		restart_delay: 500, // Auto restart interval
+		listen_timeout: 10000, // Time until considered normally started
 	}],
 };

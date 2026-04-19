@@ -25,14 +25,14 @@ test('Markdown Chunking Logic - Snapshot Consistency', async t => {
 	await t.test('Verify deeply nested heading chunk (Index 2)', () => {
 		const target = chunks[2];
 
-		// パンくずリスト（タイトルの蓄積）のチェック
+		// Breadcrumb (title accumulation) checks
 		assert.strictEqual(target.titles.length, 4, 'Should have 4 parent titles in breadcrumb');
 		assert.strictEqual(target.depth, 4, 'Should represent H4 depth');
 
-		// ポジションチェック
+		// Check positions
 		assert.strictEqual(target.position.line, 14, 'H4 heading should start on line 14');
 
-		// 内容のチェック
+		// Check contents
 		assert.ok(target.text.startsWith('#### 1.1.1.1'), 'Chunk should start with the expected heading');
 		assert.ok(target.text.includes('merged with their parent heading'), 'Chunk should contain its content');
 	});

@@ -16,7 +16,7 @@ class ProgressBar extends Component {
 			this.$('.bar').style.setProperty('--progress', `${percent}%`);
 			this.$('.label').textContent = `${label} (${value}/${total})`;
 
-			// 完了したら一定時間後に隠す
+			// Hide after some time when complete
 			clearTimeout(this.timer);
 			if (value >= total)
 				this.timer = setTimeout(() => this.hide(), 2000);

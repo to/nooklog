@@ -4,7 +4,7 @@ document.documentElement.classList.add(
 		(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') :
 		config['client.theme']);
 
-// 指定されたURLをiframeとして展開する
+// Spawn specified URL as an iframe
 const ps = new URLSearchParams(window.location.search);
 const src = ps.get('src');
 const iframe = document.createElement('iframe');
@@ -14,7 +14,7 @@ document.body.appendChild(iframe);
 
 bridge.on('UpdateForm:detach', () => openWindow(src));
 
-// ブラウザに許可される最小値に近いサイズ
+// Close to the minimum size allowed by browsers
 async function openWindow(url) {
 	const width = 500;
 	const height = 480;
@@ -22,7 +22,7 @@ async function openWindow(url) {
 		url,
 		type: 'popup',
 		width, height,
-		left: screen.availLeft + screen.availWidth - width - 30, // スクロールバーを避ける
+		left: screen.availLeft + screen.availWidth - width - 30, // Dodge the scrollbar
 		top: config['client.windowPosition'] === 'top-right'
 			? screen.availTop + 8
 			: screen.availTop + screen.availHeight - height - 2,

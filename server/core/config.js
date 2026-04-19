@@ -54,7 +54,7 @@ export default new Proxy({}, {
 	get(target, prop) {
 		if (prop === 'setConfig') {
 			return values => {
-				// 保存対象の値のみを更新する
+				// Only update the target values to save
 				for (const [k, v] of Object.entries(values || {})) {
 					if (k in config && env[k] === undefined)
 						config[k] = v;

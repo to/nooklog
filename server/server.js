@@ -8,7 +8,7 @@ import AssetCache from 'express-asset-file-cache-middleware';
 import { rateLimit } from 'express-rate-limit';
 import basicAuth from 'express-basic-auth';
 
-// データベースから設定値をロードする
+// Load config from database
 import database from './core/database.js';
 import config from './core/config.js';
 
@@ -43,7 +43,7 @@ server.use(express.json({ limit: '500mb' }));
 server.use((req, res, next) => {
 	log.trace({ method: req.method, url: req.url }, 'request received');
 
-	// iframeの中でセキュリティを厳しくし開きやすくする
+	// Tighten security in iframe to ease opening
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 	if (req.query.embed === 'true') {
 		res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
@@ -56,24 +56,24 @@ server.use((req, res, next) => {
 
 /* ---- Dynamic Basic Authentication ---- */
 
-// パスワード誤入力だけをカウントするレートリミッター
+// Rate limiter tracking only incorrect password inputs
 const authLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
-	max: 100, // 必要なリソース(HTML/JS/CSS)分から算定(低速回線を考慮)
-	skipSuccessfulRequests: true, // 正しいパスワードはカウントしない
+	max: 100, // Calculated based on required resources (HTML/JS/CSS) (for slow networks)
+	skipSuccessfulRequests: true, // Do not count correct passwords
 	message: 'Too many failed login attempts. Please try again after 15 minutes.',
 	standardHeaders: true,
 	legacyHeaders: false,
 });
 
-// Basic認証ミドルウェア
+// Basic Auth middleware
 const basicAuthenticator = basicAuth({
 	authorizer: (user, pass) => {
 		const stored = config['server.password'];
 		if (!stored)
 			return true;
 
-		// タイミング攻撃を防いで比較する
+		// Safe compare to avoid timing attacks
 		const [salt, storedHash] = stored.split(':');
 		const hash = crypto.createHash('sha256').update(pass + salt).digest('hex');
 		return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(storedHash));
@@ -87,7 +87,7 @@ server.use((req, res, next) => {
 	if (!password || req.path === '/api/alive' || req.path.startsWith('/api/favicon'))
 		return next();
 
-	// レートリミットを適用
+	// Apply rate limit
 	authLimiter(req, res, () => {
 		basicAuthenticator(req, res, next);
 	});
@@ -141,7 +141,7 @@ server.get('/api/favicon',
 server.get('/component/:component/:name.html.js', async (req, res) => {
 	const { component, name } = req.params;
 
-	// ファイル名に使用可能な文字（完全にアルファベットのみ）を許可する
+	// Allow safe characters for filenames (strict alphabetical)
 	if (!/^[a-z]+$/i.test(component) || !/^[a-z]+$/i.test(name))
 		return res.status(400).send('Invalid component name');
 
@@ -163,7 +163,7 @@ server.get('/component/:component/:name.html.js', async (req, res) => {
 
 /* ---- Mount Nooklog Application Routes (oRPC) ---- */
 
-// HTMLやテキストファイルを受け取る
+// Accept HTML or Text files
 server.post(['/api/import', '/rpc/import'],
 	express.text({ type: '*/*', limit: '500mb' }));
 
@@ -176,7 +176,7 @@ const sharedInterceptors = [
 			url: request.url,
 		});
 
-		// クライアントへエラー詳細を送信する
+		// Send error details to client
 		if (!(error instanceof ORPCError)) {
 			throw new ORPCError(error.message, {
 				cause: error,
@@ -239,7 +239,7 @@ server.get('/openapi.json', async (req, res) => {
 
 /* ---- Server Lifecycle ---- */
 
-// pm2 restartによるSIGINTから 少し時間を置く
+// Allow some delay after SIGINT from pm2 restart
 if (process.env.restart_time > 0)
 	await _.wait(2000);
 
@@ -256,18 +256,18 @@ let shutdown = async signal => {
 
 	log.info({ signal }, 'shutdown signal received');
 
-	// HTTPサーバー停止を待つ
+	// Wait for HTTP server to stop
 	instance?.closeAllConnections();
 	if (instance)
 		await new Promise(resolve => instance.close(resolve));
 	log.info('http server closed');
 
-	// リソースの破棄(Llama/DB)
+	// Release resources (Llama/DB)
 	await nooklog.dispose();
 	log.info('nooklog disposed successfully');
 
-	// 絶対にSIGINT/SIGKILL/exit(0)を行わないこと
-	// (shutdownに反応せずPM2を待たせる)
+	// NEVER trigger SIGINT/SIGKILL/exit(0)
+	// (Let PM2 wait without reacting to shutdown)
 	if (!process.env.pm_uptime)
 		process.kill(process.pid, 'SIGINT');
 };

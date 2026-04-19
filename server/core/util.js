@@ -16,7 +16,7 @@ export const merge = (target = {}, source) => {
 	return target;
 };
 
-// 元のコードを変形させずに実行実行時間を計測する
+// Measure execution time without modifying original code
 export const bench = async (task, label = 'bench') => {
 	const start = performance.now();
 	const result = typeof task === 'function' ?

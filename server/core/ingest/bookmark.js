@@ -8,8 +8,8 @@ export function process(content, options = {}) {
 		return processKarakeep(content, options);
 
 	if (content.collections) {
-		// Linkwardenはcollections直下にlinksがあるか？
-		// (Session Buddyはfoldersの中にlinksがある)
+		// Does Linkwarden have links directly under collections?
+		// (Session Buddy has links inside folders)
 		if (content.collections.some(it => it.links))
 			return processLinkwarden(content, options);
 
@@ -128,13 +128,13 @@ export function processTabSessionManager(sessions, options = {}) {
 	return results;
 }
 
-// HTMLをパースしてブックマークに変換する
+// Parse HTML and convert to bookmarks
 export function processHTML(html, options = {}) {
 	const dom = new JSDOM(html);
 	const document = dom.window.document;
 	const results = [];
 
-	// 全てのリンク（ブックマーク）を取得
+	// Get all links (bookmarks)
 	const anchors = document.querySelectorAll('a');
 
 	for (const a of anchors) {
@@ -144,12 +144,12 @@ export function processHTML(html, options = {}) {
 			tags: [],
 		};
 
-		// <DD>要素があればメモとして取得（Mosaic/Netscape形式）
+		// Get <DD> element as memo if exists (Mosaic/Netscape format)
 		const dd = a.closest('dt')?.nextElementSibling;
 		if (dd?.tagName === 'DD')
 			bookmark.memo = dd.textContent?.trim() || '';
 
-		// 日付属性があれば変換（Unixタイムスタンプ想定）
+		// Convert date attribute if exists (Unix timestamp expected)
 		const addDate = a.getAttribute('ADD_DATE');
 		if (addDate) {
 			const ts = parseInt(addDate) * 1000;
@@ -159,7 +159,7 @@ export function processHTML(html, options = {}) {
 			}
 		}
 
-		// LAST_MODIFIED 属性があれば上書き
+		// Overwrite if LAST_MODIFIED attribute exists
 		const lastModified = a.getAttribute('LAST_MODIFIED');
 		if (lastModified) {
 			const ts = parseInt(lastModified) * 1000;
@@ -167,18 +167,18 @@ export function processHTML(html, options = {}) {
 				bookmark.updated_at = ts;
 		}
 
-		// Firefox形式の TAGS 属性を処理
+		// Process TAGS attribute (Firefox format)
 		const inlineTags = a.getAttribute('TAGS');
 		if (inlineTags) {
 			const tags = inlineTags.split(',').map(normalizeTag);
 			bookmark.tags.push(...tags);
 		}
 
-		// フォルダ名をタグに追加する
+		// Append folder name to tags
 		if (options.folderTag)
 			bookmark.tags.push(...getFolderTags(a).map(normalizeTag));
 
-		// 重複タグの削除
+		// Remove duplicate tags
 		bookmark.tags = [...new Set(bookmark.tags)];
 
 		results.push(bookmark);
@@ -187,7 +187,7 @@ export function processHTML(html, options = {}) {
 	return results;
 }
 
-// タグの正規化（小文字化、記号のハイフン置換）
+// Normalize tags (lowercase, replace symbols with hyphen)
 function normalizeTag(tag) {
 	if (!tag)
 		return '';
@@ -196,18 +196,18 @@ function normalizeTag(tag) {
 		.replace(/^-+|-+$/g, '');
 }
 
-// 親要素を遡ってフォルダ名を取得する
+// Ascend parents to get folder names
 function getFolderTags(aElement) {
 	const folderNames = [];
 	let current = aElement;
 
 	while (current) {
-		// 現在の要素を包んでいる DL を探す
+		// Find wrapping DL of current element
 		const dl = current.parentElement?.closest('dl');
 		if (!dl)
 			break;
 
-		// Netscape形式では、DLの直前のDTの中にH3（フォルダ名）がある
+		// In Netscape format, H3 (folder) is inside DT right before DL
 		// DT > H3 (Folder Name)
 		// DL > DT > A (Bookmark)
 		const prevDt = dl.previousElementSibling;
@@ -217,7 +217,7 @@ function getFolderTags(aElement) {
 				folderNames.push(h3.textContent.trim());
 		}
 
-		// DLの親（通常はDTかBODY）に移動してループを続ける
+		// Move to DL parent (usually DT or BODY) and continue
 		current = dl.parentElement;
 	}
 	return folderNames;

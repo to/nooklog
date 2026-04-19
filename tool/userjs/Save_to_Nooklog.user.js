@@ -56,7 +56,7 @@ const capture = async () => {
 	const title = document.title;
 	const html = document.documentElement.outerHTML;
 
-	// サーバーに現在の状態を一時保存してから編集画面を開く
+	// Save current state to server temporarily before opening edit screen
 	GM_xmlhttpRequest({
 		method: 'POST',
 		url: `${baseUrl}/api/stash`,
@@ -68,7 +68,7 @@ const capture = async () => {
 		},
 		onerror: () => {
 			alert('Lost connection to Nooklog server.');
-			GM_setValue('server_url', ''); // 次回再入力を促す
+			GM_setValue('server_url', ''); // Require repeated input next time
 		},
 	});
 };

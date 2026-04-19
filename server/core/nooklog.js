@@ -29,7 +29,7 @@ const DETAIL_COLUMNS = [
 
 const nooklog = {
 	async initialize() {
-		// タグキャッシュの構築
+		// Build tag cache
 		if (!tagCache) {
 			tagCache = new Set(await store.getTags());
 			log.info({ count: tagCache.size }, 'tags loaded');
@@ -100,16 +100,16 @@ const nooklog = {
 		b = stashMap.get(key) || b;
 		stashMap.delete(key);
 
-		// 初回のpopか？
+		// Initial pop?
 		if (b.memo == null)
 			b = { ...await this.find(b), ...b };
 
 		if (b.html) {
-			// 不要なタグを取り除き最新のHTMLに更新する
+			// Remove obsolete tags and update to latest HTML
 			const processed = ingest.html.process(b.url, b.html);
 			b.html = processed.html;
 
-			// ユーザー編集がされていない場合 最新のMarkdownに更新する
+			// Update to latest Markdown if user has not edited
 			if (!this.isEdited(b.markdown))
 				b.markdown = processed.markdown;
 		}
@@ -158,7 +158,7 @@ const nooklog = {
 		}
 		b.updated_at = updated_at ?? now;
 
-		// 判定用に古い値を保持しておく
+		// Keep old value for checks
 		const original = { ...b };
 
 		if (this.isEdited(markdown) || (markdown != null && !this.isEdited(b.markdown)))
@@ -171,19 +171,19 @@ const nooklog = {
 				b.markdown = processed.markdown;
 		}
 
-		// ユーザーが空へ編集した場合 次回 フォームを開いた際に上書きするように弱める
-		// (空で保存するが上書きもされる特殊な状態)
+		// If user edited to empty, weaken so it's overwritten next time form opens
+		// (Special state: saved as empty but can be overwritten)
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
 
-		// HTMLを切り捨てる
+		// Truncate HTML
 		if (!config['database.saveHTML'])
 			b.html = '';
 
-		// データベースに反映
+		// Apply to DB
 		_.merge(b, { url, title, memo, summary, rating, tags, meta });
 
-		// 変更があったカラムを特定する (埋め込みやFTSの対象)
+		// Identify changed columns (targets for embeddings or FTS)
 		const ftsColumns = ['url', 'title', 'memo', 'summary', 'markdown'];
 		const embedColumns = ['title', 'summary', 'memo', 'markdown'];
 
@@ -221,7 +221,7 @@ const nooklog = {
 		const bookmarks = ingest.bookmark.process(content, options);
 		const count = await store.import(bookmarks);
 
-		// タグキャッシュを更新する
+		// Update tag cache
 		const tags = await store.getTags();
 		tags.forEach(t => tagCache.add(t));
 

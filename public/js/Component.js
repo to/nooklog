@@ -4,18 +4,18 @@ class Component extends HTMLElement {
 	constructor() {
 		super();
 
-		// 詳細度(特異性)を上げるためクラス名を割り当て利用する
+		// Assign class name and use it to increase specificity
 		const name = this.constructor.name;
 		this.classList.add(name);
 
-		// サーバーが動的に生成したHTMLテンプレートを読み込む
+		// Load dynamically generated HTML template from server
 		const template = window[name + '_html'];
 		if (template)
 			this.innerHTML = template;
 
 		Promise.all([
 			new Promise(resolve =>
-				// Web Componentの登録完了を待つ
+				// Wait for Web Component registration
 				requestAnimationFrame(async () => {
 					await this.initialize?.();
 					this.bindEvents?.();

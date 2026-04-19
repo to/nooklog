@@ -2,7 +2,7 @@ let config = {};
 chrome.storage.local.get('config').then(r => {
 	Object.assign(config, r.config || {});
 
-	// ワーカー起動時に整合性チェックを開始
+	// Trigger integrity check upon worker startup
 	registerMessagingBridge();
 });
 
@@ -49,7 +49,7 @@ bridge.on('ConfigDialog:openShortcuts', () => {
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 	if (reason === 'install') {
-		// 設定のデフォルト値を保存する
+		// Save default settings
 		await chrome.storage.local.set({
 			config: {
 				'extension.serverAddress': 'http://localhost:5050',
@@ -61,7 +61,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 		});
 	}
 
-	// 拡張アイコンのコンテキストメニューに常に表示されてしまう(解決方法不明)
+	// Always visible in extension icon context menu (solution unknown)
 	chrome.contextMenus.create({
 		id: 'search-nooklog',
 		title: 'Search Nooklog for "%s"',
@@ -71,7 +71,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 	cleanupSessionData();
 });
 
-// 設定の変更を監視して同期する
+// Synchronize and monitor config changes
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area === 'local' && changes.config) {
 		Object.assign(config, changes.config.newValue || {});
@@ -94,7 +94,7 @@ chrome.commands.onCommand.addListener(async command => {
 });
 
 chrome.contextMenus.onClicked.addListener(info => {
-	// 拡張アイコンをクリックされた時を除外する
+	// Exclude extension icon click events
 	if (info.menuItemId === 'search-nooklog' && info.selectionText)
 		openSearchPage(info.selectionText.trim());
 });
@@ -114,7 +114,7 @@ async function openUpdatePage(tab) {
 			],
 		});
 	} catch {
-		// スクリプトの埋め込みが許可されないページ(chrome://や拡張ストアなど)
+		// Script injection denied pages (e.g. chrome://, Chrome store)
 	}
 }
 
@@ -146,17 +146,17 @@ bridge.on('UpdateForm:save', async bookmark => {
 const checkedUrls = new Map();
 
 async function checkUrl(tab) {
-	// 特殊なページは除外する
+	// Exclude special pages
 	const url = tab.url;
 	if (!url || /^(chrome|chrome-extension|devtools|about|edge):/.test(url))
 		return;
 
-	// 同一URLへの連続チェックを抑制する
+	// Debounce successive checks on the same URL
 	const now = Date.now();
 	let cache = checkedUrls.get(url);
 	if (!cache || now - cache.time >= 20 * 1000) {
 		try {
-			// ブックマーク済みかチェックする
+			// Check if already bookmarked
 			const res = await fetch(
 				`${config['extension.serverAddress']}/api/find?url=${encodeURIComponent(url)}`);
 			cache = { time: now, data: await res.json() };
@@ -179,7 +179,7 @@ async function setIcon(tabId, isBookmarked) {
 	}
 }
 
-// 異常終了したセッションデータをクリアする
+// Clear abnormally terminated session data
 async function cleanupSessionData() {
 	const items = await chrome.storage.local.get();
 	const keys = Object.keys(items)

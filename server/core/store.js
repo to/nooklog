@@ -134,7 +134,7 @@ const store = {
 				if (!fields || fields.includes('memo'))
 					targets.push({ field: 'memo', text: b.memo, position: 0 });
 
-				// H2以上の見出しをタイトルにする
+				// Set H2 or higher as title
 				if (!fields || fields.includes('markdown')) {
 					targets.push(...sentence.chunkMarkdown(b.markdown).map(c => ({
 						field: 'markdown',
@@ -166,7 +166,7 @@ const store = {
 				if (targets.length === 0)
 					continue;
 
-				// ベクトル化 (タイトルと本文をセットで渡す)
+				// Vectorize (pass title and body together)
 				const vectors = await sentence.embedDocument(targets);
 				batch.push(...targets.map((t, i) => ({
 					sql: `
@@ -278,7 +278,7 @@ const store = {
 	},
 
 	async search(ps) {
-		// URL/タグ/レーティングだけの検索ではないか？
+		// Is this search only based on URL/Tag/Rating?
 		if (ps.query?.trim()) {
 			if (ps.mode === 'vector')
 				return await this.searchVector(ps);
@@ -357,7 +357,7 @@ const store = {
 		const qVec = await sentence.embedQuery(query);
 		const select = columns.map(c => `b.${c}`).join(', ');
 
-		// インデックス(DiskANN)は不正確だったため5倍程度遅い全件走査(Brute Force)を使用する
+		// Due to index (DiskANN) inaccuracy, Brute Force is used (about 5x slower)
 		const {
 			conditions, params, ftsConditions, ftsParams,
 		} = this._buildSearchQuery({ tags, rating, url });
@@ -389,7 +389,7 @@ const store = {
 
 		sql += ' GROUP BY b.id';
 
-		// エクスポート時は 適度な類似度で切り捨てる
+		// Truncate at moderate similarity upon export
 		if (limit === null) {
 			const { near, far } = await sentence.getCalibration();
 			sql += ' HAVING score <= ?';
@@ -415,7 +415,7 @@ const store = {
 	},
 
 	async searchHybrid(ps) {
-		// 統合するために候補を多めに取得する
+		// Fetch extra candidates for consolidation
 		const { limit = 50, sortBy = 'relevance' } = ps;
 		const searchLimit = limit === null ? null : Math.floor(limit * 1.5);
 		const [fts, vec] = await Promise.all([
@@ -500,21 +500,21 @@ const store = {
 		if (!query?.trim())
 			return null;
 
-		// フレーズ（"..."）を考慮してトークン分割
+		// Split token considering phrase ("...")
 		const tokens = (query.match(/".+?"|[^\s"]+/g) || [])
 			.map(w => w.replace(/^"|"$/g, ''));
 
-		// FTS5のカラム指定形式を生成(指定があれば { col1 col2 } : の形式)
-		// (無指定の場合 全FTSカラムが対象となる)
+		// Construct FTS5 column syntax (if specified, format looks like { col1 col2 } :)
+		// (Defaults to all FTS columns)
 		const columnSpec = fields.length > 0 ? `{ ${fields.join(' ')} } : ` : '';
 		const useUnigram = config['database.tokenizer'] === 'unigram';
 		const ftsTokens = tokens.map(token => {
 			if (useUnigram) {
-				// 1文字 Uni-gram をフレーズとして結合し、隣接マッチを実現(NEAR(len - 2)相当)
+				// Merge phrase using Uni-gram to simulate adjacency (NEAR(len - 2) equivalence)
 				const phrase = [...sentence.normalizeJp(token)].map(c => c.replace(/"/g, '""')).join(' ');
 				return `${columnSpec}"${phrase}"`;
 			} else {
-				// 単語単位: 必要なら末尾に "*" をつけて前方一致を許可
+				// Word level: append "*" if needed for prefix matching
 				const cleanToken = token.replace(/"/g, '""');
 				return `${columnSpec}"${cleanToken}"*`;
 			}
@@ -528,7 +528,7 @@ const store = {
 
 	_parse(row) {
 		if (row) {
-			// Proxy等で扱いやすいよう、深いコピーを作るか、プロパティを整形
+			// Deep clone or format properties for proxies
 			const parsed = { ...row };
 			if (parsed.tags)
 				parsed.tags = JSON.parse(parsed.tags);
@@ -540,7 +540,7 @@ const store = {
 	},
 };
 
-// 埋め込みエンジンの準備(エラー復帰)ができたらバックフィルする
+// Backfill once embedding engine is ready (recovers from error)
 hub.on('vector.ready', () => store.reembed());
 
 export default store;

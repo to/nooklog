@@ -36,13 +36,13 @@
 	--line-height-s: 1.25;
 	--line-height-m: 1.5;
 
-	--ink-6: var(--gray-12); /* 強調/ハイライト */
-	--ink-5: var(--gray-11); /* 一次情報/ボタン背景 */
-	--ink-4: var(--gray-9); /* 二次情報/説明 */
-	--ink-3: var(--gray-8); /* 三次情報 */
-	--ink-2: var(--gray-6); /* 枠線/プレースホルダー */
-	--ink-1: var(--gray-3); /* 罫線 */
-	--ink-0: var(--gray-2); /* バックグラウンド */
+	--ink-6: var(--gray-12); /* Emphasis/Highlight */
+	--ink-5: var(--gray-11); /* Primary info/Button bg */
+	--ink-4: var(--gray-9); /* Secondary info/Description */
+	--ink-3: var(--gray-8); /* Tertiary info */
+	--ink-2: var(--gray-6); /* Border/Placeholder */
+	--ink-1: var(--gray-3); /* Ruled line */
+	--ink-0: var(--gray-2); /* Background */
 
 	--color-1: var(--ink-6);
 
@@ -50,11 +50,11 @@
 
 	--color-bg-image: transparent;
 
-	/* 操作結果の状態遷移先を予測させる */
+	/* Let user predict transition outcome */
 	--hover-off: 1.15;
 	--hover-on: 0.85;
 
-	/* 状態遷移先がないもの(ボタンなど)は上げて戻す */
+	/* For items with no transition (like buttons), pop up and revert */
 	--hover-up: 1.15;
 }
 
@@ -72,7 +72,7 @@
 }
 
 html.dark {
-	/* 透過画像背景 */
+	/* Transparent image background */
 	--color-bg-image: var(--ink-6);
 
 	--hover-off: 0.9;

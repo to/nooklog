@@ -1,6 +1,6 @@
 const app = {
-	// 軽度なUI状態の保存
-	// (iframeと通常ページは別の設定になるためconfigを代替できない)
+	// Save lightweight UI state
+	// (Cannot replace config as iframe and normal pages have different settings)
 	...JSON.parse(localStorage.getItem('ui') || '{}'),
 
 	set(key, value) {

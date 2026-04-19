@@ -9,7 +9,7 @@
 body {
 	gap: var(--space-s);
 	padding: calc(var(--space-s) * 2);
-	overflow: hidden; /* 多数のタグ候補表示対応 */
+	overflow: hidden; /* Handle many tag candidates */
 }
 
 .UpdateForm {

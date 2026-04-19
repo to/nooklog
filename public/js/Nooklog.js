@@ -45,7 +45,7 @@ const Nooklog = {
 			{ bookmarks: [], count: 0, totalCount: 0 });
 		this.currentSearch = task;
 
-		// 最終の検索以外は結果を返さない
+		// Only return result for the last search
 		const res = await task;
 		return this.currentSearch === task
 			? this._populate(res)
@@ -102,7 +102,7 @@ const Nooklog = {
 	},
 
 	separateRating(tags, rating = 0) {
-		// タグとレートで最も高いものをレートとする
+		// Take highest rate from tags and rate
 		tags = tags.filter(t => {
 			if (!/^\d$/.test(t))
 				return true;

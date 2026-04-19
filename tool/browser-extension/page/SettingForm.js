@@ -31,7 +31,7 @@ class SettingForm {
 		this.els.error.classList.add('none');
 
 		if (await this._alive(address)) {
-			// 設定値を保存する(初回特別動作)
+			// Save settings (initial special behavior)
 			const values = { 'extension.serverAddress': address };
 			Object.assign(this.config, values);
 			await chrome.storage.local.set({ config: this.config });
