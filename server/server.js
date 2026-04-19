@@ -23,6 +23,14 @@ import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodToJsonSchemaConverter, experimental_ZodSmartCoercionPlugin as ZodSmartCoercionPlugin } from '@orpc/zod/zod4';
 
 const log = baseLog.child({ module: 'server' });
+
+const logFailure = (error, message, context = {}) => {
+	if (error instanceof Warning)
+		log.warn({ ...context, cause: error.message }, message);
+	else
+		log.error({ ...context, cause: error }, message);
+};
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const server = express();
 
@@ -163,20 +171,10 @@ server.get('/api/alive', (req, res) => res.end());
 
 const sharedInterceptors = [
 	onError((error, { request }) => {
-		if (error instanceof Warning) {
-			// errorというプロパティ名を避けてシンプルな出力にする
-			log.warn({
-				method: request.method,
-				url: request.url,
-				cause: error.message,
-			}, 'API request warning');
-		} else {
-			log.error({
-				method: request.method,
-				url: request.url,
-				error,
-			}, 'API request failed');
-		}
+		logFailure(error, 'API request failed', {
+			method: request.method,
+			url: request.url,
+		});
 
 		// クライアントへエラー詳細を送信する
 		if (!(error instanceof ORPCError)) {
@@ -282,9 +280,9 @@ process.on('message', msg => {
 });
 
 process.on('uncaughtException', error => {
-	log.error({ error }, 'uncaught exception');
+	logFailure(error, 'uncaught exception');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-	log.error({ error: reason, promise }, 'unhandled rejection');
+	logFailure(reason, 'unhandled rejection');
 });

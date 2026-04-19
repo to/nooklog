@@ -38,13 +38,12 @@ class ConfigDialog extends Component {
 		}
 
 		if (this.autoOpen)
-			this.els.dialog.showModal();
+			this.showModal();
 
 		bridge.emit('ConfigDialog:shortcuts', {}, true);
 
 		this._updateBookmarklet();
 		this._updateEmbeddingVisibility();
-		this._fetchVectorModels();
 	}
 
 	bindEvents() {
@@ -55,8 +54,11 @@ class ConfigDialog extends Component {
 			this.$$('.export-range option[value="search"]').forEach(el => el.textContent =
 				`Search (${results.count}${results.bookmarks.length === results.count ? '+' : ''})`);
 		});
-		$.on(this.els.open, 'click', () => this.els.dialog.showModal());
+
+		$.on(this.els.open, 'click', () => this.showModal());
+
 		$.on(this.els.close, 'click', () => this.els.dialog.close());
+
 		$.on(this.els.form, 'input', e => {
 			const name = e.target.name;
 			if (!name)
@@ -85,6 +87,7 @@ class ConfigDialog extends Component {
 			const isDirty = this._getValue(e.target) != config[name];
 			$.toggle(e.target.closest('.grid > div')?.querySelector('.error'), isDirty);
 		});
+
 		$.on(this.els.form, 'submit', e => {
 			e.preventDefault();
 			this._save();
@@ -151,6 +154,11 @@ class ConfigDialog extends Component {
 			const command = msg.shortcuts.find(c => c.name === 'open-update-page');
 			this.$('.shortcut-key').textContent = command?.shortcut || 'Not set';
 		});
+	}
+
+	showModal() {
+		this.els.dialog.showModal();
+		this._fetchVectorModels();
 	}
 
 	_getValue(el) {
