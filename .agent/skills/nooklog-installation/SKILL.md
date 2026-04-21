@@ -14,12 +14,12 @@ Install the Nooklog extension that runs in your browser.
 - Click the **Load unpacked** button.
 - Select the `tool/browser-extension` folder within the repository.
 
-Once installed, the Nooklog icon will appear in your browser toolbar.
+Once installed, the Nooklog icon will appear in your browser toolbar. \
 Click the icon and register your server URL (default: `http://localhost:5050`) to complete the setup.
 
 ## System Configuration
 
-Nooklog consists of two components: the Browser Extension (Client) and the Nooklog Server.
+Nooklog consists of two components: the Browser Extension (Client) and the Nooklog Server. \
 You can choose where each component runs (Local PC or Cloud) based on your needs.
 
 ### Configuration Patterns
@@ -207,13 +207,20 @@ TURSO_DATABASE_URL=libsql://your-db-name-user.turso.io
 TURSO_AUTH_TOKEN=your-auth-token
 ```
 
+Enable Local Replication (Embedded Replica) to sync your local cache with the cloud. \
+This allows you to enjoy cloud sync while maintaining local-speed performance and offline support! ✨
+
+```bash
+TURSO_REPLICA=true
+```
+
 To upload an existing local database to Turso:
 ```bash
 turso db create nooklog --from-file ./nooklog.db
 ```
 
 ### C1. LLM Server (OpenAI Compatible)
-Nooklog is tested with Ollama, LM Studio, and llama-server.
+Nooklog is tested with Ollama, LM Studio, and llama-server. \
 To enable vector search, you need an **Embedding Model** that fits your content and hardware.
 
 Check the [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard) for model performance, focusing on the **Retrieval** score.

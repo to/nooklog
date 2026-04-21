@@ -80,7 +80,8 @@ unigramは 中国/日本/韓国など スペース区切りではない言語や
 検索結果のブックマークのタグをクリックすることで タグをクイック検索できます。 一つのブックマークから 関連するブックマークを 絞り込みながら 次々に見つけることができます。
 
 **⚙️ レーティング**\
-★★★☆☆ レート入力。 レート順の並び替え。
+★★★☆☆ レート入力。 レート順の並び替え。\
+不要な場合は非表示にできます。
 
 **⚙️ libsql/Turso**\
 Tursoは ローカルと全く同じように リモートにあるSQLiteデータベースにアクセスできる 素晴らしいサービスです。\
@@ -89,12 +90,12 @@ Tursoは ローカルと全く同じように リモートにあるSQLiteデー�
 **⚙️ Open API**\
 [Open API(Scalar)](https://p01--nooklog-demo--dxnz489y9tm9.code.run/openapi.html)
 
-**バッチ変更**
+**⚙️ バッチ変更**\
 タグの一括置換や URLの整形 クローラによるコンテンツの補完など データベースに対する一括処理は 以下を確認してください。 エージェントさんに読んでもらい スクリプトを生成してもらうと かんたんです。
 
-**[📖 メンテナンスガイド](../.agent/skills/nooklog-maintenance/SKILL_ja.md)**
+**[📖 メンテナンスガイド](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-maintenance/SKILL_ja.md)**
 
-**⚙️ user.js/ユーザースタイルによるパッチ**
+**⚙️ user.js/ユーザースタイルによるパッチ**\
 user.js(Tampermonkey/Greasemonkey)で 自由にに機能を追加できます。以下のサンプルスクリプトを 参考にしてください。\
 
 - [Auto_Save.user.js](../tool/userjs/Auto_Save.user.js) (特定のサイトの閲覧を自動的にバックグラウンドで保存する。 ログ。)
@@ -126,7 +127,7 @@ npm start
 
 dockerや pm2や クラウドへの配備など 詳細なインストール方法は以下を確認してください。
 
-**[📖 インストールガイド](../.agent/skills/nooklog-maintenance/SKILL.md)**
+**[📖 インストールガイド](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-installation/SKILL_ja.md)**
 
 ### 技術スタック
 
@@ -162,3 +163,16 @@ dockerや pm2や クラウドへの配備など 詳細なインストール方�
 - PDF / 画像(OCR) / 動画(字幕)
 - クローラー / Markdown バックフィル / プレーンテキストインポート
 - Markdown アップロード / Obsidian連携
+
+## 関連プロダクト
+
+### サービス
+- [Pinboard](https://pinboard.in/)
+- [Raindrop.io](https://raindrop.io/)
+
+### プロジェクト
+- [linkding](https://github.com/sissbruecker/linkding)
+- [Karakeep](https://github.com/karakeep-app/karakeep)
+- [Linkwarden](https://github.com/linkwarden/linkwarden)
+- [Readeck](https://codeberg.org/readeck/readeck)
+- [Archivist](https://github.com/tokuhirom/Archivist)
