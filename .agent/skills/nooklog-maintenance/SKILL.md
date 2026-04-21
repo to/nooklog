@@ -19,6 +19,7 @@ This skill provides guidelines for maintaining data integrity and safely executi
 - **Safety First (Backups)**: Before performing destructive operations (bulk transformations, deletions, etc.), always create a physical copy (backup) of the database files (e.g., `nooklog.db.bak`) to ensure a reliable rollback point.
 - **Fail Fast Principle**: Design maintenance scripts to log errors or terminate immediately upon encountering irregular data, rather than silently ignoring anomalies.
 - **Proper Resource Management**: Always call `nooklog.dispose()` at the end of a script to safely close database connections and release resources.
+- **Review Database Schema**: Check [📖 schema.md](../../../docs/schema.md) to familiarize yourself with the latest database definitions for smoother operations.
 
 ## Maintenance Architecture
 

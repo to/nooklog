@@ -12,11 +12,14 @@ const PRESET_MAP = {
 		documentTitlePrefix: 'title: ',
 		documentTextPrefix: 'text: ',
 	},
-	'arctic': {
-		queryPrefix: 'Represent this sentence for searching relevant passages: ',
-	},
 	'qwen3': {
 		queryPrefix: 'Instruct: Retrieve relevant documents for the given query\nQuery: ',
+	},
+	'harrier': {
+		queryPrefix: 'Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ',
+	},
+	'arctic': {
+		queryPrefix: 'Represent this sentence for searching relevant passages: ',
 	},
 	'multilingual-e5': {
 		queryPrefix: 'query: ',

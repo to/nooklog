@@ -13,6 +13,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_notification
 //
 // @run-at       document-idle
 // ==/UserScript==
@@ -24,6 +25,7 @@
  * UserScript manager's settings (e.g., Tampermonkey > Settings > User matches).
  *
  * Example matches:
+ * https://*.wikipedia.org/wiki/*
  * https://zenn.dev/*
  * https://github.com/*
  * https://www.reddit.com/r/*
@@ -48,13 +50,18 @@ setTimeout(async () => {
 			return;
 
 		// Not bookmarked, proceed to save
-		await request('POST', '/api/save', {
+		const result = await request('POST', '/api/save', {
 			url,
 			title: document.title,
 			html: document.documentElement.outerHTML,
 		});
 
 		console.log('Nooklog: Page auto-saved', url);
+
+		GM_notification({
+			text: `Auto-saved: ${document.title}`,
+			title: 'Nooklog',
+		});
 	} catch (e) {
 		console.error('Nooklog: Auto-save failed', e);
 	}

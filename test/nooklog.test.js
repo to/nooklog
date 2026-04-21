@@ -121,13 +121,14 @@ test('nooklog.js functional verification', async t => {
 	await t.test('Selective vector updates (pinpoint embedding)', async () => {
 		// Enable vector search and mock the embedding backend
 		env['sentence.vector.enabled'] = true;
-		await db.initializeVectorTable();
-		const originalRequest = sentence._request;
 
+		const originalRequest = sentence._request;
 		// Mock embedding to return a fixed vector
 		sentence._request = async input => (Array.isArray(input) ? input : [input]).map(() => new Array(768).fill(0));
 
 		try {
+			await db.initializeVectorTable();
+
 			const b = await nooklog.save({
 				url: 'https://test.com',
 				title: 'Original Title',
