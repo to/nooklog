@@ -95,7 +95,7 @@ Synchronize one data set between two locations like home and office at a low pri
 For batch processing of the database such as bulk tag replacement  URL formatting or content interpolation by crawlers  please check the following. \
 It is easy if you ask an AI agent to read it and generate a script.
 
-**[📖 Maintenance Guide](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-maintenance/SKILL.md)**
+**[📖 Maintenance Guide](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-maintenance/SKILL.md)**
 
 **⚙️ Patching with user.js / User Styles**\
 You can freely add features with user.js (Tampermonkey/Greasemonkey). Refer to the following sample scripts.
@@ -129,7 +129,7 @@ npm start
 
 For detailed installation methods including docker  pm2 or cloud deployment  please check here:
 
-**[📖 Installation Guide](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-installation/SKILL.md)**
+**[📖 Installation Guide](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-installation/SKILL.md)**
 
 ### Tech Stack
 

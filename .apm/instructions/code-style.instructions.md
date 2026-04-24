@@ -1,3 +1,12 @@
+---
+description: "Coding conventions for the Nooklog project. Defines implementation policies prioritizing code brevity, aesthetics, and Fail Fast."
+applyTo: "**/*.{js,html,css}"
+paths:
+  - "**/*.js"
+  - "**/*.html"
+  - "**/*.css"
+---
+
 ## Code Style
  Focus on completing "Beautiful Programs." Stack up "Beautiful Code Snippets."
 - Value "Minimalism" over "Robustness."

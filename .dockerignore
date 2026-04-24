@@ -3,7 +3,6 @@
 *.pem
 *.key
 id_rsa
-.agent/
 .gemini/
 .vscode/
 node_modules/
@@ -17,7 +16,11 @@ scratch/
 /work
 memo/
 .geminiignore
-fly.toml
 
+.agents/
+.apm/
+.claude/
+.github/
+.git/
 test/
 electron/
