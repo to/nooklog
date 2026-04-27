@@ -7,6 +7,7 @@
 //
 // @match        http://localhost:*/update.html*
 // @match        http://127.0.0.1:*/update.html*
+// @icon         https://cdn.jsdelivr.net/gh/to/nooklog@main/public/image/icon_32.png
 //
 // @connect      localhost
 // @connect      *

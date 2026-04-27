@@ -5,6 +5,8 @@
 // @version      0.1
 // @author       quoposk, mii(Gemini 3 Flash)
 //
+// @icon         https://cdn.jsdelivr.net/gh/to/nooklog@main/public/image/icon_32.png
+//
 // @connect      localhost
 // @connect      *
 // @noframes
