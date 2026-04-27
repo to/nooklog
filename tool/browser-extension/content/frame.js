@@ -15,11 +15,24 @@ document.documentElement.classList.add(
 		config['client.theme'].split('-')[0]);
 
 // EN: サイドパネルから開かれたときはパラーメータがない
-let src = new URLSearchParams(window.location.search).get('src');
+const params = new URLSearchParams(window.location.search);
+let src = params.get('src');
 if (!src) {
-	const url = new URL(`${config['extension.serverAddress']}/update.html`);
-	url.searchParams.set('view', 'sidepanel');
-	src = url.href;
+	const serverUrl = new URL(`${config['extension.serverAddress']}/update.html`);
+	serverUrl.searchParams.set('view', 'sidepanel');
+	src = serverUrl.href;
+}
+
+const isPopup = new URL(src).searchParams.get('view') === 'popup';
+if (isPopup) {
+	// Adjust window size if the source URL indicates popup mode
+	document.documentElement.style.width = '320px';
+	document.documentElement.style.height = '400px';
+
+	window.addEventListener('message', e => {
+		if (e.data?.type === 'close')
+			window.close();
+	});
 }
 
 // Propagate IDs to the inner iframe

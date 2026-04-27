@@ -20,6 +20,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 		await chrome.storage.local.set({
 			config: {
 				'extension.serverAddress': 'http://localhost:5050',
+				'client.theme': 'dark',
 			},
 		});
 
@@ -64,16 +65,6 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 		title: 'Edit in window',
 		contexts: ['all'],
 	});
-
-	// TOFIX : Vivaldiで すぐにサイドパネルを閉じる？
-});
-
-// Synchronize and monitor config changes
-chrome.storage.onChanged.addListener((changes, area) => {
-	if (area === 'local' && changes.config) {
-		Object.assign(config, changes.config.newValue || {});
-		registerMessagingBridge();
-	}
 });
 
 chrome.action.onClicked.addListener(tab => {
@@ -136,10 +127,11 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-	if (msg.type === 'Content:select') {
+	// EN: 拡張内からのイベントはタブを取得できない
+	if (msg.type === 'Content:select' && sender.tab) {
 		bridge.emit('Content:select', { selection: msg.selection }, {
-			tabId: sender.tab?.id,
-			windowId: sender.tab?.windowId,
+			tabId: sender.tab.id,
+			windowId: sender.tab.windowId,
 		});
 	}
 });
@@ -155,8 +147,14 @@ bridge.on('ConfigDialog:openShortcuts', () => {
 	chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
 });
 
-bridge.on('Nooklog:updateConfig', config => {
+bridge.on('Nooklog:updateConfig', newConfig => {
+	const old = { ...config };
+	Object.assign(config, newConfig);
 	chrome.storage.local.set({ config });
+
+	if (old['extension.serverAddress'] !== config['extension.serverAddress'] ||
+		old['extension.autoAppendSelection'] !== config['extension.autoAppendSelection'])
+		registerMessagingBridge();
 });
 
 bridge.on('UpdateForm:refresh', async () => {
@@ -169,7 +167,7 @@ bridge.on('UpdateForm:save', async bookmark => {
 	const tabs = await chrome.tabs.query({});
 	for (const tab of tabs) {
 		if (tab.url === bookmark.url)
-			setIcon(tab.id, true);
+			setIcon(tab, true);
 	}
 });
 
@@ -206,10 +204,7 @@ async function openUpdateFrame(tab) {
 			stash(content, { tabId: tab.id });
 	} catch (e) {
 		// Script injection denied pages (e.g. chrome://, Chrome store)
-		const url = new URL(`${config['extension.serverAddress']}/update.html`);
-		url.searchParams.set('url', tab.url);
-		url.searchParams.set('title', tab.title);
-		openUpdateWindow(url.href);
+		openUpdateWindow(getUpdateUrl(tab));
 	}
 }
 
@@ -234,11 +229,7 @@ async function openUpdateWindow(url) {
 }
 
 async function openUpdateWindowForTab(tab) {
-	const url = new URL(`${config['extension.serverAddress']}/update.html`);
-	url.searchParams.set('url', tab.url);
-	if (tab.title)
-		url.searchParams.set('title', tab.title);
-	openUpdateWindow(url.href);
+	openUpdateWindow(getUpdateUrl(tab));
 
 	try {
 		stash(await executeFunc(tab, () => ({
@@ -259,6 +250,14 @@ async function openUpdatePanel(tab) {
 	chrome.sidePanel.open({ windowId: tab.windowId });
 
 	refreshUpdatePanel(tab);
+}
+
+function getUpdateUrl(tab, view = 'window') {
+	const url = new URL(`${config['extension.serverAddress']}/update.html`);
+	url.searchParams.set('view', view);
+	url.searchParams.set('url', tab.url);
+	url.searchParams.set('title', tab.title);
+	return url.href;
 }
 
 async function refreshUpdatePanel(tab) {
@@ -294,7 +293,7 @@ async function saveBookmark(tab) {
 	});
 
 	checkedUrls.delete(content.url);
-	setIcon(tab.id, true);
+	setIcon(tab, true);
 }
 
 async function copyMarkdownToClipboard(tab) {
@@ -353,15 +352,24 @@ async function checkUrl(tab) {
 		}
 	}
 
-	setIcon(tab.id, !!cache.data);
+	setIcon(tab, !!cache.data);
 }
 
-async function setIcon(tabId, isBookmarked) {
+async function setIcon(tab, isBookmarked) {
 	try {
+		const tabId = tab.id;
 		const color = tint[config['client.tint']] || tint.grass;
 		chrome.action.setBadgeText({ tabId, text: isBookmarked ? ' ' : '' });
 		if (isBookmarked)
 			chrome.action.setBadgeBackgroundColor({ tabId, color });
+
+		const action = config['extension.actionBehavior'];
+		if (action === 'save' && isBookmarked) {
+			const p = new URLSearchParams({ src: getUpdateUrl(tab, 'popup') });
+			chrome.action.setPopup({ tabId, popup: `content/frame.html?${p.toString()}` });
+		} else {
+			chrome.action.setPopup({ tabId, popup: '' });
+		}
 	} catch {
 	}
 }
@@ -390,15 +398,8 @@ async function registerMessagingBridge() {
 	}
 
 	try {
-		const ids = ['messaging-bridge', 'capture-selection'];
-
-		// EN: 登録に変化が無ければスキップする
-		const old = await chrome.scripting.getRegisteredContentScripts({ ids });
-		const oldBridge = old.find(s => s.id === 'messaging-bridge');
-		if (old.length === scripts.length && oldBridge?.matches[0] === scripts[0].matches[0])
-			return;
-
-		await chrome.scripting.unregisterContentScripts({ ids }).catch(() => { });
+		// EN: 登録を一旦すべて解除して、最新の設定で上書きする
+		await chrome.scripting.unregisterContentScripts().catch(() => { });
 		await chrome.scripting.registerContentScripts(scripts);
 	} catch (e) {
 		console.error(e);

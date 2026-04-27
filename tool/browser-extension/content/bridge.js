@@ -1,12 +1,13 @@
 (ctx => {
-	// Prevent duplicate executions
-	if (globalThis.bridgeLoaded)
-		return;
-
-	globalThis.bridgeLoaded = true;
-
+	// Allow coexistence of registerContentScripts and executeScript instances
 	const isWorker = typeof window === 'undefined';
 	if (isWorker) {
+		// Prevent duplicate executions
+		if (globalThis['content/bridge.js'])
+			return;
+
+		globalThis['content/bridge.js'] = true;
+
 		const listeners = {};
 		globalThis.window = {
 			addEventListener: (event, listener) => {
@@ -20,8 +21,8 @@
 	}
 
 	const ps = isWorker ? null : new URLSearchParams(window.location.search);
-	const tabId = ctx?.tabId || Number(ps?.get('tabId'));
-	const windowId = ctx?.windowId || Number(ps?.get('windowId'));
+	const tabId = ctx?.tabId || Number(ps?.get('tabId') || 0);
+	const windowId = ctx?.windowId || Number(ps?.get('windowId') || 0);
 
 	const bridge = {
 		on: (event, listner, opt = {}) => {

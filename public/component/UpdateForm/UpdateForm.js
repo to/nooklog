@@ -109,7 +109,10 @@ class UpdateForm extends Component {
 
 			if (config['extension.focusMemoOnSelection'])
 				this.els.memo.focus();
-		}, this.view === 'embed' ? { tab: true } : { window: true });
+		}, {
+			embed: { tab: true },
+			window: {},
+		}[this.view] || { window: true });
 
 		$.on(document, 'keydown', async e => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter')
@@ -137,7 +140,7 @@ class UpdateForm extends Component {
 		$.observeResize(this.els.form, entry => {
 			// Called with height 0 when showing starts
 			const height = entry.contentRect.height;
-			const isMini = height <= 360;
+			const isMini = height <= 380;
 			if (!height || this.isMini === isMini)
 				return;
 
@@ -258,6 +261,9 @@ class UpdateForm extends Component {
 	close() {
 		if (this.view === 'embed')
 			bridge.emit('UpdateForm:closeFrame');
+
+		if (this.view === 'popup')
+			window.parent.postMessage({ type: 'close' }, '*');
 
 		if (this.closeOnSave) {
 			if (this.view === 'sidepanel')
