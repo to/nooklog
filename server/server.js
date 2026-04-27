@@ -45,7 +45,7 @@ server.use((req, res, next) => {
 
 	// Tighten security in iframe to ease opening
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-	if (req.query.embed === 'true') {
+	if (req.query.view === 'embed') {
 		res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
 		res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
 	}

@@ -7,6 +7,7 @@ class UpdateForm extends Component {
 		this.els = {
 			form: this.$('form'),
 			detach: this.$('button.detach'),
+			refresh: this.$('button.refresh'),
 			close: this.$('button.close'),
 			id: this.$('[name=id]'),
 			url: this.$('[name=url]'),
@@ -41,10 +42,11 @@ class UpdateForm extends Component {
 
 		this._setSubmitting(false);
 
-		this.setBookmark(getSearchParams());
+		const ps = getSearchParams();
+		this.view = ps.view;
 
-		Nooklog.pop(getSearchParams())
-			.then(b => this.setBookmark(b));
+		this.setBookmark(ps);
+		this.pop(ps);
 	}
 
 	ready() {
@@ -59,9 +61,16 @@ class UpdateForm extends Component {
 		this.els.rating.toggle(
 			['stars', 'both'].includes(config['client.ratingInputMode']));
 		this.els.tags.focus();
+
+		const isSidePanel = this.view === 'sidepanel';
+		const isEmbed = this.view === 'embed';
+		$.toggle(this.els.refresh, isSidePanel);
+		$.toggle(this.els.close, isEmbed);
+		$.toggle(this.els.detach, isEmbed);
 	}
 
 	bindEvents() {
+		$.on(this.els.refresh, 'click', () => this.refresh());
 		$.on(this.els.detach, 'click', () => this.detach());
 		$.on(this.els.close, 'click', () => this.close());
 
@@ -70,6 +79,22 @@ class UpdateForm extends Component {
 			this.clear();
 			this.setBookmark(bookmark);
 		});
+
+		if (this.view === 'sidepanel') {
+			this.closeOnSave = config['extension.closeSidepanelOnSave'];
+
+			bridge.on('Background:stashComplete', msg => {
+				this.pop(msg);
+			}, { window: true });
+
+			const onVisible = () => {
+				if (document.visibilityState === 'visible')
+					this.refresh();
+			};
+			onVisible();
+
+			document.addEventListener('visibilitychange', onVisible);
+		}
 
 		bridge.on('Content:select', msg => {
 			// Insert selected text into text area
@@ -84,7 +109,7 @@ class UpdateForm extends Component {
 
 			if (config['extension.focusMemoOnSelection'])
 				this.els.memo.focus();
-		});
+		}, this.view === 'embed' ? { tab: true } : { window: true });
 
 		$.on(document, 'keydown', async e => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter')
@@ -168,6 +193,21 @@ class UpdateForm extends Component {
 		this.bookmark = {};
 	}
 
+	refresh() {
+		// TOFIX: 変更チェック
+		this.clear();
+		bridge.emit('UpdateForm:refresh');
+	}
+
+	async pop(ps) {
+		// EN: サイドパネルなど空でフォームが開かれたか？
+		if (!ps.id && !ps.url)
+			return;
+
+		const bookmark = await Nooklog.pop(ps);
+		this.setBookmark(bookmark);
+	}
+
 	// Request base parameters / existing data / editing data
 	setBookmark(bookmark) {
 		if (!bookmark)
@@ -216,17 +256,23 @@ class UpdateForm extends Component {
 	}
 
 	close() {
-		bridge.emit('UpdateForm:close', {}, true);
-		if (this.closeOnSave)
+		if (this.view === 'embed')
+			bridge.emit('UpdateForm:closeFrame');
+
+		if (this.closeOnSave) {
+			if (this.view === 'sidepanel')
+				bridge.emit('UpdateForm:closePanel');
+
 			window.close();
-		else
+		} else {
 			app.notify('Saved');
+		}
 	}
 
 	async detach() {
 		// Save the edited content
 		await Nooklog.stash(this.getBookmark());
-		bridge.emit('UpdateForm:detach', {}, true);
+		bridge.emit('UpdateForm:detach', { url: window.location.href });
 	}
 
 	async _handleSubmit() {
@@ -252,7 +298,7 @@ class UpdateForm extends Component {
 		this.bookmark = data;
 
 		hub.emit('UpdateForm:save', bookmark);
-		bridge.emit('UpdateForm:save', bookmark, true);
+		bridge.emit('UpdateForm:save', bookmark);
 		this.close();
 	}
 

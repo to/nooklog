@@ -1,79 +1,79 @@
-var isWorker = typeof window === 'undefined';
-if (isWorker) {
-	const listeners = {};
-	globalThis.window = {
-		addEventListener: (event, listener) => {
-			listeners[event] ??= [];
-			listeners[event].push({
-				listener,
-			});
-		},
-		dispatchEvent: e => {
-			listeners[e.type]?.forEach(l => {
-				l.listener(e);
-			});
-		},
-	};
-}
-
-var SESSION_GLOBAL = 'session:global:';
-var sessionId = isWorker ?
-	SESSION_GLOBAL :
-	(new URLSearchParams(window.location.search).get('sessionId') || SESSION_GLOBAL);
-var bridge = {
-	on: (event, listner, useSession) => {
-		window.addEventListener(`Nooklog:${event}`, e => {
-			// Is the extension robust and ready?
-			if (chrome.runtime?.id && (!useSession || sessionId))
-				listner(e.detail);
-		});
-	},
-	emit: (event, msg = {}, transfer = false) => {
-		if (transfer) {
-			msg.event = event;
-			event = 'Bridge:transfer';
-		}
-		window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail: msg }));
-	},
-};
-globalThis.bridge = bridge;
-
-(() => {
+(ctx => {
 	// Prevent duplicate executions
-	if (globalThis.nooklogBridgeLoaded)
+	if (globalThis.bridgeLoaded)
 		return;
 
-	globalThis.nooklogBridgeLoaded = true;
+	globalThis.bridgeLoaded = true;
 
-	bridge.on('Content:initialize', msg => sessionId = msg.sessionId);
+	const isWorker = typeof window === 'undefined';
+	if (isWorker) {
+		const listeners = {};
+		globalThis.window = {
+			addEventListener: (event, listener) => {
+				listeners[event] ??= [];
+				listeners[event].push(listener);
+			},
+			dispatchEvent: e => {
+				listeners[e.type]?.forEach(l => l(e));
+			},
+		};
+	}
 
-	bridge.on('Nooklog:updateConfig', msg => {
-		chrome.storage.local.set({ config: msg.config });
-	});
+	const ps = isWorker ? null : new URLSearchParams(window.location.search);
+	const tabId = ctx?.tabId || Number(ps?.get('tabId'));
+	const windowId = ctx?.windowId || Number(ps?.get('windowId'));
+
+	const bridge = {
+		on: (event, listner, opt = {}) => {
+			window.addEventListener(`Nooklog:${event}`, ({ detail }) => {
+				// Is the extension robust and ready?
+				if (!chrome.runtime?.id)
+					return;
+
+				if (opt.tab && detail.tabId !== tabId)
+					return;
+
+				if (opt.window && detail.windowId !== windowId)
+					return;
+
+				listner(detail.message, detail);
+			});
+		},
+
+		emit: (event, msg = {}, opt = {}) => {
+			let detail = { message: msg, ...opt };
+			if (!opt.local) {
+				detail = { event, ...detail };
+				event = 'Bridge:transfer';
+			}
+			window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail }));
+		},
+	};
+	globalThis.bridge = bridge;
 
 	// Forward message
-	bridge.on('Bridge:transfer', msg => {
-		chrome.storage.local.set({
-			[sessionId + 'message:' + Math.random().toString(36).slice(-8)]: msg,
+	bridge.on('Bridge:transfer', (_, meta) => {
+		meta.tabId ??= tabId;
+		meta.windowId ??= windowId;
+		chrome.storage.session.set({
+			['bridge:' + Math.random().toString(36).slice(-8)]: meta,
 		});
-	}, true);
+	});
 
 	// Receive message
 	// (Service worker also started)
 	chrome.storage.onChanged.addListener((changes, area) => {
-		if (area !== 'local' || !sessionId)
+		if (area !== 'session')
 			return;
 
-		for (const [key, { newValue }] of Object.entries(changes)) {
-			if (!newValue || !key.includes(':message:'))
+		for (const [key, { newValue: v }] of Object.entries(changes)) {
+			if (!v || !key.startsWith('bridge:'))
 				continue;
 
-			// Intercept all if worker, otherwise only to myself
-			if (isWorker || key.startsWith(sessionId)) {
-				const { event, ...msg } = newValue;
-				bridge.emit(event, msg);
-				chrome.storage.local.remove(key);
-			}
+			// EN: 削除しても イベントは確実に全てのリスナーへ伝播する
+			chrome.storage.session.remove(key);
+
+			bridge.emit(v.event, v.message, { ...v, local: true });
 		}
 	});
-})();
+})(...(globalThis.window?.args || globalThis.args || []));

@@ -128,6 +128,23 @@
 				<input type="text" name="extension.serverAddress" placeholder="http://localhost:5050" autofocus>
 			</div>
 
+			<div>
+				<label>Extension Button Action</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="extension.actionBehavior" value="embed"> Embed</label>
+					<label><input type="radio" name="extension.actionBehavior" value="sidepanel"> Sidepanel</label>
+					<label><input type="radio" name="extension.actionBehavior" value="save"> Quick Save</label>
+				</div>
+			</div>
+
+			<div>
+				<label>Close Sidepanel on Save</label>
+				<label class="toggle">
+					<input type="checkbox" name="extension.closeSidepanelOnSave">
+					<span></span>
+				</label>
+			</div>
+
 			<div class="bookmarklet">
 				<label>Bookmarklet</label>
 				<div class="flex items-center gap-m">
