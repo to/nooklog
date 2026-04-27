@@ -54,6 +54,9 @@
 			},
 			"description": "Open edit side panel"
 		},
+		"open-update-window": {
+			"description": "Open edit window"
+		},
 		"quick-save": {
 			"description": "Quick Save this page"
 		}

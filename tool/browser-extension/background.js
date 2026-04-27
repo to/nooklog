@@ -59,6 +59,12 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 		contexts: ['all'],
 	});
 
+	chrome.contextMenus.create({
+		id: 'open-update-window',
+		title: 'Edit in window',
+		contexts: ['all'],
+	});
+
 	// TOFIX : Vivaldiで すぐにサイドパネルを閉じる？
 });
 
@@ -74,6 +80,8 @@ chrome.action.onClicked.addListener(tab => {
 	const action = config['extension.actionBehavior'] || 'embed';
 	if (action === 'sidepanel')
 		openUpdatePanel(tab);
+	else if (action === 'window')
+		openUpdateWindowForTab(tab);
 	else if (action === 'save')
 		saveBookmark(tab);
 	else
@@ -87,6 +95,9 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 		if (command === 'open-update-panel')
 			openUpdatePanel(tab);
+
+		if (command === 'open-update-window')
+			openUpdateWindowForTab(tab);
 
 		if (command === 'quick-save')
 			saveBookmark(tab);
@@ -114,6 +125,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 	if (info.menuItemId === 'open-update-panel')
 		openUpdatePanel(tab);
+
+	if (info.menuItemId === 'open-update-window')
+		openUpdateWindowForTab(tab);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
@@ -217,6 +231,22 @@ async function openUpdateWindow(url) {
 			? screen.top + 8
 			: screen.top + screen.height - height - 2,
 	});
+}
+
+async function openUpdateWindowForTab(tab) {
+	const url = new URL(`${config['extension.serverAddress']}/update.html`);
+	url.searchParams.set('url', tab.url);
+	if (tab.title)
+		url.searchParams.set('title', tab.title);
+	openUpdateWindow(url.href);
+
+	try {
+		stash(await executeFunc(tab, () => ({
+			url: location.href,
+			title: document.title,
+			html: document.documentElement.outerHTML,
+		})));
+	} catch { }
 }
 
 async function openUpdatePanel(tab) {
