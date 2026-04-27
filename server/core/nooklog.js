@@ -92,13 +92,12 @@ const nooklog = {
 	},
 
 	async stash(b) {
-		stashMap.set(b.id || b.url, b);
+		stashMap.set(b.url, b);
 	},
 
 	async pop(b) {
-		const key = b.id || b.url;
-		b = stashMap.get(key) || b;
-		stashMap.delete(key);
+		b = stashMap.get(b.url) || b;
+		stashMap.delete(b.url);
 
 		// Initial pop?
 		if (b.memo == null)

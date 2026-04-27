@@ -271,8 +271,15 @@ class UpdateForm extends Component {
 
 	async detach() {
 		// Save the edited content
-		await Nooklog.stash(this.getBookmark());
-		bridge.emit('UpdateForm:detach', { url: window.location.href });
+		const b = this.getBookmark();
+		await Nooklog.stash(b);
+
+		// EN: 編集されたURLをpopのキーとする
+		const url = new URL(window.location.href);
+		if (b.url)
+			url.searchParams.set('url', b.url);
+
+		bridge.emit('UpdateForm:detach', { url: url.href });
 	}
 
 	async _handleSubmit() {
