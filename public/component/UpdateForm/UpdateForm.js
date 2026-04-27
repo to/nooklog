@@ -281,11 +281,9 @@ class UpdateForm extends Component {
 
 		this._setSubmitting(true);
 
-		const data = this.getBookmark();
+		this.setEdited();
 
-		// Record that user modifications were made
-		if (data.markdown !== this.bookmark.markdown)
-			data.markdown = this.setEdited(data.markdown);
+		const data = this.getBookmark();
 
 		const bookmark = await Nooklog.save(data);
 		this._setSubmitting(false);
@@ -302,10 +300,13 @@ class UpdateForm extends Component {
 		this.close();
 	}
 
-	setEdited(markdown) {
-		return markdown.replace(
-			new RegExp(`${UpdateForm.USER_MARK}?$`),
-			UpdateForm.USER_MARK);
+	setEdited() {
+		// Record that user modifications were made
+		if (this.els.markdown.value !== this.bookmark.markdown) {
+			this.els.markdown.value =
+				this.els.markdown.value.replaceAll(UpdateForm.USER_MARK, '') +
+				UpdateForm.USER_MARK;
+		}
 	}
 }
 
