@@ -14,7 +14,7 @@ document.documentElement.classList.add(
 		(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') :
 		config['client.theme'].split('-')[0]);
 
-// EN: サイドパネルから開かれたときはパラーメータがない
+// There are no parameters when opened from the side panel
 const params = new URLSearchParams(window.location.search);
 let src = params.get('src');
 if (!src) {

@@ -29,7 +29,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 		});
 	}
 
-	// EN: Vivaldiのみ → 書き換え Always visible in extension icon context menu (solution unknown)
+	// Vivaldi only - Always visible in the extension icon context menu (root cause unknown)
 	chrome.contextMenus.create({
 		id: 'search-nooklog',
 		title: 'Search Nooklog for "%s"',
@@ -127,7 +127,7 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-	// EN: 拡張内からのイベントはタブを取得できない
+	// Events from within the extension do not have a tab
 	if (msg.type === 'Content:select' && sender.tab) {
 		bridge.emit('Content:select', { selection: msg.selection }, {
 			tabId: sender.tab.id,
@@ -184,7 +184,7 @@ async function stash(content, opt = {}) {
 		body: JSON.stringify(content),
 	});
 
-	// EN: tabとwindow それぞれに分けて通知する
+	// Notify tab and window separately
 	bridge.emit('Background:stashComplete', { url: content.url }, opt);
 }
 
@@ -241,7 +241,7 @@ async function openUpdateWindowForTab(tab) {
 }
 
 async function openUpdatePanel(tab) {
-	// EN: Vivaldiでクエリパラメータを渡せない
+	// Query parameters cannot be passed in Vivaldi
 	const sidePanelPath = 'content/frame.html';
 	chrome.sidePanel.setOptions({
 		path: sidePanelPath,
@@ -398,7 +398,7 @@ async function registerMessagingBridge() {
 	}
 
 	try {
-		// EN: 登録を一旦すべて解除して、最新の設定で上書きする
+		// Unregister all and overwrite with the latest settings
 		await chrome.scripting.unregisterContentScripts().catch(() => { });
 		await chrome.scripting.registerContentScripts(scripts);
 	} catch (e) {

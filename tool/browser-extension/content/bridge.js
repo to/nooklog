@@ -71,7 +71,7 @@
 			if (!v || !key.startsWith('bridge:'))
 				continue;
 
-			// EN: 削除しても イベントは確実に全てのリスナーへ伝播する
+			// Events propagate to all listeners even if removed
 			chrome.storage.session.remove(key);
 
 			bridge.emit(v.event, v.message, { ...v, local: true });

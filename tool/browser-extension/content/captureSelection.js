@@ -4,7 +4,7 @@
 		if (e.button !== 0)
 			return;
 
-		// EN: テキストエリアなどの入力欄の選択は無視される
+		// Selections in input fields like text areas are ignored
 		const selection = window.getSelection().toString().trim();
 		if (selection && selection !== previousSelection) {
 			previousSelection = selection;
