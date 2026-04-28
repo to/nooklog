@@ -28,7 +28,7 @@ const logFailure = (error, message, context = {}) => {
 	if (error instanceof Warning)
 		log.warn({ ...context, cause: error.message }, message);
 	else
-		log.error({ ...context, cause: error }, message);
+		log.error({ ...context, error }, message);
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

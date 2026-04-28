@@ -107,12 +107,16 @@ class UpdateForm extends Component {
 			const delimiter = config['extension.selectionDelimiter'];
 			const noBefore = !start || /[／\/、。←→,\.\s（\(「]/.test(value.slice(start - 1, start));
 			const noAfter = (end === value.length) || /[／\/、。,\)）」]/.test(value.slice(end, end + 1));
-			this.els.memo.setRangeText(
-				(noBefore ? '' : delimiter) + msg.selection + (noAfter ? '' : delimiter),
-				start, end, 'end');
+			const insert = (noBefore ? '' : delimiter) + msg.selection + (noAfter ? '' : delimiter);
 
-			if (config['extension.focusMemoOnSelection'])
+			if (config['extension.focusMemoOnSelection'] && document.execCommand) {
+				// Support undo by preserving edit history
 				this.els.memo.focus();
+				this.els.memo.setSelectionRange(start, end);
+				document.execCommand('insertText', false, insert);
+			} else {
+				this.els.memo.setRangeText(insert, start, end, 'end');
+			}
 		}, {
 			embed: { tab: true },
 			window: {},

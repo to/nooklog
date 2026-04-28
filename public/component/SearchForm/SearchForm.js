@@ -8,6 +8,7 @@ class SearchForm extends Component {
 			tags: this.$('nl-tag-input'),
 			fields: this.$$('input[name=field]'),
 			mode: this.$$('input[name=mode]'),
+			deep: this.$('input[name=deep]'),
 			sortBy: this.$$('input[name=sortBy]'),
 			count: this.$('.count'),
 		};
@@ -82,7 +83,8 @@ class SearchForm extends Component {
 					return;
 			}
 
-			if (e.target.name === 'sortBy' || e.target.name === 'field' || e.target.name === 'mode')
+			if (e.target.name === 'sortBy' || e.target.name === 'field' ||
+				e.target.name === 'mode' || e.target.name === 'deep')
 				this._search();
 		});
 	}
@@ -116,6 +118,7 @@ class SearchForm extends Component {
 			query,
 			url,
 			mode,
+			useVectorIndex: !this.els.deep.checked,
 			fields,
 			sortBy,
 		} : {};
@@ -129,6 +132,7 @@ class SearchForm extends Component {
 		this.els.tags.tagify.loadOriginalValues(ps.tags);
 
 		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);
+		this.els.deep.checked = ps.useVectorIndex === false;
 		$.check(this.els.fields, ps.fields);
 		$.check(this.els.sortBy, ps.sortBy);
 	}
@@ -167,7 +171,7 @@ class SearchForm extends Component {
 	}
 
 	_updateVectorVisibility() {
-		this.$('input[name=mode]').parentElement.parentElement.classList.toggle(
+		this.$('.vector').classList.toggle(
 			'invisible', !config['sentence.vector.enabled']);
 		if (!config['sentence.vector.enabled'])
 			$.check(this.els.mode, 'fts');

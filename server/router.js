@@ -29,6 +29,7 @@ const searchSchema = z.object({
 	rating: z.number().int().min(0).max(5).optional(),
 	query: z.string().default(''),
 	mode: z.enum(['fts', 'vector', 'hybrid']).default('fts'),
+	useVectorIndex: z.boolean().optional(),
 	fields: inputArrayField.optional(),
 });
 

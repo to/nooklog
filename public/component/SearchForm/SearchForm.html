@@ -4,9 +4,15 @@
 			<input type="text" name="url" placeholder="URL">
 			<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
 		</div>
-		<div class="select-flat invisible">
-			<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
-			<label><input type="checkbox" name="mode" value="vector">Vector</label>
+		<div class="vector invisible">
+			<div class="select-flat flex items-center gap-s">
+				<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
+				<label><input type="checkbox" name="mode" value="vector">Vector</label>
+				<label title="Deep Search">
+					<input type="checkbox" name="deep">
+					<span class="icon">database_search</span>
+				</label>
+			</div>
 		</div>
 		<input type="text" name="query" placeholder="Query">
 		<div class="select-flat">

@@ -371,11 +371,11 @@ const store = {
 			const k = limit === null ? 300 : limit * 5;
 			sql = `
 				SELECT ${select}, bv.content as chunk, bv.field as chunkField,
-				       MIN(v.distance) as score
+				       MIN(vector_distance_cos(bv.vector, vector32(?))) as score
 				FROM vector_top_k('bookmark_vector_idx', vector32(?), ?) as v
 				JOIN bookmark_vector bv ON bv.row_id = v.rowid
 				JOIN bookmark b ON b.row_id = bv.bookmark_id`;
-			args.push(qVecJson, k);
+			args.push(qVecJson, qVecJson, k);
 		} else {
 			// Brute Force search
 			sql = `
