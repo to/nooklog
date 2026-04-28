@@ -4,13 +4,18 @@ const Nooklog = {
 
 	async load() {
 		const values = await this.rpc('config/get');
+		this.clearConfig();
 		this._updateConfig(values);
 		hub.emit('Nooklog:load', values);
 	},
 
+	async clearConfig() {
+		for (const k in config)
+			delete config[k];
+	},
+
 	async saveConfig(input) {
 		Object.assign(config, input);
-
 		const values = await this.rpc('config/save', config);
 		this._updateConfig(values);
 	},
@@ -60,7 +65,10 @@ const Nooklog = {
 		return this._populate(await this.rpc('save', data, null));
 	},
 
-	async delete(id) {
+	async delete(id, confirm = true) {
+		if (confirm && !window.confirm('Are you sure you want to delete this bookmark?'))
+			return;
+
 		return this._populate(await this.rpc('delete', { id }));
 	},
 

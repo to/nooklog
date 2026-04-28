@@ -21,7 +21,8 @@ body {
 	}
 }
 
-.frame {
+html[data-view="sidepanel"],
+html[data-view="embed"] {
 	.UpdateForm {
 		header {
 			display: flex;

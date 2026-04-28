@@ -20,6 +20,7 @@ class UpdateForm extends Component {
 			html: this.$('[name=html]'),
 			preview: this.$('div.preview'),
 			modes: this.$$('[name=mode]'),
+			delete: this.$('button.delete'),
 			submit: this.$('button[type=submit]'),
 		};
 
@@ -44,6 +45,8 @@ class UpdateForm extends Component {
 
 		const ps = getSearchParams();
 		this.view = ps.view;
+		if (this.view)
+			document.documentElement.dataset.view = this.view;
 
 		this.setBookmark(ps);
 		this.pop(ps);
@@ -52,6 +55,7 @@ class UpdateForm extends Component {
 	ready() {
 		if (config['server.mode'] === 'readonly') {
 			$.hide(this.els.submit);
+			$.hide(this.els.delete);
 			this.els.memo.readOnly = true;
 			this.els.markdown.readOnly = true;
 			this.els.title.readOnly = true;
@@ -124,7 +128,17 @@ class UpdateForm extends Component {
 			await this._handleSubmit();
 		});
 
-		if (!isFrame) {
+		$.on(this.els.delete, 'click', async () => {
+			const id = this.els.id.value;
+			const url = this.els.url.value;
+			if (await Nooklog.delete(id, this.view !== 'popup')) {
+				hub.emit('UpdateForm:delete', { id, url });
+				bridge.emit('UpdateForm:delete', { id, url });
+				this.close();
+			}
+		});
+
+		if (this.view !== 'embed') {
 			$.on(window, 'beforeunload', e => {
 				if (this.isChanged()) {
 					// Browser's default message is shown
@@ -203,7 +217,7 @@ class UpdateForm extends Component {
 	}
 
 	async pop(ps) {
-		// EN: サイドパネルなど空でフォームが開かれたか？
+		// Check if the form was opened from the side panel
 		if (!ps.id && !ps.url)
 			return;
 
@@ -230,6 +244,8 @@ class UpdateForm extends Component {
 
 		if (bookmark.markdown != null)
 			this.updatePreview();
+
+		$.toggle(this.els.delete, !!bookmark.id);
 	}
 
 	getBookmark() {
@@ -263,7 +279,7 @@ class UpdateForm extends Component {
 			bridge.emit('UpdateForm:closeFrame');
 
 		if (this.view === 'popup')
-			window.parent.postMessage({ type: 'close' }, '*');
+			bridge.emit('UpdateForm:closePopup');
 
 		if (this.closeOnSave) {
 			if (this.view === 'sidepanel')
@@ -280,7 +296,7 @@ class UpdateForm extends Component {
 		const b = this.getBookmark();
 		await Nooklog.stash(b);
 
-		// EN: 編集されたURLをpopのキーとする
+		// Use the edited URL as the key for pop
 		const url = new URL(window.location.href);
 		if (b.url)
 			url.searchParams.set('url', b.url);

@@ -52,8 +52,20 @@
 	};
 	globalThis.bridge = bridge;
 
+	if (!isWorker) {
+		// Relay postMessage from iframes as a fallback
+		window.addEventListener('message', e => {
+			if (e.data?.type === 'Bridge:transfer')
+				bridge.emit('Bridge:transfer', e.data.message, { ...e.data, local: true });
+		});
+	}
+
 	// Forward message
 	bridge.on('Bridge:transfer', (_, meta) => {
+		// Is the extension robust and ready?
+		if (!chrome.runtime?.id)
+			return;
+
 		meta.tabId ??= tabId;
 		meta.windowId ??= windowId;
 		chrome.storage.session.set({

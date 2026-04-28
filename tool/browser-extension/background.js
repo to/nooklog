@@ -149,6 +149,10 @@ bridge.on('ConfigDialog:openShortcuts', () => {
 
 bridge.on('Nooklog:updateConfig', newConfig => {
 	const old = { ...config };
+
+	for (const k in config)
+		delete config[k];
+
 	Object.assign(config, newConfig);
 	chrome.storage.local.set({ config });
 
@@ -162,13 +166,11 @@ bridge.on('UpdateForm:refresh', async () => {
 });
 
 bridge.on('UpdateForm:save', async bookmark => {
-	checkedUrls.delete(bookmark.url);
+	updateIconByUrl(bookmark.url, true);
+});
 
-	const tabs = await chrome.tabs.query({});
-	for (const tab of tabs) {
-		if (tab.url === bookmark.url)
-			setIcon(tab, true);
-	}
+bridge.on('UpdateForm:delete', async ({ url }) => {
+	updateIconByUrl(url, false);
 });
 
 bridge.on('UpdateForm:detach', msg => openUpdateWindow(msg.url));
@@ -353,6 +355,16 @@ async function checkUrl(tab) {
 	}
 
 	setIcon(tab, !!cache.data);
+}
+
+async function updateIconByUrl(url, isBookmarked) {
+	checkedUrls.delete(url);
+
+	const tabs = await chrome.tabs.query({});
+	for (const tab of tabs) {
+		if (tab.url === url)
+			setIcon(tab, isBookmarked);
+	}
 }
 
 async function setIcon(tab, isBookmarked) {

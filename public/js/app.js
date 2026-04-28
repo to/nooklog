@@ -87,12 +87,12 @@ const bridge = (() => {
 			});
 		},
 		emit: (event, msg = {}, opt = {}) => {
-			let detail = { message: msg, tabId, windowId, ...opt };
-			if (!opt.local) {
-				detail = { event, ...detail };
-				event = 'Bridge:transfer';
-			}
-			window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail }));
+			// Relay via postMessage if the bridge script is missing in popups
+			let detail = { event, message: msg, tabId, windowId, ...opt };
+			if (window.parent === window)
+				window.dispatchEvent(new CustomEvent('Nooklog:Bridge:transfer', { detail }));
+			else
+				window.parent.postMessage({ type: 'Bridge:transfer', ...detail }, '*');
 		},
 	};
 })();
