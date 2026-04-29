@@ -1,12 +1,20 @@
 import 'dotenv/config';
 import crypto from 'node:crypto';
-import express, { response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import AssetCache from 'express-asset-file-cache-middleware';
-import { rateLimit } from 'express-rate-limit';
-import basicAuth from 'express-basic-auth';
+import Fastify from 'fastify';
+import fastifyStatic from '@fastify/static';
+import fastifyRateLimit from '@fastify/rate-limit';
+import cachedFetch from 'make-fetch-happen';
+import { RPCHandler } from '@orpc/server/fastify';
+import { OpenAPIHandler } from '@orpc/openapi/fastify';
+import { onError, ORPCError } from '@orpc/server';
+import { OpenAPIGenerator } from '@orpc/openapi';
+import {
+	ZodToJsonSchemaConverter,
+	experimental_ZodSmartCoercionPlugin as ZodSmartCoercionPlugin,
+} from '@orpc/zod/zod4';
 
 // Load config from database
 import database from './core/database.js';
@@ -16,11 +24,6 @@ import nooklog from './core/nooklog.js';
 import baseLog from './core/log.js';
 import _, { Warning } from './core/util.js';
 import { router } from './router.js';
-import { RPCHandler } from '@orpc/server/node';
-import { OpenAPIHandler } from '@orpc/openapi/node';
-import { onError, ORPCError } from '@orpc/server';
-import { OpenAPIGenerator } from '@orpc/openapi';
-import { ZodToJsonSchemaConverter, experimental_ZodSmartCoercionPlugin as ZodSmartCoercionPlugin } from '@orpc/zod/zod4';
 
 const log = baseLog.child({ module: 'server' });
 
@@ -32,142 +35,147 @@ const logFailure = (error, message, context = {}) => {
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const server = express();
+const server = Fastify({
+	logger: false,
+	trustProxy: true,
+	forceCloseConnections: true,
+	bodyLimit: 500 * 1024 * 1024, // 500MB
+});
 
-/* ---- Server Framework Setup ---- */
+/* ---- Security Headers / CORS ---- */
 
-server.set('json spaces', '\t');
-server.set('trust proxy', 1);
-server.use(express.json({ limit: '500mb' }));
-
-server.use((req, res, next) => {
-	log.trace({ method: req.method, url: req.url }, 'request received');
-
-	// Tighten security in iframe to ease opening
-	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-	if (req.query.view === 'embed') {
-		res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-		res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+server.addHook('onRequest', async (request, reply) => {
+	reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+	if (request.query.view === 'embed') {
+		reply.header('Cross-Origin-Embedder-Policy', 'require-corp');
+		reply.header('Cross-Origin-Opener-Policy', 'same-origin');
 	}
-	res.setHeader('Access-Control-Allow-Origin', '*');
-	res.setHeader('Access-Control-Allow-Private-Network', 'true');
-	next();
+	reply.header('Access-Control-Allow-Origin', '*');
+	reply.header('Access-Control-Allow-Private-Network', 'true');
 });
 
-/* ---- Dynamic Basic Authentication ---- */
+/* ---- Authentication & Rate Limit ---- */
 
-// Rate limiter tracking only incorrect password inputs
-const authLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000,
-	max: 100, // Calculated based on required resources (HTML/JS/CSS) (for slow networks)
-	skipSuccessfulRequests: true, // Do not count correct passwords
-	message: 'Too many failed login attempts. Please try again after 15 minutes.',
-	standardHeaders: true,
-	legacyHeaders: false,
-});
-
-// Basic Auth middleware
-const basicAuthenticator = basicAuth({
-	authorizer: (user, pass) => {
-		const stored = config['server.password'];
-		if (!stored)
-			return true;
-
-		// Safe compare to avoid timing attacks
-		const [salt, storedHash] = stored.split(':');
-		const hash = crypto.createHash('sha256').update(pass + salt).digest('hex');
-		return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(storedHash));
+await server.register(fastifyRateLimit, {
+	max: 5,
+	timeWindow: '15 minutes',
+	allowList: req => checkAuth(req)
+		|| req.url === '/api/alive'
+		|| req.url.startsWith('/api/favicon'),
+	errorResponseBuilder: (request, context) => {
+		log.warn({ ip: request.ip, url: request.url }, 'Rate limit exceeded');
+		return {
+			statusCode: 429,
+			error: 'Too Many Requests',
+			message: `Rate limit exceeded. Try again in ${context.after}`,
+		};
 	},
-	challenge: true,
-	realm: 'Nooklog',
 });
 
-server.use((req, res, next) => {
-	const password = config['server.password'];
-	if (!password || req.path === '/api/alive' || req.path.startsWith('/api/favicon'))
-		return next();
+server.addHook('preHandler', async (request, reply) => {
+	if (checkAuth(request)
+		|| request.url === '/api/alive'
+		|| request.url.startsWith('/api/favicon'))
+		return;
 
-	// Apply rate limit
-	authLimiter(req, res, () => {
-		basicAuthenticator(req, res, next);
-	});
+	reply.header('WWW-Authenticate', 'Basic realm="Nooklog"');
+	reply.status(401).send('Unauthorized');
 });
+
+function checkAuth(request) {
+	if (request.isAuthorized !== undefined)
+		return request.isAuthorized;
+
+	const stored = config['server.password'];
+	if (!stored)
+		return request.isAuthorized = true;
+
+	const auth = request.headers.authorization;
+	if (!auth)
+		return request.isAuthorized = false;
+
+	try {
+		const credentials = Buffer.from(auth.split(' ')[1], 'base64').toString();
+		const [_, password] = credentials.split(':');
+		const [salt, storedHash] = stored.split(':');
+		const hash = crypto.createHash('sha256')
+			.update(password + salt).digest('hex');
+		return request.isAuthorized = crypto.timingSafeEqual(
+			Buffer.from(hash), Buffer.from(storedHash));
+	} catch {
+		return request.isAuthorized = false;
+	}
+}
 
 /* ---- Static File Server ---- */
 
-server.use(express.static(path.join(__dirname, '../public'), {
+await server.register(fastifyStatic, {
+	root: path.join(__dirname, '../public'),
 	index: 'home.html',
-	setHeaders: (res, path) => {
-		if (path.endsWith('.woff2'))
-			res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+	setHeaders: (res, filePath) => {
+		if (filePath.endsWith('.woff2')) {
+			res.setHeader('Cache-Control',
+				'public, max-age=31536000, immutable');
+		}
 	},
-}));
+});
 
 /* ---- Favicon Proxy & Cache ---- */
 
 const faviconCacheDir = path.join(config['server.data.path'], 'favicon');
-if (!fs.existsSync(faviconCacheDir))
-	fs.mkdirSync(faviconCacheDir, { recursive: true });
 
-const assetCache = AssetCache({
-	cacheDir: faviconCacheDir,
-	maxSize: 10 * 1024 * 1024, // 10MB
+server.get('/api/favicon', async (request, reply) => {
+	const { domain } = request.query;
+	if (!domain)
+		return reply.status(400).send('Missing domain');
+
+	const src = `https://www.google.com/s2/favicons`
+		+ `?sz=16&domain=${domain}`;
+	const response = await cachedFetch(src, {
+		cachePath: faviconCacheDir,
+	});
+	const buffer = await response.buffer();
+	reply.header('Cache-Control', 'public, max-age=86400');
+	reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+	reply.type(response.headers.get('content-type') || 'image/png');
+	return buffer;
 });
-
-server.get('/api/favicon',
-	(req, res, next) => {
-		const domain = req.query.domain;
-		if (!domain)
-			return res.status(400).send('Missing domain');
-
-		req.url = `/${domain}`;
-		res.locals.fetchUrl = `https://www.google.com/s2/favicons?sz=16&domain=${domain}`;
-		next();
-	},
-	assetCache,
-	(req, res) => {
-		res.set({
-			'Content-Type': res.locals.contentType || 'image/png',
-			'Content-Length': res.locals.contentLength,
-			'Cache-Control': 'public, max-age=86400',
-			'Cross-Origin-Resource-Policy': 'cross-origin',
-		});
-		res.end(res.locals.buffer, 'binary');
-	},
-);
 
 /* ---- Component Loader ---- */
 
-server.get('/component/:component/:name.html.js', async (req, res) => {
-	const { component, name } = req.params;
+server.get('/component/:component/:name.html.js',
+	async (request, reply) => {
+		const { component, name } = request.params;
 
-	// Allow safe characters for filenames (strict alphabetical)
-	if (!/^[a-z]+$/i.test(component) || !/^[a-z]+$/i.test(name))
-		return res.status(400).send('Invalid component name');
+		// Allow safe characters for filenames (strict alphabetical)
+		if (!/^[a-z]+$/i.test(component) || !/^[a-z]+$/i.test(name))
+			return reply.status(400).send('Invalid component name');
 
-	const filePath = path.join(__dirname, '../public/component', component, `${name}.html`);
+		const filePath = path.join(__dirname,
+			'../public/component', component, `${name}.html`);
 
-	const stat = await fs.promises.stat(filePath);
-	const mtime = stat.mtime;
-	if (req.header('If-Modified-Since') && mtime <= new Date(req.header('If-Modified-Since')))
-		return res.status(304).end();
+		const stat = await fs.promises.stat(filePath);
+		if (request.headers['if-modified-since']
+			&& stat.mtime <= new Date(
+				request.headers['if-modified-since']))
+			return reply.status(304).send();
 
-	let html = await fs.promises.readFile(filePath, 'utf8');
-	html = html.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+		let html = await fs.promises.readFile(filePath, 'utf8');
+		html = html.replace(/`/g, '\\`').replace(/\$/g, '\\$');
 
-	res.setHeader('Last-Modified', mtime.toUTCString());
-	res.setHeader('Cache-Control', 'no-cache');
-	res.type('javascript');
-	res.send(`window.${name}_html = \`${html}\`;`);
-});
+		reply.header('Last-Modified', stat.mtime.toUTCString());
+		reply.header('Cache-Control', 'no-cache');
+		reply.type('application/javascript');
+		return `window.${name}_html = \`${html}\`;`;
+	});
 
 /* ---- Mount Nooklog Application Routes (oRPC) ---- */
 
-// Accept HTML or Text files
-server.post(['/api/import', '/rpc/import'],
-	express.text({ type: '*/*', limit: '500mb' }));
+// Let oRPC parse the body
+server.addContentTypeParser(
+	'*', (request, payload, done) => done(null, undefined));
 
-server.get('/api/alive', (req, res) => res.end());
+server.get('/api/alive', async () => '');
 
 const sharedInterceptors = [
 	onError((error, { request }) => {
@@ -198,29 +206,27 @@ const openapiHandler = new OpenAPIHandler(router, {
 });
 
 // oRPC Handlers
-server.all('/rpc*', async (request, response, next) => {
-	const { matched } = await rpcHandler.handle(request, response, {
+server.all('/rpc/*', async (request, reply) => {
+	const { matched } = await rpcHandler.handle(request, reply, {
 		prefix: '/rpc',
-		context: { request, response },
+		context: { request: request.raw, response: reply.raw },
 	});
-	if (matched)
-		return;
-	next();
+	if (!matched)
+		reply.status(404).send('Not found');
 });
 
-server.all('/api*', async (request, response, next) => {
-	const { matched } = await openapiHandler.handle(request, response, {
+server.all('/api/*', async (request, reply) => {
+	const { matched } = await openapiHandler.handle(request, reply, {
 		prefix: '/api',
-		context: { request, response },
+		context: { request: request.raw, response: reply.raw },
 	});
-	if (matched)
-		return;
-	next();
+	if (!matched)
+		reply.status(404).send('Not found');
 });
 
 // Dynamic OpenAPI spec generation
 let cachedOpenAPI = null;
-server.get('/openapi.json', async (req, res) => {
+server.get('/openapi.json', async () => {
 	if (!cachedOpenAPI) {
 		const generator = new OpenAPIGenerator({
 			schemaConverters: [new ZodToJsonSchemaConverter()],
@@ -234,37 +240,32 @@ server.get('/openapi.json', async (req, res) => {
 			filter: ({ contract }) => !contract['~orpc'].route.tags?.includes('internal'),
 		});
 	}
-	res.json(cachedOpenAPI);
+	return cachedOpenAPI;
 });
 
 /* ---- Server Lifecycle ---- */
 
-// Allow some delay after SIGINT from pm2 restart
-if (process.env.restart_time > 0)
-	await _.wait(2000);
-
 await database.initialize();
 await nooklog.initialize();
 
-const instance = server.listen(config['server.port'], '::', async () => {
-	log.info({ port: config['server.port'], host: '::' }, 'server started');
+await server.listen({
+	port: config['server.port'],
+	host: '::',
 });
+log.info({ port: config['server.port'], host: '::' }, 'server started');
 
 // Graceful Shutdown
 let shutdown = async signal => {
 	shutdown = () => { };
-
 	log.info({ signal }, 'shutdown signal received');
 
-	// Wait for HTTP server to stop
-	instance?.closeAllConnections();
-	if (instance)
-		await new Promise(resolve => instance.close(resolve));
-	log.info('http server closed');
-
-	// Release resources
+	// Release resources first (priority)
 	await nooklog.dispose();
 	log.info('nooklog disposed successfully');
+
+	// Then close server
+	await server.close();
+	log.info('http server closed');
 
 	process.exit(0);
 };
@@ -272,6 +273,7 @@ let shutdown = async signal => {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('message', msg => {
+	log.info({ msg }, 'process received message');
 	if (msg === 'shutdown')
 		shutdown('PM2 shutdown message');
 });

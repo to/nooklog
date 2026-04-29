@@ -2,8 +2,6 @@ module.exports = {
 	apps: [{
 		name: 'nooklog',
 		script: 'server/server.js',
-		// Suppress punycode (express-asset-file-cache-middleware) warnings
-		node_args: ['--no-deprecation'],
 		watch: false,
 		autorestart: true,
 		ignore_watch: [
