@@ -137,6 +137,9 @@ export function process(url, html) {
 	});
 	document.querySelectorAll('img').forEach(el => {
 		const src = el.getAttribute('src');
+		if (src?.startsWith('data:'))
+			return el.remove();
+
 		if (src)
 			el.setAttribute('src', new URL(src, url).href);
 	});

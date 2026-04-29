@@ -7,6 +7,7 @@ class UpdateForm extends Component {
 		this.els = {
 			form: this.$('form'),
 			detach: this.$('button.detach'),
+			refresh: this.$('button.refresh'),
 			close: this.$('button.close'),
 			id: this.$('[name=id]'),
 			url: this.$('[name=url]'),
@@ -19,6 +20,7 @@ class UpdateForm extends Component {
 			html: this.$('[name=html]'),
 			preview: this.$('div.preview'),
 			modes: this.$$('[name=mode]'),
+			delete: this.$('button.delete'),
 			submit: this.$('button[type=submit]'),
 		};
 
@@ -41,15 +43,19 @@ class UpdateForm extends Component {
 
 		this._setSubmitting(false);
 
-		this.setBookmark(getSearchParams());
+		const ps = getSearchParams();
+		this.view = ps.view;
+		if (this.view)
+			document.documentElement.dataset.view = this.view;
 
-		Nooklog.pop(getSearchParams())
-			.then(b => this.setBookmark(b));
+		this.setBookmark(ps);
+		this.pop(ps);
 	}
 
 	ready() {
 		if (config['server.mode'] === 'readonly') {
 			$.hide(this.els.submit);
+			$.hide(this.els.delete);
 			this.els.memo.readOnly = true;
 			this.els.markdown.readOnly = true;
 			this.els.title.readOnly = true;
@@ -59,9 +65,16 @@ class UpdateForm extends Component {
 		this.els.rating.toggle(
 			['stars', 'both'].includes(config['client.ratingInputMode']));
 		this.els.tags.focus();
+
+		const isSidePanel = this.view === 'sidepanel';
+		const isEmbed = this.view === 'embed';
+		$.toggle(this.els.refresh, isSidePanel);
+		$.toggle(this.els.close, isEmbed);
+		$.toggle(this.els.detach, isEmbed);
 	}
 
 	bindEvents() {
+		$.on(this.els.refresh, 'click', () => this.refresh());
 		$.on(this.els.detach, 'click', () => this.detach());
 		$.on(this.els.close, 'click', () => this.close());
 
@@ -70,6 +83,22 @@ class UpdateForm extends Component {
 			this.clear();
 			this.setBookmark(bookmark);
 		});
+
+		if (this.view === 'sidepanel') {
+			this.closeOnSave = config['extension.closeSidepanelOnSave'];
+
+			bridge.on('Background:stashComplete', msg => {
+				this.pop(msg);
+			}, { window: true });
+
+			const onVisible = () => {
+				if (document.visibilityState === 'visible')
+					this.refresh();
+			};
+			onVisible();
+
+			document.addEventListener('visibilitychange', onVisible);
+		}
 
 		bridge.on('Content:select', msg => {
 			// Insert selected text into text area
@@ -84,7 +113,10 @@ class UpdateForm extends Component {
 
 			if (config['extension.focusMemoOnSelection'])
 				this.els.memo.focus();
-		});
+		}, {
+			embed: { tab: true },
+			window: {},
+		}[this.view] || { window: true });
 
 		$.on(document, 'keydown', async e => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter')
@@ -96,7 +128,17 @@ class UpdateForm extends Component {
 			await this._handleSubmit();
 		});
 
-		if (!isFrame) {
+		$.on(this.els.delete, 'click', async () => {
+			const id = this.els.id.value;
+			const url = this.els.url.value;
+			if (await Nooklog.delete(id, this.view !== 'popup')) {
+				hub.emit('UpdateForm:delete', { id, url });
+				bridge.emit('UpdateForm:delete', { id, url });
+				this.close();
+			}
+		});
+
+		if (this.view !== 'embed') {
 			$.on(window, 'beforeunload', e => {
 				if (this.isChanged()) {
 					// Browser's default message is shown
@@ -112,7 +154,7 @@ class UpdateForm extends Component {
 		$.observeResize(this.els.form, entry => {
 			// Called with height 0 when showing starts
 			const height = entry.contentRect.height;
-			const isMini = height <= 360;
+			const isMini = height <= 380;
 			if (!height || this.isMini === isMini)
 				return;
 
@@ -168,6 +210,21 @@ class UpdateForm extends Component {
 		this.bookmark = {};
 	}
 
+	refresh() {
+		// TOFIX: 変更チェック
+		this.clear();
+		bridge.emit('UpdateForm:refresh');
+	}
+
+	async pop(ps) {
+		// Check if the form was opened from the side panel
+		if (!ps.id && !ps.url)
+			return;
+
+		const bookmark = await Nooklog.pop(ps);
+		this.setBookmark(bookmark);
+	}
+
 	// Request base parameters / existing data / editing data
 	setBookmark(bookmark) {
 		if (!bookmark)
@@ -187,6 +244,8 @@ class UpdateForm extends Component {
 
 		if (bookmark.markdown != null)
 			this.updatePreview();
+
+		$.toggle(this.els.delete, !!bookmark.id);
 	}
 
 	getBookmark() {
@@ -216,17 +275,33 @@ class UpdateForm extends Component {
 	}
 
 	close() {
-		bridge.emit('UpdateForm:close', {}, true);
-		if (this.closeOnSave)
+		if (this.view === 'embed')
+			bridge.emit('UpdateForm:closeFrame');
+
+		if (this.view === 'popup')
+			bridge.emit('UpdateForm:closePopup');
+
+		if (this.closeOnSave) {
+			if (this.view === 'sidepanel')
+				bridge.emit('UpdateForm:closePanel');
+
 			window.close();
-		else
+		} else {
 			app.notify('Saved');
+		}
 	}
 
 	async detach() {
 		// Save the edited content
-		await Nooklog.stash(this.getBookmark());
-		bridge.emit('UpdateForm:detach', {}, true);
+		const b = this.getBookmark();
+		await Nooklog.stash(b);
+
+		// Use the edited URL as the key for pop
+		const url = new URL(window.location.href);
+		if (b.url)
+			url.searchParams.set('url', b.url);
+
+		bridge.emit('UpdateForm:detach', { url: url.href });
 	}
 
 	async _handleSubmit() {
@@ -235,11 +310,9 @@ class UpdateForm extends Component {
 
 		this._setSubmitting(true);
 
-		const data = this.getBookmark();
+		this.setEdited();
 
-		// Record that user modifications were made
-		if (data.markdown !== this.bookmark.markdown)
-			data.markdown = this.setEdited(data.markdown);
+		const data = this.getBookmark();
 
 		const bookmark = await Nooklog.save(data);
 		this._setSubmitting(false);
@@ -252,14 +325,17 @@ class UpdateForm extends Component {
 		this.bookmark = data;
 
 		hub.emit('UpdateForm:save', bookmark);
-		bridge.emit('UpdateForm:save', bookmark, true);
+		bridge.emit('UpdateForm:save', bookmark);
 		this.close();
 	}
 
-	setEdited(markdown) {
-		return markdown.replace(
-			new RegExp(`${UpdateForm.USER_MARK}?$`),
-			UpdateForm.USER_MARK);
+	setEdited() {
+		// Record that user modifications were made
+		if (this.els.markdown.value !== this.bookmark.markdown) {
+			this.els.markdown.value =
+				this.els.markdown.value.replaceAll(UpdateForm.USER_MARK, '') +
+				UpdateForm.USER_MARK;
+		}
 	}
 }
 

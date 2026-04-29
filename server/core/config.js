@@ -15,6 +15,8 @@ const config = {
 	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both', 'none'
 	'client.autoCompleteTags': false, // Auto-confirm when narrowed down enough
 	'extension.serverAddress': 'http://localhost:5050',
+	'extension.actionBehavior': 'embed', // 'embed', 'sidepanel', 'window', 'save'
+	'extension.closeSidepanelOnSave': false,
 	'extension.selectionDelimiter': '/',
 	'extension.autoAppendSelection': true,
 	'extension.openSearchInForeground': true,

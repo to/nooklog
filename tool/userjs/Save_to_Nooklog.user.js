@@ -7,6 +7,7 @@
 //
 // @match        *://*/*
 // @noframes
+// @icon         https://cdn.jsdelivr.net/gh/to/nooklog@main/public/image/icon_32.png
 //
 // @connect      localhost
 // @connect      *

@@ -21,6 +21,10 @@ class ResultTable extends Component {
 			this.$(`.tr[data-id="${bookmark.id}"]`).classList.add('is-selected');
 		});
 
+		hub.on('UpdateForm:delete', ({ id }) => {
+			this.$(`.tr[data-id="${id}"]`)?.remove();
+		});
+
 		this.addEventListener('change', e => {
 			const el = e.target.closest('nl-rating');
 			if (!el)
@@ -157,9 +161,6 @@ class ResultTable extends Component {
 	}
 
 	async _delete(id, row) {
-		if (!confirm('Are you sure you want to delete this bookmark?'))
-			return;
-
 		if (await Nooklog.delete(id))
 			row.remove();
 	}

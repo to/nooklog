@@ -90,12 +90,12 @@ Tursoは ローカルと全く同じように リモートにあるSQLiteデー�
 **⚙️ Open API**\
 [Open API(Scalar)](https://p01--nooklog-demo--dxnz489y9tm9.code.run/openapi.html)
 
-**⚙️ バッチ変更**
+**⚙️ バッチ変更**\
 タグの一括置換や URLの整形 クローラによるコンテンツの補完など データベースに対する一括処理は 以下を確認してください。 エージェントさんに読んでもらい スクリプトを生成してもらうと かんたんです。
 
-**[📖 メンテナンスガイド](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-maintenance/SKILL_ja.md)**
+**[📖 メンテナンスガイド](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-maintenance/SKILL_ja.md)**
 
-**⚙️ user.js/ユーザースタイルによるパッチ**
+**⚙️ user.js/ユーザースタイルによるパッチ**\
 user.js(Tampermonkey/Greasemonkey)で 自由にに機能を追加できます。以下のサンプルスクリプトを 参考にしてください。\
 
 - [Auto_Save.user.js](../tool/userjs/Auto_Save.user.js) (特定のサイトの閲覧を自動的にバックグラウンドで保存する。 ログ。)
@@ -127,7 +127,7 @@ npm start
 
 dockerや pm2や クラウドへの配備など 詳細なインストール方法は以下を確認してください。
 
-**[📖 インストールガイド](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-installation/SKILL_ja.md)**
+**[📖 インストールガイド](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-installation/SKILL_ja.md)**
 
 ### 技術スタック
 

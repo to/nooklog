@@ -20,8 +20,6 @@ module.exports = {
 		env: {
 			NODE_ENV: 'development',
 		},
-		// Wait for the termination of native modules (e.g. llama.cpp) and batch job chunks
-		kill_timeout: 5000,
 		shutdown_with_message: true, // Receive shutdown
 		restart_delay: 500, // Auto restart interval
 		listen_timeout: 10000, // Time until considered normally started

@@ -88,14 +88,14 @@ Can be hidden if unnecessary.
 Turso is a wonderful service that allows access to SQLite databases on remote servers just like local ones.\
 Synchronize one data set between two locations like home and office at a low price.
 
-**⚙️ Open API**
+**⚙️ Open API**\
 [Open API (Scalar)](https://p01--nooklog-demo--dxnz489y9tm9.code.run/openapi.html)
 
 **⚙️ Batch Maintenance**\
 For batch processing of the database such as bulk tag replacement  URL formatting or content interpolation by crawlers  please check the following. \
 It is easy if you ask an AI agent to read it and generate a script.
 
-**[📖 Maintenance Guide](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-maintenance/SKILL.md)**
+**[📖 Maintenance Guide](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-maintenance/SKILL.md)**
 
 **⚙️ Patching with user.js / User Styles**\
 You can freely add features with user.js (Tampermonkey/Greasemonkey). Refer to the following sample scripts.
@@ -106,12 +106,12 @@ You can freely add features with user.js (Tampermonkey/Greasemonkey). Refer to t
 
 You can also freely change the appearance according to your preference with User Styles.
 
-**⚙️ Import**
+**⚙️ Import**\
 You can import bookmarks in the following formats:\
 Bookmark HTML (Chrome/Firefox/Hatena) / Pinboard / Linkwarden / Karakeep / Session Buddy / Tab Session Manager\
 Feel free to import your data into Nooklog and see how it looks!
 
-**⚙️ Export**
+**⚙️ Export**\
 You can export in the standard bookmark HTML format  so you can switch to other services at any time.\
 You can also export in JSON format containing the complete text. There is no worry about losing access to your precious data ;-)\
 You can also download only the content text (Markdown) as a zip file.\
@@ -129,7 +129,7 @@ npm start
 
 For detailed installation methods including docker  pm2 or cloud deployment  please check here:
 
-**[📖 Installation Guide](https://github.com/to/nooklog/blob/main/.agent/skills/nooklog-installation/SKILL.md)**
+**[📖 Installation Guide](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-installation/SKILL.md)**
 
 ### Tech Stack
 

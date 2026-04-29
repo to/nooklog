@@ -45,7 +45,7 @@ server.use((req, res, next) => {
 
 	// Tighten security in iframe to ease opening
 	res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-	if (req.query.embed === 'true') {
+	if (req.query.view === 'embed') {
 		res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
 		res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
 	}
@@ -262,14 +262,11 @@ let shutdown = async signal => {
 		await new Promise(resolve => instance.close(resolve));
 	log.info('http server closed');
 
-	// Release resources (Llama/DB)
+	// Release resources
 	await nooklog.dispose();
 	log.info('nooklog disposed successfully');
 
-	// NEVER trigger SIGINT/SIGKILL/exit(0)
-	// (Let PM2 wait without reacting to shutdown)
-	if (!process.env.pm_uptime)
-		process.kill(process.pid, 'SIGINT');
+	process.exit(0);
 };
 
 process.on('SIGINT', () => shutdown('SIGINT'));

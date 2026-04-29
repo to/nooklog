@@ -1,16 +1,17 @@
 {
 	"manifest_version": 3,
 	"name": "Nooklog",
-	"version": "0.1",
-	"description": "Nooklog Official Extension",
-	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsTR19fUKu5nmCLGX2CKrpvFYVZHwlztwO2eQXrx+VroPM/mnSaSJ82vaIjtjmMN4yJdBJCXFt1m0JLK5rZKGYKqS1JRwI6sbliwuFsVAUJikfSs6R0W7JtdiqrTBhPEF/CZPIRYEcbw2JRJ1wMtSL64WXIRtYz55hgu9qckfBWslA1p1ViivXuLPO8dmijPNprKgrrX7vAMQ3sui2sNNSAEPyC+qmFRZdT0zDwjbrukrxKgwS5HBt/i/Dy9QUuNasbtMiEWPZ2S6dszGM5/BmdrNRz4EZSIuqlW096HLlWwkFWMZZgiiLDZ3KgPnOUlJIoyAzEdbrreO89VhzAbOKQIDAQAB",
+	"version": "0.4.1",
+	"description": "Nooklog: Save pages to your self-hosted bookmarking system instantly.",
+	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyXIL8ndih0YHQAVcatd/nvkbaX7bnzSt0NYqf+DZm9WEqqSCmFos0uCsmhi8WMlGCvBrCQl0+sEB777ImtmcpXsJvROzBimZnmK4ccbmcHSb1lkXk/uL99d7Hwt/hTSDtV10g1THZ0Rhz4kK6nce7XuAvbEY4gx4aBejMVEm28KnMcKuYq2laAPNBEGMDxbRy/RSjuez5taGmWvs/ht63BecpHwEGwFJc5wFLoZB/ATDXH5tVSn0lHFcV0Ve1Pp4lK0TVmYxctlFvQuM7G6IWgwDtcv6krryKbUM9mYguPgKX5HsssFbO89bNZLkTLSVNfjRE1G0SgVf7kNT9ygxKwIDAQAB",
 	"permissions": [
 		"tabs",
 		"contextMenus",
 		"scripting",
 		"activeTab",
 		"system.display",
-		"storage"
+		"storage",
+		"sidePanel"
 	],
 	"host_permissions": [
 		"<all_urls>"
@@ -18,6 +19,9 @@
 	"background": {
 		"service_worker": "background.js",
 		"type": "module"
+	},
+	"side_panel": {
+		"default_path": "content/frame.html"
 	},
 	"options_ui": {
 		"page": "page/setting.html",
@@ -36,18 +40,32 @@
 		"128": "image/icon_128.png"
 	},
 	"commands": {
-		"open-update-page": {
+		"open-update-frame": {
 			"suggested_key": {
 				"default": "Ctrl+Shift+E",
 				"mac": "Command+Shift+E"
 			},
-			"description": "Open update page"
+			"description": "Embed edit frame"
+		},
+		"open-update-panel": {
+			"suggested_key": {
+				"default": "Ctrl+Shift+S",
+				"mac": "Command+Shift+S"
+			},
+			"description": "Open edit side panel"
+		},
+		"open-update-window": {
+			"description": "Open edit window"
+		},
+		"quick-save": {
+			"description": "Quick Save this page"
 		}
 	},
 	"web_accessible_resources": [
 		{
 			"resources": [
-				"content/content.js",
+				"content/captureSelection.js",
+				"content/embedUpdateFrame.js",
 				"content/frame.html",
 				"content/frame.js",
 				"content/bridge.js"

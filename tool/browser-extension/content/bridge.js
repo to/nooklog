@@ -1,79 +1,92 @@
-var isWorker = typeof window === 'undefined';
-if (isWorker) {
-	const listeners = {};
-	globalThis.window = {
-		addEventListener: (event, listener) => {
-			listeners[event] ??= [];
-			listeners[event].push({
-				listener,
+(ctx => {
+	// Allow coexistence of registerContentScripts and executeScript instances
+	const isWorker = typeof window === 'undefined';
+	if (isWorker) {
+		// Prevent duplicate executions
+		if (globalThis['content/bridge.js'])
+			return;
+
+		globalThis['content/bridge.js'] = true;
+
+		const listeners = {};
+		globalThis.window = {
+			addEventListener: (event, listener) => {
+				listeners[event] ??= [];
+				listeners[event].push(listener);
+			},
+			dispatchEvent: e => {
+				listeners[e.type]?.forEach(l => l(e));
+			},
+		};
+	}
+
+	const ps = isWorker ? null : new URLSearchParams(window.location.search);
+	const tabId = ctx?.tabId || Number(ps?.get('tabId') || 0);
+	const windowId = ctx?.windowId || Number(ps?.get('windowId') || 0);
+
+	const bridge = {
+		on: (event, listner, opt = {}) => {
+			window.addEventListener(`Nooklog:${event}`, ({ detail }) => {
+				// Is the extension robust and ready?
+				if (!chrome.runtime?.id)
+					return;
+
+				if (opt.tab && detail.tabId !== tabId)
+					return;
+
+				if (opt.window && detail.windowId !== windowId)
+					return;
+
+				listner(detail.message, detail);
 			});
 		},
-		dispatchEvent: e => {
-			listeners[e.type]?.forEach(l => {
-				l.listener(e);
-			});
+
+		emit: (event, msg = {}, opt = {}) => {
+			let detail = { message: msg, ...opt };
+			if (!opt.local) {
+				detail = { event, ...detail };
+				event = 'Bridge:transfer';
+			}
+			window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail }));
 		},
 	};
-}
+	globalThis.bridge = bridge;
 
-var SESSION_GLOBAL = 'session:global:';
-var sessionId = isWorker ?
-	SESSION_GLOBAL :
-	(new URLSearchParams(window.location.search).get('sessionId') || SESSION_GLOBAL);
-var bridge = {
-	on: (event, listner, useSession) => {
-		window.addEventListener(`Nooklog:${event}`, e => {
-			// Is the extension robust and ready?
-			if (chrome.runtime?.id && (!useSession || sessionId))
-				listner(e.detail);
+	if (!isWorker) {
+		// Relay postMessage from iframes as a fallback
+		window.addEventListener('message', e => {
+			if (e.data?.type === 'Bridge:transfer')
+				bridge.emit('Bridge:transfer', e.data.message, { ...e.data, local: true });
 		});
-	},
-	emit: (event, msg = {}, transfer = false) => {
-		if (transfer) {
-			msg.event = event;
-			event = 'Bridge:transfer';
-		}
-		window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail: msg }));
-	},
-};
-globalThis.bridge = bridge;
-
-(() => {
-	// Prevent duplicate executions
-	if (globalThis.nooklogBridgeLoaded)
-		return;
-
-	globalThis.nooklogBridgeLoaded = true;
-
-	bridge.on('Content:initialize', msg => sessionId = msg.sessionId);
-
-	bridge.on('Nooklog:updateConfig', msg => {
-		chrome.storage.local.set({ config: msg.config });
-	});
+	}
 
 	// Forward message
-	bridge.on('Bridge:transfer', msg => {
-		chrome.storage.local.set({
-			[sessionId + 'message:' + Math.random().toString(36).slice(-8)]: msg,
+	bridge.on('Bridge:transfer', (_, meta) => {
+		// Is the extension robust and ready?
+		if (!chrome.runtime?.id)
+			return;
+
+		meta.tabId ??= tabId;
+		meta.windowId ??= windowId;
+		chrome.storage.session.set({
+			['bridge:' + Math.random().toString(36).slice(-8)]: meta,
 		});
-	}, true);
+	});
 
 	// Receive message
 	// (Service worker also started)
 	chrome.storage.onChanged.addListener((changes, area) => {
-		if (area !== 'local' || !sessionId)
+		if (area !== 'session')
 			return;
 
-		for (const [key, { newValue }] of Object.entries(changes)) {
-			if (!newValue || !key.includes(':message:'))
+		for (const [key, { newValue: v }] of Object.entries(changes)) {
+			if (!v || !key.startsWith('bridge:'))
 				continue;
 
-			// Intercept all if worker, otherwise only to myself
-			if (isWorker || key.startsWith(sessionId)) {
-				const { event, ...msg } = newValue;
-				bridge.emit(event, msg);
-				chrome.storage.local.remove(key);
-			}
+			// Events propagate to all listeners even if removed
+			chrome.storage.session.remove(key);
+
+			bridge.emit(v.event, v.message, { ...v, local: true });
 		}
 	});
-})();
+})(...(globalThis.window?.args || globalThis.args || []));

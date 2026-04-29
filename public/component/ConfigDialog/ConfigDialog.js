@@ -40,7 +40,7 @@ class ConfigDialog extends Component {
 		if (this.autoOpen)
 			this.showModal();
 
-		bridge.emit('ConfigDialog:shortcuts', {}, true);
+		bridge.emit('ConfigDialog:shortcuts');
 
 		this._updateBookmarklet();
 		this._updateEmbeddingVisibility();
@@ -147,7 +147,7 @@ class ConfigDialog extends Component {
 
 		$.on(this.$('.shortcut-key'), 'click', e => {
 			e.preventDefault();
-			bridge.emit('ConfigDialog:openShortcuts', {}, true);
+			bridge.emit('ConfigDialog:openShortcuts');
 		});
 
 		bridge.on('Background:shortcuts', msg => {

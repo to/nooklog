@@ -69,18 +69,33 @@ hub.once('Nooklog:load', () => {
 	updateTint();
 });
 
-const bridge = {
-	on: (event, listner) => {
-		window.addEventListener(`Nooklog:${event}`, e => listner(e.detail));
-	},
-	emit: (event, msg = {}, transfer = false) => {
-		if (transfer) {
-			msg.event = event;
-			event = 'Bridge:transfer';
-		}
-		window.dispatchEvent(new CustomEvent(`Nooklog:${event}`, { detail: msg }));
-	},
-};
+const bridge = (() => {
+	const ps = getSearchParams();
+	const tabId = Number(ps.tabId || 0);
+	const windowId = Number(ps.windowId || 0);
+
+	return {
+		on: (event, listner, opt = {}) => {
+			window.addEventListener(`Nooklog:${event}`, ({ detail }) => {
+				if (opt.tab && detail.tabId !== tabId)
+					return;
+
+				if (opt.window && detail.windowId !== windowId)
+					return;
+
+				listner(detail.message, detail);
+			});
+		},
+		emit: (event, msg = {}, opt = {}) => {
+			// Relay via postMessage if the bridge script is missing in popups
+			let detail = { event, message: msg, tabId, windowId, ...opt };
+			if (window.parent === window)
+				window.dispatchEvent(new CustomEvent('Nooklog:Bridge:transfer', { detail }));
+			else
+				window.parent.postMessage({ type: 'Bridge:transfer', ...detail }, '*');
+		},
+	};
+})();
 
 const eventSource = new EventSource('/api/event');
 eventSource.onmessage = event => {

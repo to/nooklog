@@ -1,8 +1,3 @@
-// Inline scripts are rejected by Chrome extension security policies
-const isFrame = window.parent !== window;
-if (isFrame)
-	document.documentElement.classList.add('frame');
-
 const config = Object.assign({
 	'client.theme': 'system',
 }, JSON.parse(localStorage.config || '{}'));
