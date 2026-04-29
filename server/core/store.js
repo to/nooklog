@@ -365,7 +365,7 @@ const store = {
 		let sql;
 		const args = [];
 
-		if (useVectorIndex) {
+		if (useVectorIndex && config['database.useVectorIndex']) {
 			// ANN Search using index
 			// We fetch a larger number of chunks (limit * 5) to account for multiple chunks per bookmark
 			const k = limit === null ? 300 : limit * 5;

@@ -4,12 +4,18 @@
 			<input type="text" name="url" placeholder="URL">
 			<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
 		</div>
-		<div class="vector invisible">
-			<div class="select-flat flex items-center gap-s">
+		<div class="invisible vector flex items-center gap-s">
+			<div class="select-flat">
 				<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
 				<label><input type="checkbox" name="mode" value="vector">Vector</label>
+			</div>
+			<div class="radio-flat flex">
+				<label title="Fast Search">
+					<input type="radio" name="useVectorIndex" value="true">
+					<span class="icon">bolt</span>
+				</label>
 				<label title="Deep Search">
-					<input type="checkbox" name="deep">
+					<input type="radio" name="useVectorIndex" value="false">
 					<span class="icon">database_search</span>
 				</label>
 			</div>

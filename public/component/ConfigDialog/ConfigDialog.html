@@ -224,6 +224,19 @@
 			</div>
 
 			<div data-vector-enabled="true">
+				<label>Use Vector Index</label>
+				<label class="toggle">
+					<input type="checkbox" name="database.useVectorIndex"><span></span>
+				</label>
+				<span class="description"><span class="value">Enabled: </span>Fast sub-second search using ANN (Approximate).
+					High speed with a slight trade-off in accuracy.</span>
+				<span class="description"><span class="value">Disabled: </span>Slower brute-force search. Ensures maximum accuracy
+					and reduces storage to ~1/6.</span>
+				<span class="description error none">Building or removing the index can take several hours depending on the data
+					volume.</span>
+			</div>
+
+			<div data-vector-enabled="true">
 				<label>OpenAI (Ollama) Base URL</label>
 				<input type="text" name="sentence.vector.baseUrl" placeholder="http://localhost:11434/">
 				<span class="description">Appends <code>/v1/embeddings</code> to the base URL.</span>

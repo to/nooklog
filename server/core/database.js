@@ -158,11 +158,14 @@ const database = {
 		const enabled = config['sentence.vector.enabled'];
 		const current = config['sentence.vector.model'];
 		const old = await this.getMeta('vector_model');
+
+		// Handle model change (Re-create table)
 		if (enabled && old !== current) {
 			const batch = ['DROP TABLE IF EXISTS bookmark_vector'];
 			if (current === '') {
 				log.info('initializing vector stub table');
-				batch.push('CREATE TABLE bookmark_vector (bookmark_id INTEGER, vector F32_BLOB(768))');
+				batch.push(`CREATE TABLE bookmark_vector (
+					row_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id INTEGER, vector F32_BLOB(768))`);
 			} else {
 				// Avoid CASCADE to prevent child vector loss on REPLACE
 				const dimension = await sentence.getDimension();
@@ -178,12 +181,25 @@ const database = {
 						position INTEGER,
 						vector F32_BLOB(${dimension}) -- dimension depends on the model
 					)`,
-					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
-					`CREATE INDEX bookmark_vector_idx ON bookmark_vector (libsql_vector_idx(vector, 'metric=cosine', 'max_neighbors=32', 'compress_neighbors=float8'))`);
+					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
 			}
 			await this.client.batch(batch, 'write');
-
 			await this.setMeta('vector_model', current);
+		}
+
+		// Sync index state (Check actual schema discrepancy)
+		const useIndex = config['database.useVectorIndex'];
+		const rs = await this.client.execute(
+			"SELECT 1 FROM sqlite_master WHERE type='index' AND name='bookmark_vector_idx'");
+		const indexExists = rs.rows.length > 0;
+		if (useIndex && !indexExists) {
+			log.info('creating vector index (ANN enabled)');
+			await this.client.execute(
+				`CREATE INDEX bookmark_vector_idx ON bookmark_vector (
+						libsql_vector_idx(vector, 'metric=cosine', 'max_neighbors=16', 'compress_neighbors=float8'))`);
+		} else if (!useIndex && indexExists) {
+			log.info('dropping vector index (ANN disabled)');
+			await this.client.execute('DROP INDEX IF EXISTS bookmark_vector_idx');
 		}
 	},
 

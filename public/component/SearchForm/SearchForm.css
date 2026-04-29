@@ -9,6 +9,10 @@
 		.icon{
 			font-size: var(--font-size-s);
 		}
+
+		.radio-flat {
+			gap: var(--space-2s);
+		}
 	}
 
 	.count {

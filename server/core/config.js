@@ -33,6 +33,7 @@ const config = {
 	'sentence.vector.limitSize': 2048,
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
+	'database.useVectorIndex': true, // Use ANN index (fast) or brute-force (accurate)
 	'database.saveHTML': false,
 };
 
