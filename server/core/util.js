@@ -16,6 +16,13 @@ export const merge = (target = {}, source) => {
 	return target;
 };
 
+export const omit = (obj, keys) => {
+	const res = { ...obj };
+	for (const k of keys)
+		delete res[k];
+	return res;
+};
+
 // Measure execution time without modifying original code
 export const bench = async (task, label = 'bench') => {
 	const start = performance.now();
@@ -103,6 +110,7 @@ export const parseFrontmatter = (text = '') => {
 
 export default {
 	merge,
+	omit,
 	bench,
 	parseNumber,
 	retry,

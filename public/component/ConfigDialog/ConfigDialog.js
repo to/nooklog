@@ -174,6 +174,15 @@ class ConfigDialog extends Component {
 			this.$('input[name="server.apiKey"]').value = config['server.apiKey'];
 			app.notify('New API Key generated.', 'info');
 		});
+
+		$.on(this.$('button.backfill-content'), 'click', async e => {
+			const limit = +this.$('.backfill-limit').value || 100;
+			const { count } = await Nooklog.backfillContent({ limit });
+			if (count > 0)
+				app.notify(`Backfill started for ${count} bookmarks.`, 'info');
+			else
+				app.notify('All bookmarks are already up to date.', 'info');
+		});
 	}
 
 	showModal() {

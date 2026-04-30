@@ -136,6 +136,26 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 	}
 });
 
+// Synchronize and monitor config changes
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area !== 'local' || !changes.config?.newValue)
+		return;
+
+	const values = changes.config.newValue;
+	const needsRegister =
+		values['extension.serverAddress'] !== config['extension.serverAddress'] ||
+		values['extension.autoAppendSelection'] !== config['extension.autoAppendSelection'];
+
+	Object.assign(config, values);
+
+	if (needsRegister)
+		registerMessagingBridge();
+});
+
+bridge.on('Nooklog:updateConfig', values => {
+	chrome.storage.local.set({ config: values });
+});
+
 bridge.on('ConfigDialog:shortcuts', async msg => {
 	const commands = await chrome.commands.getAll();
 	bridge.emit('Background:shortcuts', {
@@ -145,20 +165,6 @@ bridge.on('ConfigDialog:shortcuts', async msg => {
 
 bridge.on('ConfigDialog:openShortcuts', () => {
 	chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
-});
-
-bridge.on('Nooklog:updateConfig', newConfig => {
-	const old = { ...config };
-
-	for (const k in config)
-		delete config[k];
-
-	Object.assign(config, newConfig);
-	chrome.storage.local.set({ config });
-
-	if (old['extension.serverAddress'] !== config['extension.serverAddress'] ||
-		old['extension.autoAppendSelection'] !== config['extension.autoAppendSelection'])
-		registerMessagingBridge();
 });
 
 bridge.on('UpdateForm:refresh', async () => {
@@ -282,11 +288,20 @@ async function refreshUpdatePanel(tab) {
 }
 
 async function saveBookmark(tab) {
-	const content = await executeFunc(tab, () => ({
-		url: location.href,
-		title: document.title,
-		html: document.documentElement.outerHTML,
-	}));
+	let content;
+	try {
+		content = await executeFunc(tab, () => ({
+			url: location.href,
+			title: document.title,
+			html: document.documentElement.outerHTML,
+		}));
+	} catch {
+		// Fallback for restricted pages (e.g., Chrome Web Store)
+		content = {
+			url: tab.url,
+			title: tab.title,
+		};
+	}
 
 	await fetch(`${config['extension.serverAddress']}/api/save`, {
 		method: 'POST',

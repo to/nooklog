@@ -27,6 +27,9 @@ export const batch = (list, task, {
 				// Continue to next batch even if previous failed
 			}
 
+			if (list.length > size)
+				hub.emit('queue.progress', { label, value: 0, total: list.length });
+
 			for (let i = 0; i < list.length; i += size) {
 				if (signal.aborted)
 					return;

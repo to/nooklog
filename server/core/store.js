@@ -229,6 +229,16 @@ const store = {
 		return this.reindexJob;
 	},
 
+	async getBackfillContentTargets({ limit = 100, force = false } = {}) {
+		const sql = `
+			SELECT * FROM bookmark
+			WHERE (markdown IS NULL OR markdown = '' OR title IS NULL OR title = '')
+			${force ? '' : "AND json_extract(meta, '$.fetch_error') IS NULL"}
+			ORDER BY created_at DESC
+			LIMIT ?`;
+		return await this.query(sql, [limit]);
+	},
+
 	async import(bookmarks) {
 		const rs = await db.client.execute('SELECT url FROM bookmark');
 		const existingUrls = new Set(rs.rows.map(r => r.url));

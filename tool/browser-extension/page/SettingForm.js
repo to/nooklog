@@ -31,16 +31,16 @@ class SettingForm {
 		this.els.error.classList.add('none');
 
 		if (await this._alive(address)) {
-			// Save settings (initial special behavior)
-			const values = { 'extension.serverAddress': address };
-			Object.assign(this.config, values);
-			await chrome.storage.local.set({ config: this.config });
-
-			await fetch(`${address}/api/config/save`, {
+			let values = { 'extension.serverAddress': address };
+			const res = await fetch(`${address}/api/config/save`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(values),
 			}).catch(() => { });
+			values = await res.json();
+
+			Object.assign(this.config, values);
+			await chrome.storage.local.set({ config: this.config });
 
 			location.href = address + '/?setting=true';
 		} else {

@@ -4,6 +4,7 @@ import { env } from '#server/core/config';
 import store from '#server/core/store';
 import { batch } from '#server/core/queue';
 import * as browser from '#server/core/ingest/browser';
+import _ from '#server/core/util';
 
 // env['server.data.path'] = './custom-data'; // Override data path if needed
 
@@ -12,9 +13,9 @@ await nooklog.initialize();
 
 // Fetch bookmarks with missing content (Skip if already failed)
 const bookmarks = await store.query(`
-	SELECT id, url, title, updated_at FROM bookmark
+	SELECT id, url, title, updated_at, meta FROM bookmark
 	WHERE (markdown IS NULL OR markdown = '')
-	AND json_extract(meta, '$._fetch_error') IS NULL
+	AND json_extract(meta, '$.fetch_error') IS NULL
 	ORDER BY created_at DESC
 	LIMIT 500
 `);
@@ -27,14 +28,13 @@ await batch(bookmarks, async slice => {
 	try {
 		// Fetch web content
 		const { html, title } = await browser.fetch(b.url);
-
 		await nooklog.save({
 			id: b.id,
 			url: b.url,
 			title: b.title || title,
 			html,
 			updated_at: b.updated_at,
-			meta: { _fetch_error: null },
+			meta: _.omit(b.meta, ['fetch_error']),
 		});
 
 		console.log(`[  OK  ] ${b.title || title}`);
@@ -45,7 +45,10 @@ await batch(bookmarks, async slice => {
 		await nooklog.save({
 			id: b.id,
 			updated_at: b.updated_at,
-			meta: { _fetch_error: e.status || e.message },
+			meta: {
+				...b.meta,
+				fetch_error: e.status || e.message,
+			},
 		});
 	}
 }, {

@@ -1,5 +1,8 @@
-<header class="flex justify-end items-end">
-	<button class="open flat icon none">settings</button>
+<header class="flex">
+	<div class="corner">
+		<button class="open flat icon none">settings</button>
+	</div>
+	<nl-progress-bar></nl-progress-bar>
 </header>
 
 <dialog closedby="any" class="overflow-hidden">
@@ -327,6 +330,15 @@
 			</div>
 
 			<h2>Tools</h2>
+
+			<div>
+				<label>Backfill Content</label>
+				<div class="flex items-center gap-m">
+					<input type="number" class="backfill-limit" value="100" min="1" step="100" style="width: 80px">
+					<button type="button" class="backfill-content">Backfill</button>
+				</div>
+				<span class="description">Processes bookmarks that are missing titles or content.</span>
+			</div>
 
 			<div>
 				<label>Import</label>

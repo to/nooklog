@@ -1,13 +1,21 @@
-import { chromium } from 'playwright-extra';
-import stealth from 'puppeteer-extra-plugin-stealth';
-
-chromium.use(stealth());
-
-let browser = null;
+let browser;
+let playwrightChromium;
 
 async function getBrowser() {
-	if (!browser || !browser.isConnected())
-		browser = await chromium.launch();
+	if (!playwrightChromium) {
+		const [{ chromium }, { default: stealth }] = await Promise.all([
+			import('playwright-extra'),
+			import('puppeteer-extra-plugin-stealth'),
+		]);
+		chromium.use(stealth());
+		playwrightChromium = chromium;
+	}
+
+	if (!browser || !browser.isConnected()) {
+		browser = await playwrightChromium.launch({
+			args: ['--disable-gpu', '--disable-dev-shm-usage'],
+		});
+	}
 	return browser;
 }
 
@@ -26,7 +34,17 @@ export async function fetch(url) {
 
 	try {
 		const page = await context.newPage();
-		const response = await page.goto(url, { waitUntil: 'load', timeout: 20000 });
+
+		// Block unnecessary resources to speed up
+		await page.route(
+			'**/*.{png,jpg,jpeg,gif,webp,svg,mp4,webm,ogg,mp3,wav,woff,woff2,ttf,otf,css}',
+			route => route.abort());
+
+		// Shorter timeout and lighter wait condition
+		const response = await page.goto(url, {
+			waitUntil: 'domcontentloaded',
+			timeout: 10000,
+		});
 
 		if (!response.ok()) {
 			const error = new Error(`HTTP ${response.status()}: ${url}`);
@@ -35,7 +53,8 @@ export async function fetch(url) {
 			throw error;
 		}
 
-		await page.waitForTimeout(2000);
+		// Wait a bit for SPA content
+		await page.waitForTimeout(1500);
 
 		return {
 			html: await page.content(),
