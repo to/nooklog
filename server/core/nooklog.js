@@ -110,7 +110,7 @@ const nooklog = {
 		if (b.memo == null)
 			b = { ...await this.find(b), ...b };
 
-		return await this._fillContent(b);
+		return this._fillMarkdown(b);
 	},
 
 	async find(ps) {
@@ -163,7 +163,8 @@ const nooklog = {
 
 		_.merge(b, _.omit(n, ['id']));
 
-		await this._fillContent(b);
+		await this._fillHTML(b);
+		this._fillMarkdown(b);
 
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
@@ -188,10 +189,10 @@ const nooklog = {
 		return b;
 	},
 
-	// Fill content by crawling or processing provided HTML/Markdown
-	async _fillContent(b) {
+	// Fill content by crawling the URL
+	async _fillHTML(b) {
 		// Fetch content if missing
-		if ((!b.html && !b.markdown || !b.title) && b.url) {
+		if (((!b.html && !b.markdown) || !b.title) && b.url) {
 			try {
 				const res = await ingest.browser.fetch(b.url);
 				b.html = res.html;
@@ -207,6 +208,11 @@ const nooklog = {
 			}
 		}
 
+		return b;
+	},
+
+	// Process HTML into Markdown
+	_fillMarkdown(b) {
 		if (b.html) {
 			const res = ingest.html.process(b.url, b.html);
 			b.html = res.html;
@@ -229,7 +235,8 @@ const nooklog = {
 
 		this.backfillContentJob = queue.batch(bookmarks, async slice => {
 			const b = slice[0];
-			await this._fillContent(b);
+			await this._fillHTML(b);
+			this._fillMarkdown(b);
 			await this.save({ ...b, updated_at: b.updated_at });
 		}, { size: 1, interval: 2000, priority: 1, label: 'Backfilling content' });
 
@@ -242,6 +249,11 @@ const nooklog = {
 
 		const bookmarks = ingest.bookmark.process(content, options);
 		const count = await store.import(bookmarks);
+
+		// Trigger backfill to fetch content for imports that only contain URLs
+		const emptyCount = bookmarks.filter(b => !b.title).length;
+		if (emptyCount > 0)
+			this.backfillContent({ limit: emptyCount });
 
 		// Update tag cache
 		const tags = await store.getTags();

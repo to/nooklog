@@ -49,23 +49,30 @@ class SearchForm extends Component {
 		this.els.tags.on('remove', () => this._search());
 
 		$.on(this.els.form, 'keydown', e => {
-			if (e.target.tagName !== 'INPUT' && !e.target.classList.contains('tagify__input'))
-				return;
-
 			if (e.key === 'Escape') {
 				this.els.query.value = '';
 				this.els.url.value = '';
 				this.els.tags.removeAllTags();
 				this._search();
+				return;
 			}
 
-			if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-				e.preventDefault();
-				document.activeElement.blur();
-				document.body.dispatchEvent(new KeyboardEvent('keydown', {
-					key: e.key,
-					bubbles: true,
-				}));
+			// Only bridge standard text inputs (excludes Tagify, combo boxes, etc.)
+			if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+				if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+					e.preventDefault();
+					e.stopPropagation();
+
+					document.activeElement.blur();
+					document.body.dispatchEvent(new KeyboardEvent('keydown', {
+						key: e.key,
+						bubbles: true,
+						altKey: e.altKey,
+						ctrlKey: e.ctrlKey,
+						shiftKey: e.shiftKey,
+						metaKey: e.metaKey,
+					}));
+				}
 			}
 		});
 

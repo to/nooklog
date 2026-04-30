@@ -96,7 +96,7 @@ class ConfigDialog extends Component {
 		$.on(this.els.import, 'click', () => {
 			const input = document.createElement('input');
 			input.type = 'file';
-			input.accept = '.html,.json';
+			input.accept = '.html,.json,.txt';
 			input.onchange = async e => {
 				const file = e.target.files[0];
 

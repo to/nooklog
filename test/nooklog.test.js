@@ -21,11 +21,11 @@ test('nooklog.js functional verification', async t => {
 		const editedContent = 'User edited content' + USER_MARK;
 
 		// Initial save (ID will be generated)
-		const firstResult = await nooklog.save({ url, markdown: editedContent });
+		const firstResult = await nooklog.save({ url, title: 'dummy', markdown: editedContent });
 		const id = firstResult.id;
 
 		// Automatic update (try to overwrite using the same ID)
-		const result = await nooklog.save({ id, url, markdown: 'Fresh automatic content' });
+		const result = await nooklog.save({ id, url, title: 'dummy', markdown: 'Fresh automatic content' });
 
 		assert.strictEqual(result.markdown, editedContent, 'User edited content must be preserved');
 	});
@@ -35,9 +35,30 @@ test('nooklog.js functional verification', async t => {
 		const url = 'https://example.com';
 		const newEdit = 'New manual edit' + USER_MARK;
 
-		const result = await nooklog.save({ id, url, markdown: newEdit });
+		const result = await nooklog.save({ id, url, title: 'dummy', markdown: newEdit });
 
 		assert.strictEqual(result.markdown, newEdit, 'New manual edit must overwrite existing content');
+	});
+
+	await t.test('Existing ID should be preserved even if input has empty ID', async () => {
+		const url = 'https://id-preservation-test.com';
+
+		// 1. Initial save to generate an ID
+		// Provide title and markdown to skip crawler
+		const firstResult = await nooklog.save({ url, title: 'Original', markdown: 'dummy' });
+		const originalId = firstResult.id;
+		assert.ok(originalId, 'ID should be generated');
+
+		// 2. Update by URL, but explicitly pass an empty string as ID
+		const updateResult = await nooklog.save({ id: '', url, title: 'Updated', markdown: 'dummy' });
+
+		// 3. Verify ID is still the original one
+		assert.strictEqual(updateResult.id, originalId, 'Existing ID must not be overwritten by empty string');
+
+		// 4. Also verify it's still found in the database by the original ID
+		const found = await nooklog.find({ id: originalId });
+		assert.ok(found, 'Should still find the bookmark by its original ID');
+		assert.strictEqual(found.title, 'Updated', 'Title should have been updated');
 	});
 
 	await t.test('Secret masking and configuration persistence', async t => {
@@ -133,6 +154,7 @@ test('nooklog.js functional verification', async t => {
 				url: 'https://test.com',
 				title: 'Original Title',
 				memo: 'Original Memo',
+				markdown: 'dummy',
 			});
 
 			await wait(50);
@@ -144,7 +166,7 @@ test('nooklog.js functional verification', async t => {
 			})).rows;
 
 			const v1 = await getVectors(b.id);
-			assert.strictEqual(v1.length, 2, 'Initial save should create 2 vectors (title, memo)');
+			assert.strictEqual(v1.length, 3, 'Initial save should create 3 vectors (title, memo, markdown)');
 			
 			const titleVector = v1.find(v => v.field === 'title');
 			const memoVector = v1.find(v => v.field === 'memo');

@@ -1,7 +1,11 @@
 let browser;
 let playwrightChromium;
 
+import baseLog from '../log.js';
+const log = baseLog.child({ module: 'ingest.browser' });
+
 async function getBrowser() {
+
 	if (!playwrightChromium) {
 		const [{ chromium }, { default: stealth }] = await Promise.all([
 			import('playwright-extra'),
@@ -21,12 +25,31 @@ async function getBrowser() {
 
 export async function dispose() {
 	if (browser) {
-		await browser.close();
-		browser = null;
+		const proc = browser.process();
+		try {
+			log.info('closing browser...');
+			// Wait for close with 2s timeout
+			await Promise.race([
+				browser.close(),
+				new Promise((_, reject) =>
+					setTimeout(() => reject(new Error('timeout')), 2000)),
+			]);
+			log.info('browser closed gracefully');
+		} catch (e) {
+			log.warn({ error: e.message }, 'failed to close browser gracefully, killing process');
+			try {
+				proc?.kill('SIGKILL');
+			} catch (killError) {
+				log.error({ error: killError.message }, 'failed to kill browser process');
+			}
+		} finally {
+			browser = null;
+		}
 	}
 }
 
 export async function fetch(url) {
+
 	const browser = await getBrowser();
 	const context = await browser.newContext({
 		userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -58,6 +81,8 @@ export async function fetch(url) {
 
 		return {
 			html: await page.content(),
+			rawHtml: await response.text(),
+			url: page.url(),
 			title: await page.title(),
 		};
 	} finally {

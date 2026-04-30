@@ -1,8 +1,11 @@
 import { JSDOM } from 'jsdom';
 
 export function process(content, options = {}) {
-	if (typeof content === 'string')
-		return processHTML(content, options);
+	if (typeof content === 'string') {
+		if (/<(?:!DOCTYPE|html|head|body|p|a|ul|ol|li)/i.test(content))
+			return processHTML(content, options);
+		return processText(content, options);
+	}
 
 	if (content.bookmarks)
 		return processKarakeep(content, options);
@@ -29,6 +32,13 @@ export function process(content, options = {}) {
 	}
 
 	return [];
+}
+
+export function processText(text, options = {}) {
+	return text.split(/\r?\n/)
+		.map(line => line.trim())
+		.filter(line => line.startsWith('http'))
+		.map(url => ({ url }));
 }
 
 export function processLinkwarden(data, options = {}) {

@@ -8,6 +8,10 @@ import _ from '#server/core/util';
 
 // env['server.data.path'] = './custom-data'; // Override data path if needed
 
+// Note: This script is a sample implementation.
+// The backfill functionality is now officially built into the core
+// and can be accessed via the "Tools" section in the application settings.
+
 await db.initialize();
 await nooklog.initialize();
 

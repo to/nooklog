@@ -191,9 +191,13 @@ server.get('/component/:component/:name.html.js',
 		return `window.${name}_html = \`${html}\`;`;
 	});
 
-/* ---- Mount Nooklog Application Routes (oRPC) ---- */
+/* ---- Mount Application Routes (oRPC) ---- */
 
 // Let oRPC parse the body
+server.addContentTypeParser('text/html', { parseAs: 'string' }, (request, payload, done) => {
+	done(null, payload);
+});
+
 server.addContentTypeParser(
 	'*', (request, payload, done) => done(null, undefined));
 
