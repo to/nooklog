@@ -86,6 +86,11 @@ const nooklog = {
 		return config;
 	},
 
+	async generateApiKey() {
+		const key = crypto.randomBytes(32).toString('hex');
+		return await this.saveConfig({ 'server.apiKey': key });
+	},
+
 	async getTags() {
 		return Array.from(tagCache)
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));

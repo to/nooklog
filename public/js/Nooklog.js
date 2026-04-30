@@ -20,6 +20,11 @@ const Nooklog = {
 		this._updateConfig(values);
 	},
 
+	async generateApiKey() {
+		const values = await this.rpc('config/generateApiKey');
+		this._updateConfig(values);
+	},
+
 	_updateConfig(values) {
 		Object.assign(config, values);
 		localStorage.config = JSON.stringify(config);

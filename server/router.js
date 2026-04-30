@@ -231,6 +231,10 @@ export const router = {
 			.route({ tags: ['internal'] })
 			.input(z.unknown())
 			.handler(async ({ input }) => nooklog.saveConfig(input)),
+
+		generateApiKey: orpc
+			.route({ tags: ['internal'] })
+			.handler(async () => nooklog.generateApiKey()),
 	},
 
 	status: orpc

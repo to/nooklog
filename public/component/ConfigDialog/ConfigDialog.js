@@ -154,6 +154,26 @@ class ConfigDialog extends Component {
 			const command = msg.shortcuts.find(c => c.name === 'open-update-page');
 			this.$('.shortcut-key').textContent = command?.shortcut || 'Not set';
 		});
+
+		$.on(this.$('button.copy-api-key'), 'click', () => {
+			const input = this.$('input[name="server.apiKey"]');
+			if (!input.value)
+				return;
+
+			navigator.clipboard.writeText(input.value);
+			app.notify('API Key copied to clipboard.', 'info');
+		});
+
+		$.on(this.$('button.generate-api-key'), 'click', async () => {
+			if (config['server.apiKey'] &&
+				!confirm('Generating a new API Key will invalidate the current one. Continue?'))
+				return;
+
+			await Nooklog.generateApiKey();
+
+			this.$('input[name="server.apiKey"]').value = config['server.apiKey'];
+			app.notify('New API Key generated.', 'info');
+		});
 	}
 
 	showModal() {
