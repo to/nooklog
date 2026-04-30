@@ -15,7 +15,7 @@ const config = {
 	'client.ratingInputMode': 'both', // 'stars', 'tags', 'both', 'none'
 	'client.autoCompleteTags': false, // Auto-confirm when narrowed down enough
 	'extension.serverAddress': 'http://localhost:5050',
-	'extension.actionBehavior': 'embed', // 'embed', 'sidepanel', 'window', 'save'
+	'extension.actionBehavior': 'save', // 'embed', 'sidepanel', 'window', 'save'
 	'extension.closeSidepanelOnSave': false,
 	'extension.selectionDelimiter': '/',
 	'extension.autoAppendSelection': true,
@@ -33,13 +33,16 @@ const config = {
 	'sentence.vector.limitSize': 2048,
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
+	'database.useVectorIndex': true, // Use ANN index (fast) or brute-force (accurate)
 	'database.saveHTML': false,
 };
 
 export const env = {
-	'server.mode': process.env.NOOKLOG_READONLY ? 'readonly' :
-		(process.env.NOOKLOG_DEMO ? 'demo' : 'normal'),
-	'server.readonly': !!(process.env.NOOKLOG_DEMO || process.env.NOOKLOG_READONLY),
+	'server.mode': process.env.NOOKLOG_READONLY === 'true'
+		? 'readonly'
+		: (process.env.NOOKLOG_DEMO === 'true' ? 'demo' : 'normal'),
+	'server.readonly':
+		process.env.NOOKLOG_DEMO === 'true' || process.env.NOOKLOG_READONLY === 'true',
 	'server.data.path': dataPath,
 	'server.port': process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
 	'server.password': process.env.NOOKLOG_PASSWORD

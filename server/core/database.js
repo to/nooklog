@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { createClient } from '@libsql/client';
@@ -78,7 +79,7 @@ const database = {
 			}
 		}
 
-		await this.createTables();
+		await this.migrate();
 		await this.loadConfig();
 
 		await this.initializeFtsTable();
@@ -96,34 +97,32 @@ const database = {
 		await this.setMeta('config', JSON.stringify(config.getConfig()));
 	},
 
-	async createTables() {
-		await this.client.batch([
-			`-- Main table for storing bookmarks
-			CREATE TABLE IF NOT EXISTS bookmark (
-				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
-				id TEXT UNIQUE NOT NULL,
-				url TEXT,
-				title TEXT,
-				memo TEXT,
-				rating INTEGER,
-				tags TEXT, -- JSON array
-				created_at INTEGER,
-				updated_at INTEGER,
-				html TEXT,
-				markdown TEXT,
-				summary TEXT,
-				meta TEXT DEFAULT '{}' -- JSON object for management
-			)`,
-			`-- Internal metadata and configuration
+	async migrate() {
+		await this.client.execute(`
 			CREATE TABLE IF NOT EXISTS meta (
 				id TEXT PRIMARY KEY,
 				value TEXT
-			)`,
-			'CREATE INDEX IF NOT EXISTS bookmark_updated_at_idx ON bookmark (updated_at DESC)',
-			'CREATE INDEX IF NOT EXISTS bookmark_created_at_idx ON bookmark (created_at DESC)',
-			'CREATE INDEX IF NOT EXISTS bookmark_rating_idx ON bookmark (rating)',
-			'CREATE TABLE IF NOT EXISTS bookmark_vector (bookmark_id INTEGER)',
-		], 'write');
+			)`);
+
+		const migrationDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migration');
+		const files = fs.readdirSync(migrationDir)
+			.filter(f => f.endsWith('.sql'))
+			.sort();
+
+		let version = parseInt(await this.getMeta('version') || '0');
+		for (const file of files) {
+			const v = parseInt(file.match(/^(\d+)/)?.[0] || '0');
+			if (v > version) {
+				log.info({ file }, `applying migration ${file}`);
+
+				const sql = fs.readFileSync(path.join(migrationDir, file), 'utf-8');
+				const batch = sql.split(';').map(s => s.trim()).filter(Boolean);
+				await this.client.batch(batch, 'write');
+
+				version = v;
+				await this.setMeta('version', version.toString());
+			}
+		}
 	},
 
 	async initializeFtsTable() {
@@ -159,11 +158,14 @@ const database = {
 		const enabled = config['sentence.vector.enabled'];
 		const current = config['sentence.vector.model'];
 		const old = await this.getMeta('vector_model');
+
+		// Handle model change (Re-create table)
 		if (enabled && old !== current) {
 			const batch = ['DROP TABLE IF EXISTS bookmark_vector'];
 			if (current === '') {
 				log.info('initializing vector stub table');
-				batch.push('CREATE TABLE bookmark_vector (bookmark_id INTEGER)');
+				batch.push(`CREATE TABLE bookmark_vector (
+					row_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id INTEGER, vector F32_BLOB(768))`);
 			} else {
 				// Avoid CASCADE to prevent child vector loss on REPLACE
 				const dimension = await sentence.getDimension();
@@ -182,8 +184,22 @@ const database = {
 					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
 			}
 			await this.client.batch(batch, 'write');
-
 			await this.setMeta('vector_model', current);
+		}
+
+		// Sync index state (Check actual schema discrepancy)
+		const useIndex = config['database.useVectorIndex'];
+		const rs = await this.client.execute(
+			"SELECT 1 FROM sqlite_master WHERE type='index' AND name='bookmark_vector_idx'");
+		const indexExists = rs.rows.length > 0;
+		if (useIndex && !indexExists) {
+			log.info('creating vector index (ANN enabled)');
+			await this.client.execute(
+				`CREATE INDEX bookmark_vector_idx ON bookmark_vector (
+						libsql_vector_idx(vector, 'metric=cosine', 'max_neighbors=16', 'compress_neighbors=float8'))`);
+		} else if (!useIndex && indexExists) {
+			log.info('dropping vector index (ANN disabled)');
+			await this.client.execute('DROP INDEX IF EXISTS bookmark_vector_idx');
 		}
 	},
 

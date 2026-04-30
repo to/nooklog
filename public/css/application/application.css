@@ -240,6 +240,12 @@ header {
 	label {
 		padding: var(--space-2s) 0;
 
+		.icon {
+			/* EN: 下線を表示する */
+			display: inline;
+			vertical-align: middle;
+		}
+
 		&:hover {
 			color: oklch(from currentcolor calc(l * var(--hover-on)) c h);
 		}
@@ -311,7 +317,7 @@ header {
 /* ---- Icon(Material Symbols) ---- */
 .icon {
 	display: inline-block;
-	font-family: 'Material Symbols Outlined';
+	font-family: 'Material Symbols Rounded';
 	font-size: var(--font-size-m);
 	font-style: normal;
 	font-weight: normal;

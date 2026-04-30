@@ -110,26 +110,10 @@ body {
 }
 
 .SearchForm {
-	display: contents;
-
 	form {
 		gap: var(--_page-margin);
 		padding-inline: var(--_content-margin);
 		margin-bottom: var(--space-s);
-
-		input[name="url"]{
-			width: 30%;
-		}
-	}
-
-	.count {
-		gap: calc(var(--space-2s) * 0.5);
-		font-size: var(--font-size-2s);
-		color: var(--ink-3);
-
-		.icon{
-			font-size: var(--font-size-2s);
-		}
 	}
 }
 

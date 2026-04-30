@@ -48,10 +48,6 @@
 			"description": "Embed edit frame"
 		},
 		"open-update-panel": {
-			"suggested_key": {
-				"default": "Ctrl+Shift+S",
-				"mac": "Command+Shift+S"
-			},
 			"description": "Open edit side panel"
 		},
 		"open-update-window": {

@@ -74,7 +74,7 @@ Unigram can search languages that are not space-separated like Chinese/Japanese/
 **⚙️ Vector Search**\
 Search for similar concepts like "Cat"  "Feline"  "Kitty".\
 Text is carefully sliced at appropriate granularity (larger chunks for code blocks) according to the Markdown hierarchy.\
-Currently vector search takes a little time because it does not use an index. Results may be significantly lacking for minor words or concepts.
+You can switch between fast approximate nearest neighbor (ANN) search and accurate brute-force scan.
 
 **⚙️ Tag Input / Tag Search**\
 Smart matching (scattered matching) like searching for "javascript" with "js" can be used for tag completion.\
