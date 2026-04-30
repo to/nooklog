@@ -1,29 +1,77 @@
 @font-face {
-	font-family: 'Material Symbols Outlined';
+	font-family: "Material Symbols Outlined";
 	font-style: normal;
-	font-weight: 400;
-	src: url('./material-symbols-outlined.woff2') format('woff2');
-}
-
-@font-face {
-	font-family: 'Material Symbols Filled';
-	font-style: normal;
-	font-weight: 400;
-	src: url('./material-symbols-filled.woff2') format('woff2');
+	font-weight: 100 700;
+	src: url("./material-symbols-outlined.woff2") format("woff2");
+	font-display: block;
 }
 
 .material-symbols-outlined {
 	display: inline-block;
-	font-family: 'Material Symbols Outlined';
+	font-family: "Material Symbols Outlined";
 	font-size: 24px;
 	font-style: normal;
 	font-weight: normal;
-	font-feature-settings: 'liga';
+	font-feature-settings: "liga";
 	line-height: 1;
 	text-transform: none;
 	letter-spacing: normal;
-	overflow-wrap: normal;
+	word-wrap: normal;
 	white-space: nowrap;
 	direction: ltr;
+	text-rendering: optimizelegibility;
 	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+	font-family: "Material Symbols Rounded";
+	font-style: normal;
+	font-weight: 100 700;
+	src: url("./material-symbols-rounded.woff2") format("woff2");
+	font-display: block;
+}
+
+.material-symbols-rounded {
+	display: inline-block;
+	font-family: "Material Symbols Rounded";
+	font-size: 24px;
+	font-style: normal;
+	font-weight: normal;
+	font-feature-settings: "liga";
+	line-height: 1;
+	text-transform: none;
+	letter-spacing: normal;
+	word-wrap: normal;
+	white-space: nowrap;
+	direction: ltr;
+	text-rendering: optimizelegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+	font-family: "Material Symbols Sharp";
+	font-style: normal;
+	font-weight: 100 700;
+	src: url("./material-symbols-sharp.woff2") format("woff2");
+	font-display: block;
+}
+
+.material-symbols-sharp {
+	display: inline-block;
+	font-family: "Material Symbols Sharp";
+	font-size: 24px;
+	font-style: normal;
+	font-weight: normal;
+	font-feature-settings: "liga";
+	line-height: 1;
+	text-transform: none;
+	letter-spacing: normal;
+	word-wrap: normal;
+	white-space: nowrap;
+	direction: ltr;
+	text-rendering: optimizelegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }

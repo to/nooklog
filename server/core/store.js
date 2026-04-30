@@ -349,7 +349,7 @@ const store = {
 
 	async searchVector({
 		columns = ['*'], query = '', url = '', fields = [], limit = 50, sortBy = 'relevance',
-		tags = [], rating,
+		tags = [], rating, useVectorIndex = true,
 	}) {
 		if (!query?.trim() || !config['sentence.vector.enabled'])
 			return { count: 0, totalCount: await db.getTotalCount(), bookmarks: [] };
@@ -357,21 +357,38 @@ const store = {
 		const qVec = await sentence.embedQuery(query);
 		const select = columns.map(c => `b.${c}`).join(', ');
 
-		// Due to index (DiskANN) inaccuracy, Brute Force is used (about 5x slower)
 		const {
 			conditions, params, ftsConditions, ftsParams,
 		} = this._buildSearchQuery({ tags, rating, url });
 		const qVecJson = JSON.stringify(qVec);
-		let sql = `
-			SELECT ${select}, bv.content as chunk, bv.field as chunkField,
-			       MIN(vector_distance_cos(bv.vector, vector32(?))) as score
-			FROM bookmark_vector bv
-			JOIN bookmark b ON b.row_id = bv.bookmark_id`;
+
+		let sql;
+		const args = [];
+
+		if (useVectorIndex && config['database.useVectorIndex']) {
+			// ANN Search using index
+			// We fetch a larger number of chunks (limit * 5) to account for multiple chunks per bookmark
+			const k = limit === null ? 300 : limit * 5;
+			sql = `
+				SELECT ${select}, bv.content as chunk, bv.field as chunkField,
+				       MIN(vector_distance_cos(bv.vector, vector32(?))) as score
+				FROM vector_top_k('bookmark_vector_idx', vector32(?), ?) as v
+				JOIN bookmark_vector bv ON bv.row_id = v.rowid
+				JOIN bookmark b ON b.row_id = bv.bookmark_id`;
+			args.push(qVecJson, qVecJson, k);
+		} else {
+			// Brute Force search
+			sql = `
+				SELECT ${select}, bv.content as chunk, bv.field as chunkField,
+				       MIN(vector_distance_cos(bv.vector, vector32(?))) as score
+				FROM bookmark_vector bv
+				JOIN bookmark b ON b.row_id = bv.bookmark_id`;
+			args.push(qVecJson);
+		}
 
 		if (ftsConditions.length > 0)
 			sql += ' JOIN bookmark_fts f ON f.rowid = b.row_id';
 
-		const args = [qVecJson];
 		const where = [...ftsConditions];
 		args.push(...ftsParams);
 

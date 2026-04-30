@@ -8,6 +8,8 @@ class SearchForm extends Component {
 			tags: this.$('nl-tag-input'),
 			fields: this.$$('input[name=field]'),
 			mode: this.$$('input[name=mode]'),
+			vectorMode: this.$('input[name=mode][value=vector]'),
+			useVectorIndex: this.$$('input[name=useVectorIndex]'),
 			sortBy: this.$$('input[name=sortBy]'),
 			count: this.$('.count'),
 		};
@@ -19,14 +21,13 @@ class SearchForm extends Component {
 	}
 
 	async ready() {
-		this._updateVectorVisibility();
-		this._updateRatingVisibility();
+		this._updateVisibility();
+		this._updateVectorOptionsVisibility();
 	}
 
 	bindEvents() {
 		hub.on('Nooklog:updateConfig', () => {
-			this._updateVectorVisibility();
-			this._updateRatingVisibility();
+			this._updateVisibility();
 		});
 
 		hub.on('ResultTable:selectTag', tag => {
@@ -82,7 +83,11 @@ class SearchForm extends Component {
 					return;
 			}
 
-			if (e.target.name === 'sortBy' || e.target.name === 'field' || e.target.name === 'mode')
+			if (e.target.name === 'mode')
+				this._updateVectorOptionsVisibility();
+
+			if (e.target.name === 'sortBy' || e.target.name === 'field' ||
+				e.target.name === 'mode' || e.target.name === 'useVectorIndex')
 				this._search();
 		});
 	}
@@ -116,6 +121,7 @@ class SearchForm extends Component {
 			query,
 			url,
 			mode,
+			useVectorIndex: this.els.useVectorIndex.find(el => el.checked)?.value === 'true',
 			fields,
 			sortBy,
 		} : {};
@@ -129,8 +135,11 @@ class SearchForm extends Component {
 		this.els.tags.tagify.loadOriginalValues(ps.tags);
 
 		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);
+		$.check(this.els.useVectorIndex, (ps.useVectorIndex !== false).toString());
 		$.check(this.els.fields, ps.fields);
 		$.check(this.els.sortBy, ps.sortBy);
+
+		this._updateVectorOptionsVisibility();
 	}
 
 	_updateURL() {
@@ -166,20 +175,35 @@ class SearchForm extends Component {
 		hub.emit('SearchForm:search', res);
 	}
 
-	_updateVectorVisibility() {
-		this.$('input[name=mode]').parentElement.parentElement.classList.toggle(
-			'invisible', !config['sentence.vector.enabled']);
-		if (!config['sentence.vector.enabled'])
+	_updateVisibility() {
+		const vectorEnabled = config['sentence.vector.enabled'];
+		const indexEnabled = config['database.useVectorIndex'];
+
+		// Vector Mode Visibility
+		this.$('.vector').classList.toggle('invisible', !vectorEnabled);
+		if (!vectorEnabled)
 			$.check(this.els.mode, 'fts');
+
+		// Deep Search Visibility (Hidden if index is disabled globally)
+		$.toggle(this.els.useVectorIndex[0].closest('.radio-flat'), indexEnabled);
+		if (!indexEnabled)
+			$.check(this.els.useVectorIndex, 'false');
+
+		// Rating Visibility
+		const ratingNone = config['client.ratingInputMode'] === 'none';
+		const ratingLabel = this.$('label:has([value=rating])');
+		$.toggle(ratingLabel, !ratingNone);
+
+		if (ratingNone && ratingLabel.querySelector('input').checked)
+			$.check(this.els.sortBy, 'relevance');
+
+		this._updateVectorOptionsVisibility();
 	}
 
-	_updateRatingVisibility() {
-		const isNone = config['client.ratingInputMode'] === 'none';
-		const label = this.$('label:has([value=rating])');
-		$.toggle(label, !isNone);
-
-		if (isNone && label.querySelector('input').checked)
-			$.check(this.els.sortBy, 'relevance');
+	_updateVectorOptionsVisibility() {
+		const vectorEnabled = this.els.vectorMode.checked;
+		const radioFlat = this.els.useVectorIndex[0].closest('.radio-flat');
+		radioFlat.classList.toggle('invisible', !vectorEnabled);
 	}
 }
 

@@ -1,0 +1,27 @@
+.SearchForm {
+	display: contents;
+
+	form {
+		input[name="url"]{
+			width: 30%;
+		}
+
+		.icon{
+			font-size: var(--font-size-s);
+		}
+
+		.radio-flat {
+			gap: var(--space-2s);
+		}
+	}
+
+	.count {
+		gap: calc(var(--space-2s) * 0.5);
+		font-size: var(--font-size-2s);
+		color: var(--ink-3);
+
+		.icon{
+			font-size: var(--font-size-2s);
+		}
+	}
+}

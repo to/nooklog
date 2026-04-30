@@ -29,6 +29,7 @@ const searchSchema = z.object({
 	rating: z.number().int().min(0).max(5).optional(),
 	query: z.string().default(''),
 	mode: z.enum(['fts', 'vector', 'hybrid']).default('fts'),
+	useVectorIndex: z.boolean().optional(),
 	fields: inputArrayField.optional(),
 });
 
@@ -143,15 +144,17 @@ export const router = {
 				res.setHeader(
 					'Content-Disposition',
 					`attachment; filename="nooklog-bookmarks-${date}.json"`);
-				res.json(await nooklog.exportObject(input));
+				res.setHeader('Content-Type', 'application/json');
+				res.end(JSON.stringify(
+					await nooklog.exportObject(input), null, '\t'));
 			}
 
 			if (input.exportFormat === 'html') {
 				res.setHeader(
 					'Content-Disposition',
 					`attachment; filename="nooklog-bookmarks-${date}.html"`);
-				res.type('text/html');
-				res.send(await nooklog.exportHTML(input));
+				res.setHeader('Content-Type', 'text/html');
+				res.end(await nooklog.exportHTML(input));
 			}
 
 			if (input.exportFormat === 'markdown') {
