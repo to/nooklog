@@ -6,8 +6,9 @@
 			width: 30%;
 		}
 
-		.icon{
-			font-size: var(--font-size-s);
+		svg{
+			width: var(--font-size-s);
+			height: var(--font-size-s);
 		}
 
 		.radio-flat {

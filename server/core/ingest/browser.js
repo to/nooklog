@@ -1,3 +1,4 @@
+let browserServer;
 let browser;
 let playwrightChromium;
 
@@ -5,7 +6,6 @@ import baseLog from '../log.js';
 const log = baseLog.child({ module: 'ingest.browser' });
 
 async function getBrowser() {
-
 	if (!playwrightChromium) {
 		const [{ chromium }, { default: stealth }] = await Promise.all([
 			import('playwright-extra'),
@@ -15,42 +15,55 @@ async function getBrowser() {
 		playwrightChromium = chromium;
 	}
 
-	if (!browser || !browser.isConnected()) {
-		browser = await playwrightChromium.launch({
+	if (!browserServer || !browserServer.process()) {
+		browserServer = await playwrightChromium.launchServer({
 			args: ['--disable-gpu', '--disable-dev-shm-usage'],
 		});
 	}
+
+	if (!browser || !browser.isConnected())
+		browser = await playwrightChromium.connect(browserServer.wsEndpoint());
+
 	return browser;
 }
 
 export async function dispose() {
 	if (browser) {
-		const proc = browser.process();
-		try {
-			log.info('closing browser...');
-			// Wait for close with 2s timeout
-			await Promise.race([
-				browser.close(),
-				new Promise((_, reject) =>
-					setTimeout(() => reject(new Error('timeout')), 2000)),
-			]);
-			log.info('browser closed gracefully');
-		} catch (e) {
-			log.warn({ error: e.message }, 'failed to close browser gracefully, killing process');
-			try {
-				proc?.kill('SIGKILL');
-			} catch (killError) {
-				log.error({ error: killError.message }, 'failed to kill browser process');
+		browser.close().catch(() => { });
+		browser = null;
+	}
+
+	if (browserServer) {
+		// Prevent the browser process from hanging the shutdown sequence
+		const proc = browserServer.process();
+		const forceKill = setTimeout(() => {
+			if (browserServer) {
+				log.warn('browser server close timed out, forcing kill');
+				try {
+					proc?.kill('SIGKILL');
+				} catch (e) {
+					log.error({ error: e.message }, 'failed to kill browser process');
+				}
 			}
+		}, 3000);
+		forceKill.unref();
+
+		try {
+			log.info('closing browser server...');
+			await browserServer.close();
+			log.info('browser server closed gracefully');
+		} catch (e) {
+			log.warn({ error: e.message }, 'browser server close error');
 		} finally {
-			browser = null;
+			clearTimeout(forceKill);
+			browserServer = null;
 		}
 	}
 }
 
 export async function fetch(url) {
-
 	const browser = await getBrowser();
+
 	const context = await browser.newContext({
 		userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
 	});
