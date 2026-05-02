@@ -133,7 +133,20 @@ export function process(url, html) {
 		.replace(JUNK_REGEX_TAG, '')
 		.replace(JUNK_REGEX_OPEN, '')
 		.replace(/<!--[\s\S]*?-->/g, '');
+
 	const { document } = parseHTML(html);
+
+	// Merge paginated content to help Readability identify the full article
+	document.querySelectorAll('[id^="uAutoPagerize-divider-"]').forEach(divider => {
+		const prev = divider.previousElementSibling;
+		const next = divider.nextElementSibling;
+		if (prev && next) {
+			prev.append(...next.childNodes);
+			next.remove();
+		}
+		divider.remove();
+	});
+	document.getElementById('uAutoPagerize-insertPoint')?.remove();
 
 	document.querySelectorAll('a').forEach(el => {
 		const href = el.getAttribute('href');
