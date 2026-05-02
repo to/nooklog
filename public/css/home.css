@@ -13,6 +13,22 @@ body {
 	padding: 0;
 }
 
+header {
+	display: flex;
+	align-items: flex-end;
+
+	.corner {
+		display: flex;
+		width: var(--_page-margin);
+		height: var(--_page-margin);
+		padding: var(--space-2s);
+	}
+
+	.corner:first-child {
+		justify-content: flex-end;
+	}
+}
+
 .area-main {
 	flex: 1;
 	min-width: 0;
@@ -21,14 +37,6 @@ body {
 	--_content-margin: max(var(--_page-margin), calc((100cqw - 76rem) / 2));
 
 	overflow-y: auto;
-
-	.ConfigDialog {
-		> header {
-			width: var(--_page-margin);
-			height: var(--_page-margin);
-			padding: var(--space-2s);
-		}
-	}
 
 	.ProgressBar {
 		position: relative;
@@ -137,17 +145,6 @@ body {
 		position: sticky;
 		top: 0;
 		z-index: 1;
-
-		div {
-			display: flex;
-			width: var(--_page-margin);
-			height: var(--_page-margin);
-			padding: var(--space-2s);
-		}
-
-		div:first-child {
-			justify-content: flex-end;
-		}
 	}
 
 	.content {

@@ -86,25 +86,47 @@ function checkAuth(request) {
 	if (request.isAuthorized !== undefined)
 		return request.isAuthorized;
 
-	const stored = config['server.password'];
-	if (!stored)
+	const passwordStored = config['server.password'];
+	const apiKeyStored = config['server.apiKey'];
+
+	// If no password is set, the server is public
+	if (!passwordStored)
 		return request.isAuthorized = true;
 
-	const auth = request.headers.authorization;
-	if (!auth)
+	const authHeader = request.headers.authorization;
+	const apiKeyHeader = request.headers['x-api-key'];
+
+	// Check API Key (Header: x-api-key or Bearer token)
+	if (apiKeyStored) {
+		if (apiKeyHeader === apiKeyStored)
+			return request.isAuthorized = true;
+
+		if (authHeader?.startsWith('Bearer ')) {
+			const token = authHeader.slice(7).trim();
+			if (token === apiKeyStored)
+				return request.isAuthorized = true;
+		}
+	}
+
+	if (!authHeader)
 		return request.isAuthorized = false;
 
-	try {
-		const credentials = Buffer.from(auth.split(' ')[1], 'base64').toString();
-		const [_, password] = credentials.split(':');
-		const [salt, storedHash] = stored.split(':');
-		const hash = crypto.createHash('sha256')
-			.update(password + salt).digest('hex');
-		return request.isAuthorized = crypto.timingSafeEqual(
-			Buffer.from(hash), Buffer.from(storedHash));
-	} catch {
-		return request.isAuthorized = false;
+	// Check Basic Auth (Header: Authorization: Basic <base64>)
+	if (passwordStored && authHeader.startsWith('Basic ')) {
+		try {
+			const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString();
+			const [_, password] = credentials.split(':');
+			const [salt, storedHash] = passwordStored.split(':');
+			const hash = crypto.createHash('sha256')
+				.update(password + salt).digest('hex');
+			return request.isAuthorized = crypto.timingSafeEqual(
+				Buffer.from(hash), Buffer.from(storedHash));
+		} catch {
+			return request.isAuthorized = false;
+		}
 	}
+
+	return request.isAuthorized = false;
 }
 
 /* ---- Static File Server ---- */
@@ -169,9 +191,13 @@ server.get('/component/:component/:name.html.js',
 		return `window.${name}_html = \`${html}\`;`;
 	});
 
-/* ---- Mount Nooklog Application Routes (oRPC) ---- */
+/* ---- Mount Application Routes (oRPC) ---- */
 
 // Let oRPC parse the body
+server.addContentTypeParser('text/html', { parseAs: 'string' }, (request, payload, done) => {
+	done(null, payload);
+});
+
 server.addContentTypeParser(
 	'*', (request, payload, done) => done(null, undefined));
 
@@ -238,6 +264,24 @@ server.get('/openapi.json', async () => {
 			},
 			servers: [{ url: '/api' }],
 			filter: ({ contract }) => !contract['~orpc'].route.tags?.includes('internal'),
+			components: {
+				securitySchemes: {
+					apiKey: {
+						type: 'apiKey',
+						in: 'header',
+						name: 'x-api-key',
+					},
+					bearer: {
+						type: 'http',
+						scheme: 'bearer',
+					},
+					basic: {
+						type: 'http',
+						scheme: 'basic',
+					},
+				},
+			},
+			security: [{ apiKey: [] }, { bearer: [] }, { basic: [] }],
 		});
 	}
 	return cachedOpenAPI;
@@ -259,14 +303,10 @@ let shutdown = async signal => {
 	shutdown = () => { };
 	log.info({ signal }, 'shutdown signal received');
 
-	// Release resources first (priority)
 	await nooklog.dispose();
-	log.info('nooklog disposed successfully');
-
-	// Then close server
 	await server.close();
-	log.info('http server closed');
 
+	log.info('shutdown complete');
 	process.exit(0);
 };
 

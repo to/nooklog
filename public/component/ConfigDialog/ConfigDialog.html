@@ -1,5 +1,8 @@
-<header class="flex justify-end items-end">
-	<button class="open flat icon none">settings</button>
+<header class="flex">
+	<div class="corner">
+		<button class="open flat icon none">settings</button>
+	</div>
+	<nl-progress-bar></nl-progress-bar>
 </header>
 
 <dialog closedby="any" class="overflow-hidden">
@@ -208,6 +211,17 @@
 					Requires page reload to prompt.</span>
 			</div>
 
+			<div>
+				<label>API Key</label>
+				<div class="flex items-center gap-s">
+					<input type="text" name="server.apiKey" placeholder="Not generated" readonly class="grow">
+					<button type="button" class="copy-api-key flat icon" title="Copy to clipboard">content_copy</button>
+					<button type="button" class="generate-api-key flat icon" title="Generate new key">refresh</button>
+				</div>
+				<span class="description">Use this key for programmatic access via <code>x-api-key</code> header or
+					<code>Bearer</code> token.</span>
+			</div>
+
 			<h2>Vector Search</h2>
 
 			<div>
@@ -230,7 +244,8 @@
 				</label>
 				<span class="description"><span class="value">Enabled: </span>Fast sub-second search using ANN (Approximate).
 					High speed with a slight trade-off in accuracy.</span>
-				<span class="description"><span class="value">Disabled: </span>Slower brute-force search. Ensures maximum accuracy
+				<span class="description"><span class="value">Disabled: </span>Slower brute-force search. Ensures maximum
+					accuracy
 					and reduces storage to ~1/6.</span>
 				<span class="description error none">Building or removing the index can take several hours depending on the data
 					volume.</span>
@@ -317,6 +332,15 @@
 			<h2>Tools</h2>
 
 			<div>
+				<label>Backfill Content</label>
+				<div class="flex items-center gap-m">
+					<input type="number" class="backfill-limit" value="100" min="1" step="100" style="width: 80px">
+					<button type="button" class="backfill-content">Backfill</button>
+				</div>
+				<span class="description">Processes bookmarks that are missing titles or content.</span>
+			</div>
+
+			<div>
 				<label>Import</label>
 				<div class="flex items-center gap-m">
 					<select class="folder-tag">
@@ -325,7 +349,7 @@
 					</select>
 					<button type="button" class="import">Import</button>
 				</div>
-				<span class="description">Import from Bookmark HTML (Chrome/Firefox/Hatena), Pinboard, Linkwarden, Karakeep,
+				<span class="description">Import from Bookmark HTML, Plain Text (URL list), Pinboard, Linkwarden, Karakeep,
 					Session Buddy, or Tab
 					Session Manager.</span>
 			</div>

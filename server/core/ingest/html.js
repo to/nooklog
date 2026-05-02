@@ -112,17 +112,22 @@ turndown.addRule('smartLink', {
 	},
 });
 
+function resolveURL(target, base, options) {
+	try {
+		const resolved = base ? new URL(target, base).href : new URL(target).href;
+		return options ? normalizeUrl(resolved, options) : resolved;
+	} catch (e) {
+		return target;
+	}
+}
+
 export function process(url, html) {
 	const normalizeUrlOptions = {
 		stripWWW: false,
 		removeTrailingSlash: false,
 		removeDirectoryIndex: false,
 	};
-	try {
-		url = normalizeUrl(url, { stripHash: true, ...normalizeUrlOptions });
-	} catch (e) {
-		url = url ? url.split('#')[0] : '';
-	}
+	url = resolveURL(url, undefined, normalizeUrlOptions);
 
 	html = html
 		.replace(JUNK_REGEX_TAG, '')
@@ -133,7 +138,7 @@ export function process(url, html) {
 	document.querySelectorAll('a').forEach(el => {
 		const href = el.getAttribute('href');
 		if (href)
-			el.setAttribute('href', normalizeUrl(new URL(href, url).href, normalizeUrlOptions));
+			el.setAttribute('href', resolveURL(href, url, normalizeUrlOptions));
 	});
 	document.querySelectorAll('img').forEach(el => {
 		const src = el.getAttribute('src');
@@ -141,7 +146,7 @@ export function process(url, html) {
 			return el.remove();
 
 		if (src)
-			el.setAttribute('src', new URL(src, url).href);
+			el.setAttribute('src', resolveURL(src, url));
 	});
 	document.querySelectorAll('table caption').forEach(caption => {
 		const table = caption.closest('table');

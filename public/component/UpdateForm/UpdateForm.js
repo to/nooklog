@@ -225,7 +225,13 @@ class UpdateForm extends Component {
 		if (!ps.id && !ps.url)
 			return;
 
+		const updatedAt = this._updatedAt = Date.now();
 		const bookmark = await Nooklog.pop(ps);
+
+		// Ignore stale results from slow fetches (e.g., HTML crawling)
+		if (this._updatedAt !== updatedAt)
+			return;
+
 		this.setBookmark(bookmark);
 	}
 
@@ -273,9 +279,9 @@ class UpdateForm extends Component {
 			(bookmark[k] ? `${bookmark[k]}` : ''));
 	}
 
-	_setSubmitting(active) {
-		this.isSubmitting = active;
-		this.els.submit.disabled = active;
+	_setSubmitting(submitting) {
+		this.isSubmitting = submitting;
+		this.els.submit.disabled = submitting;
 	}
 
 	close() {
@@ -313,6 +319,7 @@ class UpdateForm extends Component {
 			return;
 
 		this._setSubmitting(true);
+		this._updatedAt = Date.now();
 
 		this.setEdited();
 

@@ -20,6 +20,7 @@ module.exports = {
 		},
 		shutdown_with_message: true, // Receive shutdown
 		restart_delay: 500, // Auto restart interval
+		kill_timeout: 5000, // Time to wait for graceful shutdown
 		listen_timeout: 10000, // Time until considered normally started
 	}],
 };

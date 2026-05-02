@@ -35,6 +35,10 @@ html:has(dialog[open]) {
 			background-color: var(--ink-0);
 		}
 
+		.generate-api-key {
+			transform: scale(1.2);
+		}
+
 		.grid {
 			grid-template-columns: max-content minmax(0, 30rem);
 			gap: 0 var(--space-m);

@@ -91,13 +91,14 @@ graph TD
 
 - `backfill_content.mjs`
   - 概要: `markdown` が未設定のレコードに対し、Playwright プロセスを通じてURLから最新のHTMLを取得・変換し、コンテンツを補完します。
-  - 特記事項: 取得失敗時は、`bookmark` テーブルの `meta` カラム（JSON オブジェクト）内の `meta._fetch_error` にエラーコードが記録されます。
+  - メモ: 取得失敗時は、`bookmark` テーブルの `meta` カラム（JSON オブジェクト）内の `meta._fetch_error` にエラーコードが記録されます。
+  - メモ: この機能は現在公式にコアへ組み込まれており、アプリ設定の **Tools** セクションから直接実行することが可能です。
 - `import_obsidian_clippings.mjs`
   - 概要: Obsidian 等で作成された Markdown 形式のクリップファイルを一括読み込みし、フロントメターの情報（URL、タグ、公開日等）をDBへマッピングしてインポートします。
   - 設定方法: スクリプト内の `CLIPPINGS_DIR` 変数を、自身の環境の Obsidian Vault パスへ書き換えて使用してください。
 - `normalize_github_urls.mjs`
   - 概要: GitHubのURL内の不要なクエリパラメータ（`?tab=...` 等）を除去し、データの正規化を行います。
-  - 特記事項: コンテンツの変更を伴わないため、ベクトル埋め込みをスキップする `embed: false` を活用しています。
+  - メモ: コンテンツの変更を伴わないため、ベクトル埋め込みをスキップする `embed: false` を活用しています。
 - `tag_video_bookmarks.mjs`
   - 概要: 主要な動画プラットフォームのブックマークに対し、不足している `video` タグを自動的に補完します。
 

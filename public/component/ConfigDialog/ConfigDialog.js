@@ -96,7 +96,7 @@ class ConfigDialog extends Component {
 		$.on(this.els.import, 'click', () => {
 			const input = document.createElement('input');
 			input.type = 'file';
-			input.accept = '.html,.json';
+			input.accept = '.html,.json,.txt';
 			input.onchange = async e => {
 				const file = e.target.files[0];
 
@@ -153,6 +153,35 @@ class ConfigDialog extends Component {
 		bridge.on('Background:shortcuts', msg => {
 			const command = msg.shortcuts.find(c => c.name === 'open-update-page');
 			this.$('.shortcut-key').textContent = command?.shortcut || 'Not set';
+		});
+
+		$.on(this.$('button.copy-api-key'), 'click', () => {
+			const input = this.$('input[name="server.apiKey"]');
+			if (!input.value)
+				return;
+
+			navigator.clipboard.writeText(input.value);
+			app.notify('API Key copied to clipboard.', 'info');
+		});
+
+		$.on(this.$('button.generate-api-key'), 'click', async () => {
+			if (config['server.apiKey'] &&
+				!confirm('Generating a new API Key will invalidate the current one. Continue?'))
+				return;
+
+			await Nooklog.generateApiKey();
+
+			this.$('input[name="server.apiKey"]').value = config['server.apiKey'];
+			app.notify('New API Key generated.', 'info');
+		});
+
+		$.on(this.$('button.backfill-content'), 'click', async e => {
+			const limit = +this.$('.backfill-limit').value || 100;
+			const { count } = await Nooklog.backfillContent({ limit });
+			if (count > 0)
+				app.notify(`Backfill started for ${count} bookmarks.`, 'info');
+			else
+				app.notify('All bookmarks are already up to date.', 'info');
 		});
 	}
 

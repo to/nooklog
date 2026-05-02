@@ -5,6 +5,7 @@ import config from './config.js';
 import vector from './sentence/vector.js';
 import _ from './util.js';
 import baseLog from './log.js';
+import queue from './queue.js';
 
 let ingest;
 if (!config['server.readonly'])
@@ -24,7 +25,7 @@ const DEFAULT_COLUMNS = [
 	'updated_at', 'created_at',
 ];
 const DETAIL_COLUMNS = [
-	...DEFAULT_COLUMNS, 'markdown',
+	...DEFAULT_COLUMNS, 'markdown', 'meta',
 ];
 
 const nooklog = {
@@ -40,10 +41,15 @@ const nooklog = {
 	},
 
 	async dispose() {
-		log.info('disposing nooklog');
-		await ingest?.browser.dispose();
-		await store.dispose();
+		log.info('disposing resources...');
+
+		await Promise.allSettled([
+			this.backfillContentJob?.abort(),
+			store.dispose(),
+		]);
+
 		db.close();
+		await ingest?.browser.dispose();
 	},
 
 	getConfig() {
@@ -86,6 +92,11 @@ const nooklog = {
 		return config;
 	},
 
+	async generateApiKey() {
+		const key = crypto.randomBytes(32).toString('hex');
+		return await this.saveConfig({ 'server.apiKey': key });
+	},
+
 	async getTags() {
 		return Array.from(tagCache)
 			.sort((a, b) => a.length - b.length || a.localeCompare(b));
@@ -103,17 +114,7 @@ const nooklog = {
 		if (b.memo == null)
 			b = { ...await this.find(b), ...b };
 
-		if (b.html) {
-			// Remove obsolete tags and update to latest HTML
-			const processed = ingest.html.process(b.url, b.html);
-			b.html = processed.html;
-
-			// Update to latest Markdown if user has not edited
-			if (!this.isEdited(b.markdown))
-				b.markdown = processed.markdown;
-		}
-
-		return b;
+		return this._fillMarkdown(b);
 	},
 
 	async find(ps) {
@@ -140,49 +141,41 @@ const nooklog = {
 		});
 	},
 
-	async save({ id, url, title, memo, summary, rating, tags, html, markdown, meta, created_at, updated_at }) {
+	async save(n) {
 		if (config['server.readonly'])
-			return await this.find({ id, url });
+			return await this.find(n);
 
-		if (!id && !url)
+		if (!n.id && !n.url)
 			throw new Error('Missing id or url');
 
-		let b = await store.find({ id, url });
+		let b = await store.find(n);
 		const isNew = !b;
 		const now = Date.now();
 
 		if (isNew) {
 			b = db.createBookmark();
-			b.created_at = created_at ?? now;
+			b.created_at = n.created_at ?? now;
 		}
-		b.updated_at = updated_at ?? now;
+		b.updated_at = n.updated_at ?? now;
 
-		// Keep old value for checks
 		const original = { ...b };
 
-		if (this.isEdited(markdown) || (markdown != null && !this.isEdited(b.markdown)))
-			b.markdown = markdown || '';
+		// Prioritize user-edited data
+		n.markdown = (this.isEdited(b.markdown) || !n.markdown)
+			? b.markdown
+			: n.markdown;
 
-		if (html) {
-			const processed = ingest.html.process(url, html);
-			b.html = processed.html;
-			if (!this.isEdited(b.markdown))
-				b.markdown = processed.markdown;
-		}
+		_.merge(b, _.omit(n, ['id']));
 
-		// If user edited to empty, weaken so it's overwritten next time form opens
-		// (Special state: saved as empty but can be overwritten)
+		await this._fillHTML(b);
+		this._fillMarkdown(b);
+
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
 
-		// Truncate HTML
 		if (!config['database.saveHTML'])
 			b.html = '';
 
-		// Apply to DB
-		_.merge(b, { url, title, memo, summary, rating, tags, meta });
-
-		// Identify changed columns (targets for embeddings or FTS)
 		const ftsColumns = ['url', 'title', 'memo', 'summary', 'markdown'];
 		const embedColumns = ['title', 'summary', 'memo', 'markdown'];
 
@@ -200,17 +193,58 @@ const nooklog = {
 		return b;
 	},
 
-	async _syncTagCache(oldTags, newTags) {
-		if (config['server.readonly'])
-			return;
-
-		for (const tag of newTags)
-			tagCache.add(tag);
-
-		for (const tag of oldTags.filter(t => !newTags.includes(t))) {
-			if (!await store.existsTag(tag))
-				tagCache.delete(tag);
+	// Fill content by crawling the URL
+	async _fillHTML(b) {
+		// Fetch content if missing
+		if (((!b.html && !b.markdown) || !b.title) && b.url) {
+			try {
+				const res = await ingest.browser.fetch(b.url);
+				b.html = res.html;
+				b.title = b.title || res.title;
+				delete b.meta?.fetch_error;
+				log.info({ url: b.url }, 'fetch success');
+			} catch (e) {
+				b.meta = {
+					...b.meta,
+					fetch_error: e.status || e.message,
+				};
+				log.warn({ url: b.url, error: e.message }, 'fetch failed');
+			}
 		}
+
+		return b;
+	},
+
+	// Process HTML into Markdown
+	_fillMarkdown(b) {
+		if (b.html) {
+			const res = ingest.html.process(b.url, b.html);
+			b.html = res.html;
+
+			if (!this.isEdited(b.markdown))
+				b.markdown = res.markdown;
+		}
+
+		return b;
+	},
+
+	async backfillContent({ limit = 100, force = false } = {}) {
+		await this.backfillContentJob?.abort();
+
+		const bookmarks = await store.getBackfillContentTargets({ limit, force });
+		if (bookmarks.length === 0)
+			return { count: 0 };
+
+		log.info({ count: bookmarks.length, force }, 'backfilling content');
+
+		this.backfillContentJob = queue.batch(bookmarks, async slice => {
+			const b = slice[0];
+			await this._fillHTML(b);
+			this._fillMarkdown(b);
+			await this.save({ ...b, updated_at: b.updated_at });
+		}, { size: 1, interval: 2000, priority: 1, label: 'Backfilling content' });
+
+		return { count: bookmarks.length };
 	},
 
 	async import(content, options = {}) {
@@ -219,6 +253,11 @@ const nooklog = {
 
 		const bookmarks = ingest.bookmark.process(content, options);
 		const count = await store.import(bookmarks);
+
+		// Trigger backfill to fetch content for imports that only contain URLs
+		const emptyCount = bookmarks.filter(b => !b.title).length;
+		if (emptyCount > 0)
+			this.backfillContent({ limit: emptyCount });
 
 		// Update tag cache
 		const tags = await store.getTags();
@@ -347,6 +386,19 @@ const nooklog = {
 		});
 
 		await archive.finalize();
+	},
+
+	async _syncTagCache(oldTags, newTags) {
+		if (config['server.readonly'])
+			return;
+
+		for (const tag of newTags)
+			tagCache.add(tag);
+
+		for (const tag of oldTags.filter(t => !newTags.includes(t))) {
+			if (!await store.existsTag(tag))
+				tagCache.delete(tag);
+		}
 	},
 
 	isEdited(markdown) {

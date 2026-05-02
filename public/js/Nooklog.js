@@ -4,19 +4,18 @@ const Nooklog = {
 
 	async load() {
 		const values = await this.rpc('config/get');
-		this.clearConfig();
 		this._updateConfig(values);
 		hub.emit('Nooklog:load', values);
-	},
-
-	async clearConfig() {
-		for (const k in config)
-			delete config[k];
 	},
 
 	async saveConfig(input) {
 		Object.assign(config, input);
 		const values = await this.rpc('config/save', config);
+		this._updateConfig(values);
+	},
+
+	async generateApiKey() {
+		const values = await this.rpc('config/generateApiKey');
 		this._updateConfig(values);
 	},
 
@@ -81,6 +80,10 @@ const Nooklog = {
 
 	async getVectorModels(url) {
 		return await this.rpc('getVectorModels', url, []);
+	},
+
+	async backfillContent(ps) {
+		return await this.rpc('backfillContent', ps);
 	},
 
 	async import(file, options = {}) {

@@ -6,6 +6,7 @@ import { createClient } from '@libsql/client';
 import config from './config.js';
 import baseLog from './log.js';
 import sentence from './sentence/index.js';
+import { wait } from './util.js';
 
 const log = baseLog.child({ module: 'database' });
 
@@ -114,10 +115,19 @@ const database = {
 			const v = parseInt(file.match(/^(\d+)/)?.[0] || '0');
 			if (v > version) {
 				log.info({ file }, `applying migration ${file}`);
+				await wait(32); // Yield to ensure log is flushed
 
 				const sql = fs.readFileSync(path.join(migrationDir, file), 'utf-8');
 				const batch = sql.split(';').map(s => s.trim()).filter(Boolean);
-				await this.client.batch(batch, 'write');
+
+				// VACUUM cannot be executed within a transaction (batch 'write' mode)
+				const hasVacuum = batch.some(s => s.toUpperCase().includes('VACUUM'));
+				if (hasVacuum) {
+					for (const s of batch)
+						await this.client.execute(s);
+				} else {
+					await this.client.batch(batch, 'write');
+				}
 
 				version = v;
 				await this.setMeta('version', version.toString());
@@ -194,6 +204,8 @@ const database = {
 		const indexExists = rs.rows.length > 0;
 		if (useIndex && !indexExists) {
 			log.info('creating vector index (ANN enabled)');
+			await wait(32);
+
 			await this.client.execute(
 				`CREATE INDEX bookmark_vector_idx ON bookmark_vector (
 						libsql_vector_idx(vector, 'metric=cosine', 'max_neighbors=16', 'compress_neighbors=float8'))`);

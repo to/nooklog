@@ -23,6 +23,7 @@ const config = {
 	'extension.focusMemoOnSelection': false,
 	'server.port': 5050,
 	'server.password': '',
+	'server.apiKey': '',
 	'sentence.vector.enabled': false,
 	'sentence.vector.queryPrefix': '', // Use preset if empty
 	'sentence.vector.documentTitlePrefix': '', // Use preset if empty

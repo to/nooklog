@@ -92,6 +92,7 @@ The following scripts are **samples** and should be customized to meet specific 
 - `backfill_content.mjs`
   - Purpose: Identifies records with missing `markdown` and fetches/converts content from the URL using Playwright.
   - Note: Records failure reasons in `meta._fetch_error` within the `meta` (JSON object) column of the `bookmark` table.
+  - Note: This functionality is now officially integrated into the core and can be accessed via the **Tools** section in the application settings.
 - `import_obsidian_clippings.mjs`
   - Purpose: Performs bulk import of Markdown clippings (e.g., from an Obsidian vault). Maps frontmatter fields (URL, tags, dates) to database columns.
   - Setup: Update the `CLIPPINGS_DIR` variable to point to your actual vault path.

@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM mcr.microsoft.com/playwright:v1.59.0-noble
 
 # Install system dependencies required for building native modules (e.g., node-llama-cpp)
 RUN apt-get update && apt-get install -y \
@@ -11,6 +11,9 @@ WORKDIR /app
 
 # Copy package manifest files first to leverage Docker build caching for dependencies
 COPY package*.json ./
+
+# Skip browser download during npm install as they are already pre-installed in the base image
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Install node modules using cache mount for faster builds
 RUN --mount=type=cache,target=/root/.npm \
