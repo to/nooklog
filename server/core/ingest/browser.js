@@ -56,6 +56,11 @@ export async function dispose() {
 			log.warn({ error: e.message }, 'browser server close error');
 		} finally {
 			clearTimeout(forceKill);
+			try {
+				proc?.kill('SIGKILL');
+			} catch (e) {
+				// ignore
+			}
 			browserServer = null;
 		}
 	}
