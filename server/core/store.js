@@ -241,10 +241,10 @@ const store = {
 
 	async import(bookmarks) {
 		const rs = await db.client.execute('SELECT url FROM bookmark');
-		const existingUrls = new Set(rs.rows.map(r => r.url));
+		let urls = new Set(rs.rows.map(r => r.url));
 
 		const newBookmarks = bookmarks
-			.filter(b => !existingUrls.has(b.url))
+			.filter(b => !urls.has(b.url) && urls.add(b.url))
 			.map(b => Object.assign(db.createBookmark(), b));
 
 		if (newBookmarks.length > 0)

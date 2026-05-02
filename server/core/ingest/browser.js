@@ -29,7 +29,11 @@ async function getBrowser() {
 
 export async function dispose() {
 	if (browser) {
-		browser.close().catch(() => { });
+		try {
+			await browser.close();
+		} catch (e) {
+			// ignore
+		}
 		browser = null;
 	}
 
@@ -42,25 +46,18 @@ export async function dispose() {
 				try {
 					proc?.kill('SIGKILL');
 				} catch (e) {
-					log.error({ error: e.message }, 'failed to kill browser process');
+					// ignore
 				}
 			}
 		}, 3000);
 		forceKill.unref();
 
 		try {
-			log.info('closing browser server...');
 			await browserServer.close();
-			log.info('browser server closed gracefully');
 		} catch (e) {
 			log.warn({ error: e.message }, 'browser server close error');
 		} finally {
 			clearTimeout(forceKill);
-			try {
-				proc?.kill('SIGKILL');
-			} catch (e) {
-				// ignore
-			}
 			browserServer = null;
 		}
 	}

@@ -303,14 +303,10 @@ let shutdown = async signal => {
 	shutdown = () => { };
 	log.info({ signal }, 'shutdown signal received');
 
-	// Release resources first (priority)
 	await nooklog.dispose();
-	log.info('nooklog disposed successfully');
-
-	// Then close server
 	await server.close();
-	log.info('http server closed');
 
+	log.info('shutdown complete');
 	process.exit(0);
 };
 

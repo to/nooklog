@@ -9,6 +9,9 @@ import vector from './vector.js';
 // Normalize Japanese orthographical variants (Wide space/Alphanumeric to half-width, combined voiced marks, etc.)
 const normalizeJp = text => (text || '')
 	.normalize('NFKC')
+	.replace(/[‘’'＇]/g, "'")
+	.replace(/[“”"＂]/g, '"')
+	.replace(/[－–—―‐]/g, '-')
 	.replace(/([ァ-ヶー]{2,})ー$/g, '$1');
 
 // Uni-gram splitting

@@ -41,19 +41,15 @@ const nooklog = {
 	},
 
 	async dispose() {
-		log.info('disposing nooklog');
+		log.info('disposing resources...');
 
-		await this.backfillContentJob?.abort();
-		log.info('backfill job aborted');
-
-		await store.dispose();
-		log.info('store disposed');
+		await Promise.allSettled([
+			this.backfillContentJob?.abort(),
+			store.dispose(),
+		]);
 
 		db.close();
-		log.info('database closed');
-
 		await ingest?.browser.dispose();
-		log.info('ingest browser disposed');
 	},
 
 	getConfig() {

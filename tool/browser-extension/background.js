@@ -415,9 +415,11 @@ async function registerMessagingBridge() {
 	}];
 
 	if (config['extension.autoAppendSelection']) {
+		// Exclude the update form to prevent circular pasting (self-selection loops)
 		scripts.push({
 			id: 'capture-selection',
 			matches: ['<all_urls>'],
+			excludeMatches: [`${url}/update.html*`],
 			js: ['content/captureSelection.js'],
 			runAt: 'document_start',
 			allFrames: false,

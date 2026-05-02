@@ -145,7 +145,7 @@ const updateTint = () => {
 	steps.forEach((step, i) => {
 		root.style.setProperty(`--ink-${i}`,
 			theme.endsWith('-gray') ?
-				`hsl(from var(--${ink}-${step}) h calc(s * 0.5) l)` :
+				`hsl(from var(--${ink}-${step}) h calc(s * 0.2) l)` :
 				`var(--${ink}-${step})`);
 	});
 	root.style.setProperty('--color-1', `var(--${tint}-11)`);
