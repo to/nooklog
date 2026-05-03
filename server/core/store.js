@@ -290,12 +290,12 @@ const store = {
 	},
 
 	async searchFTS({
-		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, sortBy = 'created_at', limit = 300,
+		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, from, to, sortBy = 'created_at', limit = 300,
 	}) {
 		const {
 			conditions, params, ftsConditions, ftsParams,
 		} = this._buildSearchQuery({
-			tags, query, url, fields, rating,
+			tags, query, url, fields, rating, from, to,
 		});
 
 		const hasFts = ftsConditions.length > 0;
@@ -352,7 +352,7 @@ const store = {
 
 	async searchVector({
 		columns = ['*'], query = '', url = '', fields = [], limit = 50, sortBy = 'relevance',
-		tags = [], rating, useVectorIndex = true,
+		tags = [], rating, from, to, useVectorIndex = true,
 	}) {
 		if (!query?.trim() || !config['sentence.vector.enabled'])
 			return { count: 0, totalCount: await db.getTotalCount(), bookmarks: [] };
@@ -362,7 +362,7 @@ const store = {
 
 		const {
 			conditions, params, ftsConditions, ftsParams,
-		} = this._buildSearchQuery({ tags, rating, url });
+		} = this._buildSearchQuery({ tags, rating, url, from, to });
 		const qVecJson = JSON.stringify(qVec);
 
 		let sql;
@@ -480,7 +480,7 @@ const store = {
 	},
 
 	_buildSearchQuery({
-		tags = [], query = '', url = '', fields = [], rating,
+		tags = [], query = '', url = '', fields = [], rating, from, to,
 	}) {
 		const conditions = [];
 		const params = [];
@@ -497,6 +497,16 @@ const store = {
 		if (rating != null) {
 			conditions.push('b.rating >= ?');
 			params.push(rating);
+		}
+
+		if (from) {
+			conditions.push('b.created_at >= ?');
+			params.push(from instanceof Date ? from.getTime() : from);
+		}
+
+		if (to) {
+			conditions.push('b.created_at <= ?');
+			params.push(to instanceof Date ? to.getTime() : to);
 		}
 
 		const ftsUrl = this._buildFtsMatch(url, ['url']);

@@ -79,6 +79,28 @@ input[type='number'] {
 	appearance: textfield;
 }
 
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+	filter: invert(0.9);
+}
+
+input[type="date"] {
+	position: relative;
+	width: 9.2em;
+
+	/* Calendar icon */
+	&::-webkit-calendar-picker-indicator {
+		cursor: pointer;
+	}
+
+	/* Calendar placeholder */
+	&::-webkit-datetime-edit-text,
+	&::-webkit-datetime-edit-month-field,
+	&::-webkit-datetime-edit-day-field,
+	&::-webkit-datetime-edit-year-field {
+		color: var(--ink-4);
+	}
+}
+
 select {
 	width: fit-content;
 	cursor: pointer;
@@ -242,7 +264,7 @@ header {
 		padding: var(--space-2s) 0;
 
 		.icon {
-			/* EN: 下線を表示する */
+			/* Show underline */
 			display: inline;
 			vertical-align: middle;
 		}

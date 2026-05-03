@@ -27,6 +27,8 @@ const searchSchema = z.object({
 	url: z.string().optional(),
 	tags: inputArrayField.optional(),
 	rating: z.number().int().min(0).max(5).optional(),
+	from: z.coerce.date().optional(),
+	to: z.coerce.date().optional(),
 	query: z.string().default(''),
 	mode: z.enum(['fts', 'vector', 'hybrid']).default('fts'),
 	useVectorIndex: z.boolean().optional(),

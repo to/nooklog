@@ -54,6 +54,12 @@ class ResultTable extends Component {
 				return;
 			}
 
+			const dates = e.target.closest('.dates');
+			if (dates) {
+				hub.emit('ResultTable:selectDate', dates.textContent);
+				return;
+			}
+
 			const link = e.target.closest('.title');
 			if (!link)
 				this._select(row);
