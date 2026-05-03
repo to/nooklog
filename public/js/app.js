@@ -12,13 +12,48 @@ const app = {
 		return this[key] ?? def;
 	},
 
-	notify(message, type = 'info', ms) {
-		return new Toast(message, type, ms);
+	notify(opt) {
+		this.showToast({
+			className: 'toast-info',
+			...opt,
+		});
 	},
 
 	error(e) {
 		console.error(e);
-		return this.notify(e?.message || e, 'error');
+		this.showToast({
+			duration: -1,
+			className: 'toast-error',
+			text: e.message || e,
+		});
+	},
+
+	showToast(opt) {
+		const toastify = Toastify({
+			duration: 2000,
+			selector: document.querySelector('dialog[open]') || document.body,
+			gravity: 'bottom',
+			position: 'left',
+			stopOnFocus: true,
+			...opt,
+		});
+		const toastifyElm = toastify.showToast().toastElement;
+
+		let buttonElm = document.createElement('button');
+		if (opt.duration === -1)
+			buttonElm.innerHTML = '<span class="icon">close<span>';
+
+		if (opt.buttonText)
+			buttonElm.textContent = opt.buttonText;
+
+		if (buttonElm.innerHTML) {
+			buttonElm.onclick = e => {
+				e.stopPropagation();
+				opt.onButtonClick?.();
+				toastify.hideToast();
+			};
+			toastifyElm.appendChild(buttonElm);
+		}
 	},
 
 	renderMarkdown(b = {}) {

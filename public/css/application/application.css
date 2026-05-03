@@ -115,8 +115,9 @@ button {
 	--background-color: var(--ink-5);
 
 	display: flex; /* Remove minor line margins */
-	padding: var(--space-2s) var(--space-s);
+	padding: var(--space-s) var(--space-s);
 	font-weight: bold;
+	line-height: 1;
 	color: var(--color);
 	background-color: var(--background-color);
 	border-radius: var(--radius-m);
@@ -335,6 +336,34 @@ header .icon,
 footer .icon {
 	font-size: var(--font-size-l);
 }
+
+/* ---- Toastify ---- */
+
+.toastify {
+	display: flex;
+	gap: var(--space-s);
+	align-items: center;
+	padding: var(--space-s);
+	color: var(--ink-0);
+	cursor: default;
+	box-shadow: 4px 0 16px rgba(0, 0, 0, 20%);
+	transition-duration: 0.2s;
+
+	&.toast-info {
+		background: var(--ink-5);
+	}
+
+	&.toast-error {
+		background: var(--color-error);
+	}
+
+	button {
+		padding: var(--space-2s);
+		color: var(--ink-5);
+		background: var(--ink-0);
+	}
+}
+
 
 /* ---- Animation ---- */
 @keyframes animate-spin {

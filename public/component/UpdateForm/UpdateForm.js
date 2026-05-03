@@ -299,7 +299,7 @@ class UpdateForm extends Component {
 
 			window.close();
 		} else {
-			app.notify('Saved');
+			app.notify({ text: 'Saved', duration: 1600 });
 		}
 	}
 
