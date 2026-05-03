@@ -128,10 +128,11 @@ const nooklog = {
 			return;
 
 		const bookmark = await store.find({ id });
-		await store.delete(id);
+		if (!bookmark)
+			return;
 
-		if (bookmark)
-			await this._syncTagCache(bookmark.tags, []);
+		await store.delete(id);
+		await this._syncTagCache(bookmark.tags, []);
 
 		return bookmark;
 	},
@@ -156,6 +157,7 @@ const nooklog = {
 
 		if (isNew) {
 			b = db.createBookmark();
+			b.id = n.id || b.id;
 			b.created_at = n.created_at ?? now;
 		}
 		b.updated_at = n.updated_at ?? now;

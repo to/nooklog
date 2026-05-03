@@ -300,7 +300,7 @@ const store = {
 	},
 
 	async searchFTS({
-		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, sortBy = 'updated_at', limit = 300,
+		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, sortBy = 'created_at', limit = 300,
 	}) {
 		const {
 			conditions, params, ftsConditions, ftsParams,
@@ -324,12 +324,14 @@ const store = {
 		if (allConditions.length > 0)
 			sql += ' WHERE ' + allConditions.join(' AND ');
 
-		let orderBy = 'updated_at DESC';
+		let orderBy = 'created_at DESC';
 		if (sortBy === 'relevance') {
 			if (hasFts)
 				orderBy = 'f.rank';
-		} else if (sortBy !== 'updated_at') {
-			orderBy = `${sortBy} DESC, updated_at DESC`;
+		} else if (sortBy === 'rating') {
+			orderBy = 'rating DESC, created_at DESC';
+		} else if (sortBy === 'updated_at') {
+			orderBy = 'updated_at DESC';
 		}
 		sql += ` ORDER BY ${orderBy}`;
 

@@ -139,7 +139,7 @@ class ResultTable extends Component {
 						</div>
 						${r.score !== undefined ?
 				`<span class="score hidden">${r.score.toFixed(2)}</span>` : ''}
-						<span class="dates" title="Created: ${createdAt}">${updatedAt}</span>
+						<span class="dates" title="Updated: ${updatedAt}">${createdAt}</span>
 						<button class="delete flat icon ${config['server.mode'] === 'readonly' ? 'none' : ''}">delete</button>
 					</div>
 				</div>

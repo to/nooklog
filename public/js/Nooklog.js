@@ -64,11 +64,30 @@ const Nooklog = {
 		return this._populate(await this.rpc('save', data, null));
 	},
 
-	async delete(id, confirm = true) {
-		if (confirm && !window.confirm('Are you sure you want to delete this bookmark?'))
+	async delete(id) {
+		if (app.view === 'window' || app.view === 'embed') {
+			if (!window.confirm('Are you sure you want to delete this bookmark?'))
+				return;
+		}
+
+		const bookmark = await this.rpc('delete', { id });
+		if (!bookmark)
 			return;
 
-		return this._populate(await this.rpc('delete', { id }));
+		if (app.view === 'home' || (app.view === 'sidepanel' && !config['extension.closeSidepanelOnSave'])) {
+			const label = bookmark.title.length > 20 ? bookmark.title.slice(0, 25) + '...' : bookmark.title;
+			app.notify({
+				text: `Deleted: ${label}`,
+				duration: 5000,
+				buttonText: 'Undo',
+				onButtonClick: async () => {
+					await this.save(bookmark);
+					app.notify({ text: `Restored: ${label}` });
+				},
+			});
+		}
+
+		return this._populate(bookmark);
 	},
 
 	async getTags() {
@@ -92,7 +111,7 @@ const Nooklog = {
 
 	async rpc(path, data = {}, def = undefined) {
 		const res = await this.net.post('/rpc/' + path, { json: data }, def);
-		return res?.json ?? res;
+		return res?.json;
 	},
 
 	_populate(b) {

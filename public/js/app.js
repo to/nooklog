@@ -3,6 +3,9 @@ const app = {
 	// (Cannot replace config as iframe and normal pages have different settings)
 	...JSON.parse(localStorage.getItem('ui') || '{}'),
 
+	// view modes: embed, sidepanel, window, popup, or empty (home screen)
+	view: getSearchParams().view || 'home',
+
 	set(key, value) {
 		this[key] = value;
 		localStorage.setItem('ui', JSON.stringify(this));
@@ -20,7 +23,7 @@ const app = {
 	},
 
 	error(e) {
-		console.error(e);
+		console.error(e.message, e);
 		this.showToast({
 			duration: -1,
 			className: 'toast-error',
@@ -40,6 +43,7 @@ const app = {
 		const toastifyElm = toastify.showToast().toastElement;
 
 		let buttonElm = document.createElement('button');
+		buttonElm.type = 'button';
 		if (opt.duration === -1)
 			buttonElm.innerHTML = '<span class="icon">close<span>';
 
@@ -98,6 +102,7 @@ const app = {
 		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(markdown))}</div>`;
 	},
 };
+document.documentElement.dataset.view = app.view;
 
 const hub = new EventEmitter();
 hub.once('Nooklog:load', () => {
