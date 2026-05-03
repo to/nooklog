@@ -59,9 +59,10 @@
 }
 
 :root:lang(ja){
-	--font-sans-m: "BIZ UDPGothic", "Hiragino Sans", meiryo, system-ui, sans-serif;
+	--font-sans-m: segoe ui, helvetica neue, helvetica, arial, "BIZ UDPGothic", "Hiragino Sans", meiryo, system-ui, sans-serif;
 	--font-sans-s: meiryo, system-ui, sans-serif;
 
+	text-autospace: normal;
 	letter-spacing: 0.02em;
 }
 
