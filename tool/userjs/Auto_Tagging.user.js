@@ -15,7 +15,7 @@
 /* global beforeHook, afterHook, UpdateForm */
 
 (() => {
-	if (!window.beforeHook)
+	if (typeof beforeHook === 'undefined')
 		return;
 
 	const autoTags = {

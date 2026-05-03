@@ -273,19 +273,9 @@ const store = {
 
 	async getTags() {
 		const rs = await db.client.execute(`
-			SELECT DISTINCT value as tag FROM bookmark, json_each(tags)
-			ORDER BY tag`);
-		return rs.rows.map(r => r.tag);
-	},
-
-	async existsTag(tag) {
-		const rs = await db.client.execute({
-			sql: `
-				SELECT 1 FROM bookmark, json_each(tags)
-				WHERE value = ? LIMIT 1`,
-			args: [tag],
-		});
-		return rs.rows.length > 0;
+			SELECT value as tag, COUNT(*) as count FROM bookmark, json_each(tags)
+			GROUP BY tag`);
+		return rs.rows;
 	},
 
 	async search(ps) {

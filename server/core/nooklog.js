@@ -32,7 +32,7 @@ const nooklog = {
 	async initialize() {
 		// Build tag cache
 		if (!tagCache) {
-			tagCache = new Set(await store.getTags());
+			tagCache = new Map((await store.getTags()).map(r => [r.tag, r.count]));
 			log.info({ count: tagCache.size }, 'tags loaded');
 		}
 
@@ -100,8 +100,9 @@ const nooklog = {
 	},
 
 	async getTags() {
-		return Array.from(tagCache)
-			.sort((a, b) => a.length - b.length || a.localeCompare(b));
+		return Array.from(tagCache.entries())
+			.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+			.map(e => e[0]);
 	},
 
 	async stash(b) {
@@ -264,8 +265,7 @@ const nooklog = {
 			this.backfillContent({ limit: emptyCount });
 
 		// Update tag cache
-		const tags = await store.getTags();
-		tags.forEach(t => tagCache.add(t));
+		tagCache = new Map((await store.getTags()).map(r => [r.tag, r.count]));
 
 		return { count };
 	},
@@ -397,11 +397,14 @@ const nooklog = {
 			return;
 
 		for (const tag of newTags)
-			tagCache.add(tag);
+			tagCache.set(tag, (tagCache.get(tag) || 0) + 1);
 
-		for (const tag of oldTags.filter(t => !newTags.includes(t))) {
-			if (!await store.existsTag(tag))
+		for (const tag of oldTags) {
+			const count = (tagCache.get(tag) || 1) - 1;
+			if (count <= 0)
 				tagCache.delete(tag);
+			else
+				tagCache.set(tag, count);
 		}
 	},
 

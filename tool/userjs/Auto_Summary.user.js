@@ -23,7 +23,7 @@ const serverUrl = 'http://localhost:11434/v1';
 const model = 'gemma3:4b';
 
 (() => {
-	if (!window.beforeHook)
+	if (typeof beforeHook === 'undefined')
 		return;
 
 	const summarize = async text => {

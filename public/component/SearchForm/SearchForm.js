@@ -15,14 +15,17 @@ class SearchForm extends Component {
 		};
 
 		this.els.query.focus();
-
-		this.setQuery(getSearchParams());
-		this._search();
 	}
 
 	async ready() {
-		this._updateVisibility();
-		this._updateVectorOptionsVisibility();
+		// Wait for the tag whitelist to load for proper auto-completion
+		this.els.tags.hub.on('refresh', () => {
+			this.setQuery(getSearchParams());
+			this._search();
+
+			this._updateVisibility();
+			this._updateVectorOptionsVisibility();
+		});
 	}
 
 	bindEvents() {
@@ -45,8 +48,7 @@ class SearchForm extends Component {
 			this._search();
 		});
 
-		this.els.tags.on('add', () => this._search());
-		this.els.tags.on('remove', () => this._search());
+		this.els.tags.on('change', () => this._search());
 
 		$.on(this.els.form, 'keydown', e => {
 			if (e.key === 'Escape') {
@@ -135,11 +137,21 @@ class SearchForm extends Component {
 	}
 
 	setQuery(ps) {
-		this.els.query.value = ps.query || '';
-		this.els.url.value = ps.url || '';
+		let query = ps.query || '';
+		let url = ps.url || '';
+		let tags = ps.tags || [];
+		if (typeof tags === 'string')
+			tags = tags.split(',').filter(Boolean);
 
-		// Suppress event
-		this.els.tags.tagify.loadOriginalValues(ps.tags);
+		query = query
+			.replace(/\bu:(\S+)/g, (_, v) => (url = v, ''))
+			.replace(/\bt:(\S+)/g, (_, v) => (tags.push(v), ''))
+			.trim().replace(/\s+/g, ' ');
+
+		this.els.query.value = query;
+		this.els.url.value = url;
+
+		this.els.tags.load(tags);
 
 		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);
 		$.check(this.els.useVectorIndex, (ps.useVectorIndex !== false).toString());
@@ -154,6 +166,8 @@ class SearchForm extends Component {
 	}
 
 	async _search() {
+		this.setQuery(this.getQuery());
+
 		$.hide(this.els.count);
 		$.show(this.els.loading);
 
