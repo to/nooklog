@@ -38,6 +38,9 @@ const nooklog = {
 
 		store.reindexFts();
 		store.reembed();
+
+		// Delay vacuum to avoid contention with initial indexing tasks
+		setTimeout(() => db.vacuum(), 1000);
 	},
 
 	async dispose() {
@@ -47,8 +50,7 @@ const nooklog = {
 			this.backfillContentJob?.abort(),
 			store.dispose(),
 		]);
-
-		db.close();
+		await db.dispose();
 		await ingest?.browser.dispose();
 	},
 

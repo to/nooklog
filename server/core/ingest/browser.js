@@ -28,6 +28,7 @@ async function getBrowser() {
 }
 
 export async function dispose() {
+	log.info('disposing browser');
 	if (browser) {
 		try {
 			await browser.close();

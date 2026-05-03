@@ -44,6 +44,8 @@ class UpdateForm extends Component {
 		this._setSubmitting(false);
 
 		const ps = getSearchParams();
+
+		// view modes: embed, sidepanel, window, popup, or empty (home screen)
 		this.view = ps.view;
 		if (this.view)
 			document.documentElement.dataset.view = this.view;
