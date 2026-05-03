@@ -8,6 +8,14 @@
 		"@stylistic/stylelint-plugin"
 	],
 	"rules": {
+		"property-no-unknown": [
+			true,
+			{
+				"ignoreProperties": [
+					"text-autospace"
+				]
+			}
+		],
 		"declaration-block-no-redundant-longhand-properties": null,
 		"keyframes-name-pattern": null,
 		"@stylistic/indentation": "tab",

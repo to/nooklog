@@ -12,6 +12,7 @@ const store = {
 	UNLIMITED: null,
 
 	async dispose() {
+		log.info('disposing store');
 		await this.reembedJob?.abort();
 		await this.reindexJob?.abort();
 	},

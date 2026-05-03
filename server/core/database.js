@@ -6,12 +6,14 @@ import { createClient } from '@libsql/client';
 import config from './config.js';
 import baseLog from './log.js';
 import sentence from './sentence/index.js';
+import queue from './queue.js';
 import { wait } from './util.js';
 
 const log = baseLog.child({ module: 'database' });
 
 const database = {
 	client: null,
+	vacuumJob: null,
 
 	async initialize() {
 		const isReadOnly = config['server.readonly'];
@@ -54,11 +56,14 @@ const database = {
 			});
 		}
 
-		// Performance settings (Execute only in pure local mode and when writable)
-		if (!tursoUrl && !isReadOnly) {
-			await this.client.execute('PRAGMA journal_mode = WAL');
-			await this.client.execute('PRAGMA synchronous = NORMAL');
+		// Performance settings
+		if (!isReadOnly) {
+			if (!tursoUrl) {
+				await this.client.execute('PRAGMA journal_mode = WAL');
+				await this.client.execute('PRAGMA synchronous = NORMAL');
+			}
 			await this.client.execute('PRAGMA foreign_keys = ON');
+			await this.client.execute('PRAGMA busy_timeout = 10000');
 		}
 
 		// Read-only mode handling: wrap with a proxy that ignores write-blocked errors
@@ -86,6 +91,12 @@ const database = {
 		await this.initializeFtsTable();
 
 		log.info('database initialized and config restored');
+	},
+
+	async dispose() {
+		log.info('disposing database');
+		await this.vacuumJob?.abort();
+		this.client?.close();
 	},
 
 	async loadConfig() {
@@ -199,25 +210,58 @@ const database = {
 
 		// Sync index state (Check actual schema discrepancy)
 		const useIndex = config['database.useVectorIndex'];
-		const rs = await this.client.execute(
+		const rows = await this.execute(
 			"SELECT 1 FROM sqlite_master WHERE type='index' AND name='bookmark_vector_idx'");
-		const indexExists = rs.rows.length > 0;
+		const indexExists = rows.length > 0;
+
 		if (useIndex && !indexExists) {
 			log.info('creating vector index (ANN enabled)');
 			await wait(32);
 
-			await this.client.execute(
+			await this.execute(
 				`CREATE INDEX bookmark_vector_idx ON bookmark_vector (
 						libsql_vector_idx(vector, 'metric=cosine', 'max_neighbors=16', 'compress_neighbors=float8'))`);
 		} else if (!useIndex && indexExists) {
 			log.info('dropping vector index (ANN disabled)');
-			await this.client.execute('DROP INDEX IF EXISTS bookmark_vector_idx');
+			await this.execute('DROP INDEX IF EXISTS bookmark_vector_idx');
 		}
 	},
 
-	close() {
-		log.info('closing database');
-		this.client?.close();
+	async vacuum() {
+		if (config['server.readonly'])
+			return;
+
+		const { page_size, page_count, freelist_count } = await this.getPragma([
+			'page_size', 'page_count', 'freelist_count',
+		]);
+		log.debug({ page_size, page_count, freelist_count }, 'vacuum status');
+
+		if (freelist_count === 0)
+			return;
+
+		// Optimize if waste is > 20% and > 100MB
+		const wastePercent = (freelist_count / page_count) * 100;
+		const wasteBytes = freelist_count * page_size;
+		log.debug({ wastePercent, wasteBytes }, 'vacuum threshold check');
+		if (wastePercent <= 20 || wasteBytes <= 100 * 1024 * 1024)
+			return;
+
+		await this.vacuumJob?.abort();
+
+		log.info({
+			waste: `${wastePercent.toFixed(1)}%`,
+			size: `${(wasteBytes / 1024 / 1024).toFixed(1)}MB`,
+		}, 'optimizing database (incremental vacuum)');
+
+		const step = 300;
+		const steps = new Array(Math.ceil(freelist_count / step)).fill(0);
+		this.vacuumJob = queue.batch(steps, async () => {
+			await this.execute(`PRAGMA incremental_vacuum(${step})`);
+		}, { priority: -2, size: 1, interval: 500, label: 'Vacuuming' });
+
+		this.vacuumJob.then(() => {
+			this.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+		});
 	},
 
 	createBookmark() {
@@ -239,29 +283,34 @@ const database = {
 	},
 
 	async getMeta(id) {
-		const rs = await this.client.execute({
-			sql: 'SELECT value FROM meta WHERE id = ?',
-			args: [id],
-		});
-		return rs.rows[0]?.value;
+		const [row] = await this.execute('SELECT value FROM meta WHERE id = ?', [id]);
+		return row?.value;
 	},
 
 	async setMeta(id, value) {
-		await this.client.execute({
-			sql: 'INSERT OR REPLACE INTO meta (id, value) VALUES (?, ?)',
-			args: [id, value],
-		});
+		await this.execute('INSERT OR REPLACE INTO meta (id, value) VALUES (?, ?)', [id, value]);
 	},
 
 	async getTotalCount() {
-		const rs = await this.client.execute('SELECT count(*) as count FROM bookmark');
-		return rs.rows[0].count;
+		const [{ count }] = await this.execute('SELECT count(*) as count FROM bookmark');
+		return count;
 	},
 
 	async count({ from, where, args }) {
 		const sql = `SELECT count(*) as count ${from} ${where ? `WHERE ${where}` : ''}`;
-		const rs = await this.client.execute({ sql, args });
-		return rs.rows[0].count;
+		const [{ count }] = await this.execute(sql, args);
+		return count;
+	},
+
+	async execute(sql, args = []) {
+		const rs = await this.client.execute(typeof sql === 'string' ? { sql, args } : sql);
+		return rs.rows || [];
+	},
+
+	async getPragma(names) {
+		names = Array.isArray(names) ? names : [names];
+		const rs = await this.client.batch(names.map(n => `PRAGMA ${n}`), 'read');
+		return rs.reduce((acc, r) => Object.assign(acc, r.rows[0]), {});
 	},
 };
 

@@ -17,6 +17,7 @@ const app = {
 	},
 
 	error(e) {
+		console.error(e);
 		return this.notify(e?.message || e, 'error');
 	},
 

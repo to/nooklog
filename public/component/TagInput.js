@@ -61,13 +61,16 @@ class TagInput extends Component {
 
 		if (config['client.tagMatchMode'] === 'smart') {
 			this.tagify.dropdown.filterListItems = value => {
+				const selected = new Set(this.tagify.value.map(v => v.value));
+				let whitelist = this.tagify.whitelist.filter(t => !selected.has(t));
+
 				if (!value)
-					return this.tagify.whitelist.slice(0, this.maxWhitelist);
+					return whitelist.slice(0, this.maxWhitelist);
 
 				const regex = new RegExp(
 					`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
 
-				const whitelist = this.tagify.whitelist
+				whitelist = whitelist
 					.filter(t => regex.test(t))
 					.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
 					.slice(0, this.maxWhitelist);
