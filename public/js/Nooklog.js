@@ -10,7 +10,7 @@ const Nooklog = {
 
 	async saveConfig(input) {
 		Object.assign(config, input);
-		const values = await this.rpc('config/save', config);
+		const values = await this.rpc('config/save', input);
 		this._updateConfig(values);
 	},
 

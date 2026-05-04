@@ -88,6 +88,9 @@ const nooklog = {
 
 		await db.saveConfig(input);
 
+		if (Object.keys(input).length > 3)
+			db.vacuum();
+
 		store.reindexFts();
 		store.reembed();
 
