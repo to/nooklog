@@ -116,7 +116,7 @@ const store = {
 
 				if (fields) {
 					batch.push({
-						sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND field IN (${fields.map(() => '?').join(',')})`,
+						sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND (field IN (${fields.map(() => '?').join(',')}) OR field = 'none')`,
 						args: [rowId, ...fields],
 					});
 				} else {
@@ -164,8 +164,19 @@ const store = {
 
 				targets = targets.filter(t => t.text?.trim() || t.title?.trim());
 
-				if (targets.length === 0)
+				if (targets.length === 0) {
+					// Mark as processed to prevent infinite re-embedding loop
+					if (!fields) {
+						batch.push({
+							sql: `
+							INSERT INTO bookmark_vector (
+								bookmark_id, chunk_index, field, content, position, vector
+							) VALUES (?, 0, 'none', '', 0, NULL)`,
+							args: [rowId],
+						});
+					}
 					continue;
+				}
 
 				// Vectorize (pass title and body together)
 				const vectors = await sentence.embedDocument(targets);
