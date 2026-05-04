@@ -21,16 +21,16 @@ const store = {
 		if (!id && !url)
 			return null;
 
-		const rs = await db.client.execute({
+		const rows = await db.execute({
 			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE ${id ? 'id' : 'url'} = ?`,
 			args: [id || url],
 		});
-		return this._parse(rs.rows[0]);
+		return this._parse(rows[0]);
 	},
 
 	async query(sql, args = []) {
-		const rs = await db.client.execute({ sql, args });
-		return rs.rows.map(r => this._parse(r));
+		const rows = await db.execute({ sql, args });
+		return rows.map(r => this._parse(r));
 	},
 
 	async save(bookmarks, { fts = true, embed = true, embedFields = null } = {}) {
@@ -102,10 +102,10 @@ const store = {
 
 			// Fetch row_ids for all bookmarks in the slice
 			const ids = slice.map(b => b.id);
-			const idMap = new Map((await db.client.execute({
+			const idMap = new Map((await db.execute({
 				sql: `SELECT id, row_id FROM bookmark WHERE id IN (${ids.map(() => '?').join(',')})`,
 				args: ids,
-			})).rows.map(r => [r.id, r.row_id]));
+			})).map(r => [r.id, r.row_id]));
 
 			for (let b of slice) {
 				const rowId = idMap.get(b.id);
@@ -209,11 +209,10 @@ const store = {
 
 		await this.reembedJob?.abort();
 
-		const rs = await db.client.execute(`
+		const bookmarks = await db.execute(`
 			SELECT id, title, memo, summary, markdown FROM bookmark
 			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
 			ORDER BY updated_at DESC`);
-		const bookmarks = rs.rows;
 		if (bookmarks.length === 0)
 			return;
 
@@ -228,10 +227,9 @@ const store = {
 
 		await this.reindexJob?.abort();
 
-		const rs = await db.client.execute(`
+		const bookmarks = await db.execute(`
 			SELECT id, title, memo, summary, markdown, url FROM bookmark
 			WHERE row_id NOT IN (SELECT rowid FROM bookmark_fts)`);
-		const bookmarks = rs.rows;
 		if (bookmarks.length === 0)
 			return;
 
@@ -252,8 +250,8 @@ const store = {
 	},
 
 	async import(bookmarks) {
-		const rs = await db.client.execute('SELECT url FROM bookmark');
-		let urls = new Set(rs.rows.map(r => r.url));
+		const rows = await db.execute('SELECT url FROM bookmark');
+		let urls = new Set(rows.map(r => r.url));
 
 		const newBookmarks = bookmarks
 			.filter(b => !urls.has(b.url) && urls.add(b.url))
@@ -283,10 +281,9 @@ const store = {
 	},
 
 	async getTags() {
-		const rs = await db.client.execute(`
+		return await db.execute(`
 			SELECT value as tag, COUNT(*) as count FROM bookmark, json_each(tags)
 			GROUP BY tag`);
-		return rs.rows;
 	},
 
 	async search(ps) {
@@ -342,7 +339,7 @@ const store = {
 			args.push(limit);
 		}
 
-		const rs = await db.client.execute({ sql, args });
+		const rows = await db.execute({ sql, args });
 		const totalCount = await db.getTotalCount();
 
 		let count = totalCount;
@@ -357,7 +354,7 @@ const store = {
 		return {
 			count,
 			totalCount,
-			bookmarks: rs.rows.map(r => this._parse(r)),
+			bookmarks: rows.map(r => this._parse(r)),
 		};
 	},
 
@@ -437,11 +434,11 @@ const store = {
 			args.push(limit);
 		}
 
-		const rs = await db.client.execute({ sql, args });
+		const rows = await db.execute({ sql, args });
 		return {
-			count: rs.rows.length,
+			count: rows.length,
 			totalCount: await db.getTotalCount(),
-			bookmarks: rs.rows.map(r => this._parse(r)),
+			bookmarks: rows.map(r => this._parse(r)),
 		};
 	},
 
