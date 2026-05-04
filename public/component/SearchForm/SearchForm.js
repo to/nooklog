@@ -45,10 +45,8 @@ class SearchForm extends Component {
 		});
 
 		hub.on('ResultTable:selectDate', dateStr => {
-			const date = new Date(dateStr);
-			date.setDate(date.getDate() + 1);
 			this.els.from.value = dateStr;
-			this.els.to.value = date.toISOString().split('T')[0];
+			this.els.to.value = dateStr;
 			this._search();
 		});
 

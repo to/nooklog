@@ -509,12 +509,17 @@ const store = {
 
 		if (from) {
 			conditions.push('b.created_at >= ?');
-			params.push(from instanceof Date ? from.getTime() : from);
+			params.push((from instanceof Date) ? from.getTime() : new Date(from).getTime());
 		}
 
 		if (to) {
+			// Make inclusive for date-only strings (e.g., YYYY-MM-DD)
+			let time = (to instanceof Date) ? to.getTime() : new Date(to).getTime();
+			if (typeof to === 'string' && to.length <= 10)
+				time += (24 * 60 * 60 * 1000) - 1;
+
 			conditions.push('b.created_at <= ?');
-			params.push(to instanceof Date ? to.getTime() : to);
+			params.push(time);
 		}
 
 		const ftsUrl = this._buildFtsMatch(url, ['url']);
