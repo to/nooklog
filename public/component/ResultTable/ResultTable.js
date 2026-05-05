@@ -54,6 +54,12 @@ class ResultTable extends Component {
 				return;
 			}
 
+			const dates = e.target.closest('.dates');
+			if (dates) {
+				hub.emit('ResultTable:selectDate', dates.textContent);
+				return;
+			}
+
 			const link = e.target.closest('.title');
 			if (!link)
 				this._select(row);
@@ -139,7 +145,7 @@ class ResultTable extends Component {
 						</div>
 						${r.score !== undefined ?
 				`<span class="score hidden">${r.score.toFixed(2)}</span>` : ''}
-						<span class="dates" title="Created: ${createdAt}">${updatedAt}</span>
+						<span class="dates" title="Updated: ${updatedAt}">${createdAt}</span>
 						<button class="delete flat icon ${config['server.mode'] === 'readonly' ? 'none' : ''}">delete</button>
 					</div>
 				</div>

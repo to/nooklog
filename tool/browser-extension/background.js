@@ -428,10 +428,11 @@ async function registerMessagingBridge() {
 
 	try {
 		// Unregister all and overwrite with the latest settings
-		await chrome.scripting.unregisterContentScripts().catch(() => { });
+		await chrome.scripting.unregisterContentScripts({
+			ids: ['messaging-bridge', 'capture-selection'],
+		}).catch(() => { });
 		await chrome.scripting.registerContentScripts(scripts);
 	} catch (e) {
-		console.error(e);
 	}
 }
 

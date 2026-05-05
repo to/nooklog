@@ -79,6 +79,28 @@ input[type='number'] {
 	appearance: textfield;
 }
 
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+	filter: invert(0.9);
+}
+
+input[type="date"] {
+	position: relative;
+	width: 9.2em;
+
+	/* Calendar icon */
+	&::-webkit-calendar-picker-indicator {
+		cursor: pointer;
+	}
+
+	/* Calendar placeholder */
+	&::-webkit-datetime-edit-text,
+	&::-webkit-datetime-edit-month-field,
+	&::-webkit-datetime-edit-day-field,
+	&::-webkit-datetime-edit-year-field {
+		color: var(--ink-4);
+	}
+}
+
 select {
 	width: fit-content;
 	cursor: pointer;
@@ -115,8 +137,9 @@ button {
 	--background-color: var(--ink-5);
 
 	display: flex; /* Remove minor line margins */
-	padding: var(--space-2s) var(--space-s);
+	padding: var(--space-s) var(--space-s);
 	font-weight: bold;
+	line-height: 1;
 	color: var(--color);
 	background-color: var(--background-color);
 	border-radius: var(--radius-m);
@@ -241,7 +264,7 @@ header {
 		padding: var(--space-2s) 0;
 
 		.icon {
-			/* EN: 下線を表示する */
+			/* Show underline */
 			display: inline;
 			vertical-align: middle;
 		}
@@ -335,6 +358,34 @@ header .icon,
 footer .icon {
 	font-size: var(--font-size-l);
 }
+
+/* ---- Toastify ---- */
+
+.toastify {
+	display: flex;
+	gap: var(--space-s);
+	align-items: center;
+	padding: var(--space-s);
+	color: var(--ink-0);
+	cursor: default;
+	box-shadow: 4px 0 16px rgba(0, 0, 0, 20%);
+	transition-duration: 0.2s;
+
+	&.toast-info {
+		background: var(--ink-5);
+	}
+
+	&.toast-error {
+		background: var(--color-error);
+	}
+
+	button {
+		padding: var(--space-2s);
+		color: var(--ink-5);
+		background: var(--ink-0);
+	}
+}
+
 
 /* ---- Animation ---- */
 @keyframes animate-spin {

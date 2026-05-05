@@ -116,7 +116,7 @@ class ConfigDialog extends Component {
 					const message = count > 0 ?
 						`Successfully imported ${count} bookmarks! ✨` :
 						'All bookmarks are already up to date.';
-					app.notify(message, 'info', 5000);
+					app.notify({ text: message, duration: 3000 });
 					hub.emit('ConfigDialog:import');
 				} finally {
 					this.els.import.disabled = false;
@@ -132,7 +132,7 @@ class ConfigDialog extends Component {
 
 			// Download directly via OpenAPI
 			window.location.href = `${Network.baseUrl}/api/export?${qs({ ...options, ...query })}`;
-			app.notify('Export started.\nPlease check your download folder.', 'info', 5000);
+			app.notify({ text: 'Export started.\nPlease check your download folder.', duration: 5000 });
 		};
 
 		$.on(this.$('button.export-bookmarks'), 'click', e => download(e, {
@@ -161,7 +161,7 @@ class ConfigDialog extends Component {
 				return;
 
 			navigator.clipboard.writeText(input.value);
-			app.notify('API Key copied to clipboard.', 'info');
+			app.notify({ text: 'API Key copied to clipboard.' });
 		});
 
 		$.on(this.$('button.generate-api-key'), 'click', async () => {
@@ -172,16 +172,16 @@ class ConfigDialog extends Component {
 			await Nooklog.generateApiKey();
 
 			this.$('input[name="server.apiKey"]').value = config['server.apiKey'];
-			app.notify('New API Key generated.', 'info');
+			app.notify({ text: 'New API Key generated.' });
 		});
 
 		$.on(this.$('button.backfill-content'), 'click', async e => {
 			const limit = +this.$('.backfill-limit').value || 100;
 			const { count } = await Nooklog.backfillContent({ limit });
 			if (count > 0)
-				app.notify(`Backfill started for ${count} bookmarks.`, 'info');
+				app.notify({ text: `Backfill started for ${count} bookmarks.`, duration: 4000 });
 			else
-				app.notify('All bookmarks are already up to date.', 'info');
+				app.notify({ text: 'All bookmarks are already up to date.' });
 		});
 	}
 

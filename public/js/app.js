@@ -3,6 +3,9 @@ const app = {
 	// (Cannot replace config as iframe and normal pages have different settings)
 	...JSON.parse(localStorage.getItem('ui') || '{}'),
 
+	// view modes: embed, sidepanel, window, popup, or empty (home screen)
+	view: getSearchParams().view || 'home',
+
 	set(key, value) {
 		this[key] = value;
 		localStorage.setItem('ui', JSON.stringify(this));
@@ -12,13 +15,49 @@ const app = {
 		return this[key] ?? def;
 	},
 
-	notify(message, type = 'info', ms) {
-		return new Toast(message, type, ms);
+	notify(opt) {
+		this.showToast({
+			className: 'toast-info',
+			...opt,
+		});
 	},
 
 	error(e) {
-		console.error(e);
-		return this.notify(e?.message || e, 'error');
+		console.error(e.message, e);
+		this.showToast({
+			duration: -1,
+			className: 'toast-error',
+			text: e.message || e,
+		});
+	},
+
+	showToast(opt) {
+		const toastify = Toastify({
+			duration: 2000,
+			selector: document.querySelector('dialog[open]') || document.body,
+			gravity: 'bottom',
+			position: 'left',
+			stopOnFocus: true,
+			...opt,
+		});
+		const toastifyElm = toastify.showToast().toastElement;
+
+		let buttonElm = document.createElement('button');
+		buttonElm.type = 'button';
+		if (opt.duration === -1)
+			buttonElm.innerHTML = '<span class="icon">close<span>';
+
+		if (opt.buttonText)
+			buttonElm.textContent = opt.buttonText;
+
+		if (buttonElm.innerHTML) {
+			buttonElm.onclick = e => {
+				e.stopPropagation();
+				opt.onButtonClick?.();
+				toastify.hideToast();
+			};
+			toastifyElm.appendChild(buttonElm);
+		}
 	},
 
 	renderMarkdown(b = {}) {
@@ -63,6 +102,7 @@ const app = {
 		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(markdown))}</div>`;
 	},
 };
+document.documentElement.dataset.view = app.view;
 
 const hub = new EventEmitter();
 hub.once('Nooklog:load', () => {

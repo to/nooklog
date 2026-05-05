@@ -23,6 +23,7 @@ class TagInput extends Component {
 			},
 		});
 		this.tagify = tagify;
+		this.hub = new EventEmitter();
 		this.lockInput = false;
 		this.refresh();
 
@@ -67,12 +68,8 @@ class TagInput extends Component {
 				if (!value)
 					return whitelist.slice(0, this.maxWhitelist);
 
-				const regex = new RegExp(
-					`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
-
-				whitelist = whitelist
-					.filter(t => regex.test(t))
-					.sort((a, b) => (b.startsWith(value) - a.startsWith(value)) || (a.length - b.length))
+				whitelist = this.filterSmart(whitelist, value)
+					.sort((a, b) => (b.startsWith(value) - a.startsWith(value)))
 					.slice(0, this.maxWhitelist);
 
 				// Emphasize and auto-close when items are sufficiently narrowed
@@ -91,7 +88,10 @@ class TagInput extends Component {
 	}
 
 	refresh() {
-		Nooklog.getTags().then(tags => this.tagify.whitelist = tags);
+		Nooklog.getTags().then(tags => {
+			this.tagify.whitelist = tags;
+			this.hub.emit('refresh');
+		});
 	}
 
 	enter() {
@@ -100,21 +100,42 @@ class TagInput extends Component {
 	}
 
 	setTags(...args) {
-		this.removeAllTags();
-
 		// Remove duplicate tags and determine appropriate string
 		// (Fix data mix-up when detaching window)
 		const { tags, rating } = Nooklog.separateRating(
-			[].concat(...args.filter(v => v)));
-		this.tagify.addTags([...new Set([].concat(rating || [], tags))]);
+			[].concat(...args.filter(Boolean)));
+		this.tagify.loadOriginalValues([...new Set([].concat(rating || [], tags))]);
 	}
 
 	getTags() {
 		return this.tagify.value.map(t => t.value);
 	}
 
+	filterSmart(list, value) {
+		const regex = new RegExp(
+			`^${[...value].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*')}`, 'i');
+		return list.filter(t => regex.test(t));
+	}
+
+	load(tags) {
+		const whitelist = this.tagify.whitelist || [];
+		const normalized = !whitelist.length
+			? tags
+			: tags.map(tag => {
+				const exact = whitelist.find(t => t.toLowerCase() === tag.toLowerCase());
+				if (exact)
+					return exact;
+
+				const matches = this.filterSmart(whitelist, tag);
+				return matches[0] || tag;
+			});
+
+		// This method blocks "change" event, but "add" events will still fire
+		this.tagify.loadOriginalValues(normalized);
+	}
+
 	removeAllTags() {
-		this.tagify.loadOriginalValues([]);
+		this.load([]);
 	}
 
 	focus() {

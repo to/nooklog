@@ -3,6 +3,8 @@ class SearchForm extends Component {
 		this.els = {
 			form: this.$('form'),
 			query: this.$('input[name=query]'),
+			from: this.$('input[name=from]'),
+			to: this.$('input[name=to]'),
 			url: this.$('input[name=url]'),
 			loading: this.$('.loading'),
 			tags: this.$('nl-tag-input'),
@@ -15,14 +17,17 @@ class SearchForm extends Component {
 		};
 
 		this.els.query.focus();
-
-		this.setQuery(getSearchParams());
-		this._search();
 	}
 
 	async ready() {
-		this._updateVisibility();
-		this._updateVectorOptionsVisibility();
+		// Wait for the tag whitelist to load for proper auto-completion
+		this.els.tags.hub.on('refresh', () => {
+			this.setQuery(getSearchParams());
+			this._search();
+
+			this._updateVisibility();
+			this._updateVectorOptionsVisibility();
+		});
 	}
 
 	bindEvents() {
@@ -39,20 +44,23 @@ class SearchForm extends Component {
 			this._search();
 		});
 
+		hub.on('ResultTable:selectDate', dateStr => {
+			this.els.from.value = dateStr;
+			this.els.to.value = dateStr;
+			this._search();
+		});
+
 		hub.on('ConfigDialog:import', () => {
 			this.els.tags.refresh();
 			this.clear();
 			this._search();
 		});
 
-		this.els.tags.on('add', () => this._search());
-		this.els.tags.on('remove', () => this._search());
+		this.els.tags.on('change', () => this._search());
 
 		$.on(this.els.form, 'keydown', e => {
 			if (e.key === 'Escape') {
-				this.els.query.value = '';
-				this.els.url.value = '';
-				this.els.tags.removeAllTags();
+				this.clear(false);
 				this._search();
 				return;
 			}
@@ -93,37 +101,45 @@ class SearchForm extends Component {
 			if (e.target.name === 'mode')
 				this._updateVectorOptionsVisibility();
 
-			if (e.target.name === 'sortBy' || e.target.name === 'field' ||
+			if (e.target.name === 'from' || e.target.name === 'to' ||
+				e.target.name === 'sortBy' || e.target.name === 'field' ||
 				e.target.name === 'mode' || e.target.name === 'useVectorIndex')
 				this._search();
 		});
 	}
 
-	clear() {
+	clear(full = true) {
 		this.els.query.value = '';
+		this.els.from.value = '';
+		this.els.to.value = '';
 		this.els.url.value = '';
 		this.els.tags.removeAllTags();
-		this.els.fields.forEach(el => el.checked = el.value !== 'markdown');
-		const fts = this.els.mode.find(el => el.value === 'fts');
-		if (fts)
-			fts.checked = true;
-
-		const relevance = this.els.sortBy.find(el => el.value === 'relevance');
-		if (relevance)
-			relevance.checked = true;
 		this.els.count.textContent = '';
+
+		if (full) {
+			this.els.fields.forEach(el => el.checked = el.value !== 'markdown');
+			const fts = this.els.mode.find(el => el.value === 'fts');
+			if (fts)
+				fts.checked = true;
+
+			const relevance = this.els.sortBy.find(el => el.value === 'relevance');
+			if (relevance)
+				relevance.checked = true;
+		}
 	}
 
 	getQuery(full = false) {
 		const tags = this.els.tags.getTags();
 		const query = this.els.query.value;
+		const from = this.els.from.value;
+		const to = this.els.to.value;
 		const url = this.els.url.value;
 		const modes = this.els.mode.filter(el => el.checked).map(el => el.value);
 		const mode = (modes.length === 2 || modes.length === 0) ? 'hybrid' : modes[0];
 		const fields = this.els.fields.filter(el => el.checked).map(el => el.value);
 		const sortBy = this.els.sortBy.find(el => el.checked)?.value;
 
-		return (full || tags.length || query || url) ? {
+		const res = (full || tags.length || query || from || to || url) ? {
 			tags,
 			query,
 			url,
@@ -132,14 +148,34 @@ class SearchForm extends Component {
 			fields,
 			sortBy,
 		} : {};
+
+		if (from)
+			res.from = from;
+
+		if (to)
+			res.to = to;
+
+		return res;
 	}
 
 	setQuery(ps) {
-		this.els.query.value = ps.query || '';
-		this.els.url.value = ps.url || '';
+		let query = ps.query || '';
+		let url = ps.url || '';
+		let tags = ps.tags || [];
+		if (typeof tags === 'string')
+			tags = tags.split(',').filter(Boolean);
 
-		// Suppress event
-		this.els.tags.tagify.loadOriginalValues(ps.tags);
+		query = query
+			.replace(/\bu:(\S+)/g, (_, v) => (url = v, ''))
+			.replace(/\bt:(\S+)/g, (_, v) => (tags.push(v), ''))
+			.trim().replace(/\s+/g, ' ');
+
+		this.els.query.value = query;
+		this.els.from.value = ps.from || '';
+		this.els.to.value = ps.to || '';
+		this.els.url.value = url;
+
+		this.els.tags.load(tags);
 
 		$.check(this.els.mode, ps.mode === 'hybrid' ? ['fts', 'vector'] : ps.mode);
 		$.check(this.els.useVectorIndex, (ps.useVectorIndex !== false).toString());
@@ -154,6 +190,8 @@ class SearchForm extends Component {
 	}
 
 	async _search() {
+		this.setQuery(this.getQuery());
+
 		$.hide(this.els.count);
 		$.show(this.els.loading);
 

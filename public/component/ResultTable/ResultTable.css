@@ -96,7 +96,7 @@
 	.title {
 		font-family: var(--font-sans-m);
 		font-size: var(--font-size-m);
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	.memo {
@@ -133,6 +133,12 @@
 			font-variant-numeric: tabular-nums;
 			color: var(--ink-3);
 			white-space: nowrap;
+			cursor: pointer;
+
+			&:hover {
+				color: var(--ink-5);
+				text-decoration: underline;
+			}
 		}
 
 		.icon{

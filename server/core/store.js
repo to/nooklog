@@ -21,16 +21,16 @@ const store = {
 		if (!id && !url)
 			return null;
 
-		const rs = await db.client.execute({
+		const rows = await db.execute({
 			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE ${id ? 'id' : 'url'} = ?`,
 			args: [id || url],
 		});
-		return this._parse(rs.rows[0]);
+		return this._parse(rows[0]);
 	},
 
 	async query(sql, args = []) {
-		const rs = await db.client.execute({ sql, args });
-		return rs.rows.map(r => this._parse(r));
+		const rows = await db.execute({ sql, args });
+		return rows.map(r => this._parse(r));
 	},
 
 	async save(bookmarks, { fts = true, embed = true, embedFields = null } = {}) {
@@ -102,10 +102,10 @@ const store = {
 
 			// Fetch row_ids for all bookmarks in the slice
 			const ids = slice.map(b => b.id);
-			const idMap = new Map((await db.client.execute({
+			const idMap = new Map((await db.execute({
 				sql: `SELECT id, row_id FROM bookmark WHERE id IN (${ids.map(() => '?').join(',')})`,
 				args: ids,
-			})).rows.map(r => [r.id, r.row_id]));
+			})).map(r => [r.id, r.row_id]));
 
 			for (let b of slice) {
 				const rowId = idMap.get(b.id);
@@ -116,7 +116,7 @@ const store = {
 
 				if (fields) {
 					batch.push({
-						sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND field IN (${fields.map(() => '?').join(',')})`,
+						sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND (field IN (${fields.map(() => '?').join(',')}) OR field = 'none')`,
 						args: [rowId, ...fields],
 					});
 				} else {
@@ -164,8 +164,19 @@ const store = {
 
 				targets = targets.filter(t => t.text?.trim() || t.title?.trim());
 
-				if (targets.length === 0)
+				if (targets.length === 0) {
+					// Mark as processed to prevent infinite re-embedding loop
+					if (!fields) {
+						batch.push({
+							sql: `
+							INSERT INTO bookmark_vector (
+								bookmark_id, chunk_index, field, content, position, vector
+							) VALUES (?, 0, 'none', '', 0, NULL)`,
+							args: [rowId],
+						});
+					}
 					continue;
+				}
 
 				// Vectorize (pass title and body together)
 				const vectors = await sentence.embedDocument(targets);
@@ -198,11 +209,10 @@ const store = {
 
 		await this.reembedJob?.abort();
 
-		const rs = await db.client.execute(`
+		const bookmarks = await db.execute(`
 			SELECT id, title, memo, summary, markdown FROM bookmark
 			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
 			ORDER BY updated_at DESC`);
-		const bookmarks = rs.rows;
 		if (bookmarks.length === 0)
 			return;
 
@@ -217,10 +227,9 @@ const store = {
 
 		await this.reindexJob?.abort();
 
-		const rs = await db.client.execute(`
+		const bookmarks = await db.execute(`
 			SELECT id, title, memo, summary, markdown, url FROM bookmark
 			WHERE row_id NOT IN (SELECT rowid FROM bookmark_fts)`);
-		const bookmarks = rs.rows;
 		if (bookmarks.length === 0)
 			return;
 
@@ -241,8 +250,8 @@ const store = {
 	},
 
 	async import(bookmarks) {
-		const rs = await db.client.execute('SELECT url FROM bookmark');
-		let urls = new Set(rs.rows.map(r => r.url));
+		const rows = await db.execute('SELECT url FROM bookmark');
+		let urls = new Set(rows.map(r => r.url));
 
 		const newBookmarks = bookmarks
 			.filter(b => !urls.has(b.url) && urls.add(b.url))
@@ -272,20 +281,9 @@ const store = {
 	},
 
 	async getTags() {
-		const rs = await db.client.execute(`
-			SELECT DISTINCT value as tag FROM bookmark, json_each(tags)
-			ORDER BY tag`);
-		return rs.rows.map(r => r.tag);
-	},
-
-	async existsTag(tag) {
-		const rs = await db.client.execute({
-			sql: `
-				SELECT 1 FROM bookmark, json_each(tags)
-				WHERE value = ? LIMIT 1`,
-			args: [tag],
-		});
-		return rs.rows.length > 0;
+		return await db.execute(`
+			SELECT value as tag, COUNT(*) as count FROM bookmark, json_each(tags)
+			GROUP BY tag`);
 	},
 
 	async search(ps) {
@@ -300,12 +298,12 @@ const store = {
 	},
 
 	async searchFTS({
-		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, sortBy = 'updated_at', limit = 300,
+		columns = ['*'], tags = [], query = '', url = '', fields = [], rating, from, to, sortBy = 'created_at', limit = 300,
 	}) {
 		const {
 			conditions, params, ftsConditions, ftsParams,
 		} = this._buildSearchQuery({
-			tags, query, url, fields, rating,
+			tags, query, url, fields, rating, from, to,
 		});
 
 		const hasFts = ftsConditions.length > 0;
@@ -324,12 +322,14 @@ const store = {
 		if (allConditions.length > 0)
 			sql += ' WHERE ' + allConditions.join(' AND ');
 
-		let orderBy = 'updated_at DESC';
+		let orderBy = 'created_at DESC';
 		if (sortBy === 'relevance') {
 			if (hasFts)
 				orderBy = 'f.rank';
-		} else if (sortBy !== 'updated_at') {
-			orderBy = `${sortBy} DESC, updated_at DESC`;
+		} else if (sortBy === 'rating') {
+			orderBy = 'rating DESC, created_at DESC';
+		} else if (sortBy === 'updated_at') {
+			orderBy = 'updated_at DESC';
 		}
 		sql += ` ORDER BY ${orderBy}`;
 
@@ -339,7 +339,7 @@ const store = {
 			args.push(limit);
 		}
 
-		const rs = await db.client.execute({ sql, args });
+		const rows = await db.execute({ sql, args });
 		const totalCount = await db.getTotalCount();
 
 		let count = totalCount;
@@ -354,13 +354,13 @@ const store = {
 		return {
 			count,
 			totalCount,
-			bookmarks: rs.rows.map(r => this._parse(r)),
+			bookmarks: rows.map(r => this._parse(r)),
 		};
 	},
 
 	async searchVector({
 		columns = ['*'], query = '', url = '', fields = [], limit = 50, sortBy = 'relevance',
-		tags = [], rating, useVectorIndex = true,
+		tags = [], rating, from, to, useVectorIndex = true,
 	}) {
 		if (!query?.trim() || !config['sentence.vector.enabled'])
 			return { count: 0, totalCount: await db.getTotalCount(), bookmarks: [] };
@@ -370,7 +370,7 @@ const store = {
 
 		const {
 			conditions, params, ftsConditions, ftsParams,
-		} = this._buildSearchQuery({ tags, rating, url });
+		} = this._buildSearchQuery({ tags, rating, url, from, to });
 		const qVecJson = JSON.stringify(qVec);
 
 		let sql;
@@ -434,11 +434,11 @@ const store = {
 			args.push(limit);
 		}
 
-		const rs = await db.client.execute({ sql, args });
+		const rows = await db.execute({ sql, args });
 		return {
-			count: rs.rows.length,
+			count: rows.length,
 			totalCount: await db.getTotalCount(),
-			bookmarks: rs.rows.map(r => this._parse(r)),
+			bookmarks: rows.map(r => this._parse(r)),
 		};
 	},
 
@@ -488,7 +488,7 @@ const store = {
 	},
 
 	_buildSearchQuery({
-		tags = [], query = '', url = '', fields = [], rating,
+		tags = [], query = '', url = '', fields = [], rating, from, to,
 	}) {
 		const conditions = [];
 		const params = [];
@@ -505,6 +505,21 @@ const store = {
 		if (rating != null) {
 			conditions.push('b.rating >= ?');
 			params.push(rating);
+		}
+
+		if (from) {
+			conditions.push('b.created_at >= ?');
+			params.push((from instanceof Date) ? from.getTime() : new Date(from).getTime());
+		}
+
+		if (to) {
+			// Make inclusive for date-only strings (e.g., YYYY-MM-DD)
+			let time = (to instanceof Date) ? to.getTime() : new Date(to).getTime();
+			if (typeof to === 'string' && to.length <= 10)
+				time += (24 * 60 * 60 * 1000) - 1;
+
+			conditions.push('b.created_at <= ?');
+			params.push(time);
 		}
 
 		const ftsUrl = this._buildFtsMatch(url, ['url']);
