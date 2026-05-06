@@ -156,13 +156,6 @@ bridge.on('Nooklog:updateConfig', values => {
 	chrome.storage.local.set({ config: values });
 });
 
-bridge.on('ConfigDialog:shortcuts', async msg => {
-	const commands = await chrome.commands.getAll();
-	bridge.emit('Background:shortcuts', {
-		shortcuts: commands,
-	});
-});
-
 bridge.on('ConfigDialog:openShortcuts', () => {
 	chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
 });
