@@ -14,6 +14,8 @@ class SearchForm extends Component {
 			useVectorIndex: this.$$('input[name=useVectorIndex]'),
 			sortBy: this.$$('input[name=sortBy]'),
 			count: this.$('.count'),
+			prevTerm: this.$('.prevTerm'),
+			nextTerm: this.$('.nextTerm'),
 		};
 
 		this.els.query.focus();
@@ -106,6 +108,9 @@ class SearchForm extends Component {
 				e.target.name === 'mode' || e.target.name === 'useVectorIndex')
 				this._search();
 		});
+
+		$.on(this.els.prevTerm, 'click', () => this._shiftDate(-1));
+		$.on(this.els.nextTerm, 'click', () => this._shiftDate(1));
 	}
 
 	clear(full = true) {
@@ -249,6 +254,27 @@ class SearchForm extends Component {
 		const vectorEnabled = this.els.vectorMode.checked;
 		const radioFlat = this.els.useVectorIndex[0].closest('.radio-flat');
 		radioFlat.classList.toggle('invisible', !vectorEnabled);
+	}
+
+	_shiftDate(dir) {
+		const DAY = 86400000;
+		const from = this.els.from.value;
+		const to = this.els.to.value;
+
+		// Default to 1 day shift if range is not specified
+		const step = (from && to)
+			? (new Date(to) - new Date(from) + DAY) * dir
+			: DAY * dir;
+
+		[this.els.from, this.els.to].forEach(el => {
+			if (!el.value)
+				return;
+
+			el.value = new Date(new Date(el.value).getTime() + step)
+				.toISOString().split('T')[0];
+		});
+
+		this._search();
 	}
 }
 

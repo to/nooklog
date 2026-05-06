@@ -156,12 +156,10 @@ dockerや pm2や クラウドへの配備など 詳細なインストール方�
 - モバイル対応(PWA)
 - Electron
 - AI要約
-- 日付検索
 - 高速化 / 軽量化
 - Agentic Search / MCP / Skills / CLI
 - 拡張検索 / HyDE
 - PDF / 画像(OCR) / 動画(字幕)
-- クローラー / Markdown バックフィル / プレーンテキストインポート
 - Markdown アップロード / Obsidian連携
 
 ## 関連プロダクト

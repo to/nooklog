@@ -15,6 +15,8 @@
 	--placeholder-color: var(--ink-3);
 	--placeholder-color-focus: var(--ink-2);
 
+	flex: 1 1 0%;
+
 	&, *, *::before, *::after  {
 		transition: none !important;
 		animation: none !important;

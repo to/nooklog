@@ -2,8 +2,23 @@
 	display: contents;
 
 	form {
-		input[name="url"]{
-			width: 30%;
+		input[name="url"],
+		nl-tag-input[name="tags"],
+		input[name="query"] {
+			width: 100%;
+		}
+
+		.prevTerm,
+		.nextTerm {
+			padding: 0;
+		}
+
+		.prevTerm{
+			margin-inline: calc(var(--space-2s) * -1);
+		}
+
+		.nextTerm{
+			margin-inline: calc(var(--space-2s) * -1);
 		}
 
 		svg{

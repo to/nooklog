@@ -201,6 +201,24 @@ const nooklog = {
 		return b;
 	},
 
+	async backfillContent({ limit = 100, force = false } = {}) {
+		await this.backfillContentJob?.abort();
+
+		const bookmarks = await store.getBackfillContentTargets({ limit, force });
+		if (bookmarks.length === 0)
+			return { count: 0 };
+
+		log.info({ count: bookmarks.length, force }, 'backfilling content');
+
+		this.backfillContentJob = queue.batch(bookmarks, async ([b]) => {
+			await this._fillHTML(b);
+			this._fillMarkdown(b);
+			await this.save(b);
+		}, { size: 1, interval: 2000, priority: 1, label: 'Backfilling content' });
+
+		return { count: bookmarks.length };
+	},
+
 	// Fill content by crawling the URL
 	async _fillHTML(b) {
 		// Fetch content if missing
@@ -234,25 +252,6 @@ const nooklog = {
 		}
 
 		return b;
-	},
-
-	async backfillContent({ limit = 100, force = false } = {}) {
-		await this.backfillContentJob?.abort();
-
-		const bookmarks = await store.getBackfillContentTargets({ limit, force });
-		if (bookmarks.length === 0)
-			return { count: 0 };
-
-		log.info({ count: bookmarks.length, force }, 'backfilling content');
-
-		this.backfillContentJob = queue.batch(bookmarks, async slice => {
-			const b = slice[0];
-			await this._fillHTML(b);
-			this._fillMarkdown(b);
-			await this.save({ ...b, updated_at: b.updated_at });
-		}, { size: 1, interval: 2000, priority: 1, label: 'Backfilling content' });
-
-		return { count: bookmarks.length };
 	},
 
 	async import(content, options = {}) {

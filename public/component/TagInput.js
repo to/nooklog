@@ -3,7 +3,7 @@ class TagInput extends Component {
 
 	initialize() {
 		this.innerHTML = `<input name="${this.getAttribute('name')}"
-			placeholder="${this.getAttribute('placeholder') || ''}" class="flex-1">`;
+			placeholder="${this.getAttribute('placeholder') || ''}">`;
 		this.input = this.$('input');
 		this.style.display = 'contents';
 
