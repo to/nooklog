@@ -129,11 +129,11 @@ const nooklog = {
 
 	async delete(id) {
 		if (config['server.readonly'])
-			return;
+			return null;
 
 		const bookmark = await store.find({ id });
 		if (!bookmark)
-			return;
+			return null;
 
 		await store.delete(id);
 		await this._syncTagCache(bookmark.tags, []);

@@ -72,7 +72,7 @@ const Nooklog = {
 
 		const bookmark = await this.rpc('delete', { id });
 		if (!bookmark)
-			return;
+			return null;
 
 		if (app.view === 'home' || (app.view === 'sidepanel' && !config['extension.closeSidepanelOnSave'])) {
 			const label = bookmark.title.length > 20 ? bookmark.title.slice(0, 25) + '...' : bookmark.title;

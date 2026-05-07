@@ -25,7 +25,7 @@ const store = {
 			sql: `SELECT ${columns.join(', ')} FROM bookmark WHERE ${id ? 'id' : 'url'} = ?`,
 			args: [id || url],
 		});
-		return this._parse(rows[0]);
+		return this._parse(rows[0]) ?? null;
 	},
 
 	async query(sql, args = []) {

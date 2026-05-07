@@ -350,19 +350,17 @@ async function checkUrl(tab) {
 	// Debounce successive checks on the same URL
 	const now = Date.now();
 	let cache = checkedUrls.get(url);
-	if (!cache || now - cache.time >= 20 * 1000) {
+	if (!cache || now - cache.time >= 60 * 1000) {
+		let exists = false;
 		try {
-			// Check if already bookmarked
 			const res = await fetch(
 				`${config['extension.serverAddress']}/api/find?url=${encodeURIComponent(url)}`);
-			cache = { time: now, data: await res.json() };
-			checkedUrls.set(url, cache);
-		} catch {
-			return;
-		}
+			exists = !!(await res.json());
+		} catch (e) { }
+		checkedUrls.set(url, cache = { time: now, exists });
 	}
 
-	setIcon(tab, !!cache.data);
+	setIcon(tab, !!cache.exists);
 }
 
 async function updateIconByUrl(url, isBookmarked) {
