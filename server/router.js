@@ -73,7 +73,7 @@ export const router = {
 	find: orpc
 		.route({ method: 'GET', path: '/find' })
 		.input(idOrUrlSchema)
-		.output(bookmarkSchema.nullish())
+		.output(bookmarkSchema.nullable())
 		.handler(async ({ input }) => {
 			return await nooklog.find(input);
 		}),
@@ -99,7 +99,7 @@ export const router = {
 		.input(z.object({
 			id: z.string(),
 		}))
-		.output(bookmarkSchema.nullish())
+		.output(bookmarkSchema.nullable())
 		.handler(async ({ input }) => {
 			if (!input.id)
 				throw new Error('Missing id');

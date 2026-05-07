@@ -1,9 +1,7 @@
 <form class="flex flex-col search-form w-full">
-	<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto;">
-		<div class="flex gap-s">
-			<input type="text" name="url" placeholder="URL">
-			<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
-		</div>
+	<div class="grid items-center gap-s" style="grid-template-columns: 1fr auto auto;">
+		<input type="text" name="url" placeholder="URL">
+		<nl-tag-input name="tags" placeholder="Tags"></nl-tag-input>
 		<div class="invisible vector flex items-center gap-s">
 			<div class="select-flat">
 				<label><input type="checkbox" name="mode" value="fts" checked>Keywords</label>
@@ -20,13 +18,13 @@
 				</label>
 			</div>
 		</div>
-		<div class="flex gap-s">
-			<input type="text" name="query" placeholder="Query (u:URL t:Tag)" class="flex-1">
-			<div class="flex items-center gap-2s">
-				<input type="date" name="from">
-				<span>～</span>
-				<input type="date" name="to">
-			</div>
+		<input type="text" name="query" placeholder="Query (u:URL t:Tag)" class="flex-1">
+		<div class="flex items-center gap-2s">
+			<button type="button" class="prevTerm flat"><span class="icon">chevron_left</span></button>
+			<input type="date" name="from">
+			<span>～</span>
+			<input type="date" name="to">
+			<button type="button" class="nextTerm flat"><span class="icon">chevron_right</span></button>
 		</div>
 		<div class="select-flat">
 			<label><input type="checkbox" name="field" value="title" checked>Title</label>

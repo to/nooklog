@@ -158,12 +158,10 @@ Credit is optional. Not following it is not a license violation.
 - Mobile Support (PWA)
 - Electron
 - AI Summary
-- Date Search
 - Speed / Memory Optimization
 - Agentic Search / MCP / Skills / CLI
 - Extended Search / HyDE
 - PDF / Image (OCR) / Video (Subtitles)
-- Crawler / Markdown Backfill / Plain Text Import
 - Markdown Upload / Obsidian Integration
 
 ## Related Products

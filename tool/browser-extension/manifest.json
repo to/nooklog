@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Nooklog",
-	"version": "0.6.0",
+	"version": "0.6.3",
 	"description": "Nooklog: Save pages to your self-hosted bookmarking system instantly.",
 	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyXIL8ndih0YHQAVcatd/nvkbaX7bnzSt0NYqf+DZm9WEqqSCmFos0uCsmhi8WMlGCvBrCQl0+sEB777ImtmcpXsJvROzBimZnmK4ccbmcHSb1lkXk/uL99d7Hwt/hTSDtV10g1THZ0Rhz4kK6nce7XuAvbEY4gx4aBejMVEm28KnMcKuYq2laAPNBEGMDxbRy/RSjuez5taGmWvs/ht63BecpHwEGwFJc5wFLoZB/ATDXH5tVSn0lHFcV0Ve1Pp4lK0TVmYxctlFvQuM7G6IWgwDtcv6krryKbUM9mYguPgKX5HsssFbO89bNZLkTLSVNfjRE1G0SgVf7kNT9ygxKwIDAQAB",
 	"permissions": [

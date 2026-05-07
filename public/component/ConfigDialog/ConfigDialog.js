@@ -40,8 +40,6 @@ class ConfigDialog extends Component {
 		if (this.autoOpen)
 			this.showModal();
 
-		bridge.emit('ConfigDialog:shortcuts');
-
 		this._updateBookmarklet();
 		this._updateEmbeddingVisibility();
 	}
@@ -145,14 +143,9 @@ class ConfigDialog extends Component {
 			exportStructure: this.$('.export-structure').value,
 		}));
 
-		$.on(this.$('.shortcut-key'), 'click', e => {
+		$.on(this.$('.open-shortcuts'), 'click', e => {
 			e.preventDefault();
 			bridge.emit('ConfigDialog:openShortcuts');
-		});
-
-		bridge.on('Background:shortcuts', msg => {
-			const command = msg.shortcuts.find(c => c.name === 'open-update-page');
-			this.$('.shortcut-key').textContent = command?.shortcut || 'Not set';
 		});
 
 		$.on(this.$('button.copy-api-key'), 'click', () => {

@@ -52,7 +52,7 @@ test('router integration verification', async t => {
 
 			// 5. Verify it's gone
 			const gone = await call(router.find, { id });
-			assert.strictEqual(gone, undefined, `Item ${i} should be deleted`);
+			assert.strictEqual(gone, null, `Item ${i} should be deleted`);
 		}
 	});
 });
