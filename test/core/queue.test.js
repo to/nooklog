@@ -1,94 +1,144 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { batch } from '../../server/core/queue.js';
+import { batch, task, clear } from '../../server/core/queue.js';
 
-test('Core Queue - batch() function', async t => {
-	await t.test('should process all items in chunks correctly', async () => {
+test('Core Queue', async t => {
+	// Ensure a clean state for every test
+	t.beforeEach(async () => {
+		await clear();
+	});
+
+	await t.test('batch() - process all items in chunks correctly', async () => {
 		const list = Array.from({ length: 25 }, (_, i) => i);
 		const result = [];
 		const chunkSizes = [];
 
-		await batch(list, async slice => {
+		await batch('TestChunks', async slice => {
 			result.push(...slice);
 			chunkSizes.push(slice.length);
-		}, { size: 10, interval: 0 });
+		}, list, { size: 10, interval: 0 });
 
-		// Should process all 25 items
 		assert.strictEqual(result.length, 25);
 		assert.deepStrictEqual(result, list);
-
-		// Should be divided into [10, 10, 5]
 		assert.deepStrictEqual(chunkSizes, [10, 10, 5]);
 	});
 
-	await t.test('should support abortion via promise.abort()', async () => {
-		const list = Array.from({ length: 100 }, (_, i) => i);
-		let processedCount = 0;
+	await t.test('batch() - support numeric items (numeric mode)', async () => {
+		let totalProcessed = 0;
+		const steps = [];
 
-		const promise = batch(list, async slice => {
-			processedCount += slice.length;
-			// Artificial delay to make abortion easier to trigger between chunks
-			await new Promise(resolve => setTimeout(resolve, 50));
-		}, { size: 10, interval: 10 });
+		await batch('Numeric', async count => {
+			totalProcessed += count;
+			steps.push(count);
+		}, 120, { size: 50, interval: 0 });
 
-		// Trigger abort after the first chunk starts processing
-		setTimeout(() => {
-			promise.abort();
-		}, 20);
-
-		await promise;
-
-		// Should have stopped before processing all items
-		assert.ok(processedCount < 100, `Expected early exit, but processed ${processedCount} items`);
+		assert.strictEqual(totalProcessed, 120);
+		assert.deepStrictEqual(steps, [50, 50, 20]);
 	});
 
-	await t.test('should handle single item list', async () => {
-		const list = ['only-one'];
-		const result = [];
-		await batch(list, async slice => {
-			result.push(...slice);
+	await t.test('task() - run a single task', async () => {
+		let called = 0;
+		await task('Single', async count => {
+			called++;
+			assert.strictEqual(count, 1);
 		});
-		assert.deepStrictEqual(result, ['only-one']);
+		assert.strictEqual(called, 1);
 	});
 
-	await t.test('should handle empty list', async () => {
-		const list = [];
-		let called = false;
-		await batch(list, async () => {
-			called = true;
-		});
-		assert.strictEqual(called, false);
-	});
-
-	await t.test('should serialize batches of the same priority', async () => {
+	await t.test('mode: "queue" (default) - serialize same-label jobs', async () => {
 		const result = [];
-		const b1 = batch([1, 2], async slice => {
+		const b1 = batch('Serialize', async slice => {
 			result.push('A' + slice[0]);
-		}, { size: 1, interval: 10 });
-		const b2 = batch([1, 2], async slice => {
+			await new Promise(r => setTimeout(r, 10));
+		}, [1, 2], { size: 1, interval: 0 });
+
+		const b2 = batch('Serialize', async slice => {
 			result.push('B' + slice[0]);
-		}, { size: 1, interval: 10 });
+		}, [1, 2], { size: 1, interval: 0 });
 
 		await Promise.all([b1, b2]);
-		// Sequential within same priority
 		assert.deepStrictEqual(result, ['A1', 'A2', 'B1', 'B2']);
 	});
 
-	await t.test('should allow high-priority tasks to preempt', async () => {
+	await t.test('mode: "replace" - abort previous job with same label', async () => {
 		const result = [];
-		const low = batch([1, 2], async slice => {
-			result.push('L' + slice[0]);
-		}, { size: 1, interval: 50, priority: 0 });
+		let aborted = false;
 
-		// Wait slightly for L1 to finish execution and enter its interval wait
+		const b1 = batch('Replace', async (slice, i, signal) => {
+			try {
+				result.push('A' + slice[0]);
+				await new Promise((resolve, reject) => {
+					if (signal.aborted)
+						return reject(new Error('AbortError'));
+					const timer = setTimeout(resolve, 1000);
+					signal.addEventListener('abort', () => {
+						clearTimeout(timer);
+						reject(new Error('AbortError'));
+					}, { once: true });
+				});
+				result.push('A' + slice[0] + '-done');
+			} catch (e) {
+				if (e.message === 'AbortError' || e.name === 'AbortError')
+					aborted = true;
+				throw e;
+			}
+		}, [1, 2], { size: 1, mode: 'replace' });
+
+		await new Promise(r => setTimeout(r, 50));
+
+		const b2 = batch('Replace', async slice => {
+			result.push('B' + slice[0]);
+		}, [1], { size: 1, mode: 'replace' });
+
+		await Promise.allSettled([b1, b2]);
+
+		assert.ok(aborted, 'First job should have been aborted');
+		assert.ok(!result.includes('A1-done'), 'First job should not have finished its work');
+		assert.ok(result.includes('B1'), 'Second job should have executed');
+	});
+
+	await t.test('clear() - stop all running jobs', async () => {
+		let aStarted = false;
+		let aStopped = false;
+
+		const b1 = batch('JobA', async (slice, i, signal) => {
+			aStarted = true;
+			try {
+				await new Promise((resolve, reject) => {
+					if (signal.aborted)
+						return reject(new Error('AbortError'));
+					signal.addEventListener('abort', () => reject(new Error('AbortError')), { once: true });
+				});
+			} catch (e) {
+				aStopped = true;
+				throw e;
+			}
+		}, 10, { size: 1 });
+
+		// Wait for job to start
+		for (let i = 0; i < 20 && !aStarted; i++)
+			await new Promise(r => setTimeout(r, 10));
+		assert.ok(aStarted, 'Job should have started');
+
+		await clear();
+
 		await new Promise(r => setTimeout(r, 20));
+		assert.ok(aStopped, 'Job should have recorded stop after clear');
+	});
 
-		const high = batch([1], async slice => {
+	await t.test('priority - high-priority tasks preempt', async () => {
+		const result = [];
+		const low = batch('Low', async slice => {
+			result.push('L' + slice[0]);
+		}, [1, 2], { size: 1, interval: 200, priority: 0 });
+
+		await new Promise(r => setTimeout(r, 50));
+
+		const high = batch('High', async slice => {
 			result.push('H' + slice[0]);
-		}, { size: 1, priority: 1 });
+		}, [1], { size: 1, priority: 1 });
 
 		await Promise.all([low, high]);
-		// H1 should jump in between L1 and L2
 		assert.deepStrictEqual(result, ['L1', 'H1', 'L2']);
 	});
 });

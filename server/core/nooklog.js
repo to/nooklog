@@ -46,10 +46,7 @@ const nooklog = {
 	async dispose() {
 		log.info('disposing resources...');
 
-		await Promise.allSettled([
-			this.backfillContentJob?.abort(),
-			store.dispose(),
-		]);
+		await queue.clear();
 		await db.dispose();
 		await ingest?.browser.dispose();
 	},
@@ -202,19 +199,17 @@ const nooklog = {
 	},
 
 	async backfillContent({ limit = 100, force = false } = {}) {
-		await this.backfillContentJob?.abort();
-
 		const bookmarks = await store.getBackfillContentTargets({ limit, force });
 		if (bookmarks.length === 0)
 			return { count: 0 };
 
 		log.info({ count: bookmarks.length, force }, 'backfilling content');
 
-		this.backfillContentJob = queue.batch(bookmarks, async ([b]) => {
+		queue.batch('Backfilling content', async ([b]) => {
 			await this._fillHTML(b);
 			this._fillMarkdown(b);
 			await this.save(b);
-		}, { size: 1, interval: 2000, priority: 1, label: 'Backfilling content' });
+		}, bookmarks, { size: 1, interval: 2000, priority: 1, mode: 'replace' });
 
 		return { count: bookmarks.length };
 	},

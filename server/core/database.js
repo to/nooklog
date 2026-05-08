@@ -13,7 +13,6 @@ const log = baseLog.child({ module: 'database' });
 
 const database = {
 	client: null,
-	vacuumJob: null,
 
 	async initialize() {
 		const isReadOnly = config['server.readonly'];
@@ -95,9 +94,6 @@ const database = {
 
 	async dispose() {
 		log.info('disposing database');
-		try {
-			await this.vacuumJob?.abort();
-		} catch (e) { }
 		this.client?.close();
 	},
 
@@ -254,24 +250,20 @@ const database = {
 		if (wastePercent <= 20 || wasteBytes <= 100 * 1024 * 1024)
 			return;
 
-		await this.vacuumJob?.abort();
-
 		// Use a dedicated connection to prevent vacuum from blocking main transactions
 		const vacuumClient = createClient({ url: this.localDbUrl });
 
-		const step = 500;
-		const steps = new Array(Math.ceil(freelist_count / step)).fill(0);
-		this.vacuumJob = queue.batch(steps, async () => {
+		queue.batch('Vacuuming', async step => {
 			// Execute page-by-page to ensure all requested pages are processed
 			for (let i = 0; i < step; i++)
 				await vacuumClient.execute('PRAGMA incremental_vacuum(1)');
-		}, {
-			priority: -2, size: 1, label: 'Vacuuming',
+		}, freelist_count, {
+			priority: -2,
+			size: 500,
+			mode: 'replace',
 			// Keep intervals short to avoid automatic checkpoint interruptions
 			interval: 64,
-		});
-
-		this.vacuumJob.then(async () => {
+		}).then(async () => {
 			// Wait for the vacuum connection to fully release its locks
 			vacuumClient.close();
 			await wait(2 * 1000);
