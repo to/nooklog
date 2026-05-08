@@ -309,6 +309,15 @@
 				</span>
 			</div>
 
+			<div>
+				<label>Maintenance</label>
+				<nl-busy-button class="clear-vector-table">
+					<button type="button" class="w-fit" data-busy-text="Clearing...">Clear Vector
+						Table</button>
+				</nl-busy-button>
+				<span class="description">Drop and recreate the vector table. All existing embeddings will be deleted.</span>
+			</div>
+
 			<h2>Database</h2>
 
 			<div>
@@ -339,7 +348,9 @@
 				<label>Backfill Content</label>
 				<div class="flex items-center gap-m">
 					<input type="number" class="backfill-limit" value="100">
-					<button type="button" class="backfill-content">Backfill</button>
+					<nl-busy-button class="backfill-content">
+						<button type="button" data-busy-text="Running...">Backfill</button>
+					</nl-busy-button>
 				</div>
 				<span class="description">Processes bookmarks that are missing titles or content.</span>
 			</div>
@@ -351,7 +362,9 @@
 						<option value="true">Folders as Tags</option>
 						<option value="false">Ignore Folders</option>
 					</select>
-					<button type="button" class="import">Import</button>
+					<nl-busy-button class="import">
+						<button type="button" data-busy-text="Importing...">Import...</button>
+					</nl-busy-button>
 				</div>
 				<span class="description">Import from Bookmark HTML, Plain Text (URL list), Pinboard, Linkwarden, Karakeep,
 					Session Buddy, or Tab

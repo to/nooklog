@@ -21,7 +21,7 @@ class UpdateForm extends Component {
 			preview: this.$('div.preview'),
 			modes: this.$$('[name=mode]'),
 			delete: this.$('button.delete'),
-			submit: this.$('button[type=submit]'),
+			submit: this.$('nl-busy-button'),
 		};
 
 		this.memoResizeHandle = new ResizeHandle(this.els.memo, {
@@ -280,7 +280,10 @@ class UpdateForm extends Component {
 
 	_setSubmitting(submitting) {
 		this.isSubmitting = submitting;
-		this.els.submit.disabled = submitting;
+		if (submitting)
+			this.els.submit.disable();
+		else
+			this.els.submit.enable();
 	}
 
 	close() {

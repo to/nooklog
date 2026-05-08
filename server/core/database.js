@@ -229,6 +229,13 @@ const database = {
 		], 'write');
 	},
 
+	async clearVectorTable() {
+		const dimension = config['sentence.vector.enabled'] ?
+			await sentence.getDimension()
+			: 768;
+		await this.recreateVectorTable(dimension);
+	},
+
 	// Due to concurrent reader locks and driver limitations, 5-10% of "waste" (freelist pages)
 	// may remain even after a full sweep. This is an intentional trade-off for a non-blocking background process.
 	async vacuum() {

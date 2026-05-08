@@ -19,6 +19,9 @@ class SearchForm extends Component {
 		};
 
 		this.els.query.focus();
+
+		// Debounce to consolidate rapid updates and minimize browser history clutter
+		debounce(this, '_updateURL', 800);
 	}
 
 	async ready() {

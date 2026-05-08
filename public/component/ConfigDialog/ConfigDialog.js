@@ -5,7 +5,7 @@ class ConfigDialog extends Component {
 			dialog: this.$('dialog'),
 			open: this.$('button.open'),
 			close: this.$('button.close'),
-			import: this.$('button.import'),
+			import: this.$('nl-busy-button.import'),
 			submit: this.$('button[type="submit"]'),
 		};
 		this.results = null;
@@ -91,38 +91,22 @@ class ConfigDialog extends Component {
 			this._save();
 		});
 
-		$.on(this.els.import, 'click', () => {
-			const input = document.createElement('input');
-			input.type = 'file';
-			input.accept = '.html,.json,.txt';
-			input.onchange = async e => {
-				const file = e.target.files[0];
+		this.els.import.onClick = async () => {
+			const file = await $.selectFile('.html,.json,.txt');
+			if (!file)
+				return;
 
-				if (!file)
-					return;
+			const folderTag = this.$('.folder-tag').value === 'true';
+			const { count } = await Nooklog.import(file, { folderTag });
+			if (count == null)
+				return;
 
-				const buttonText = this.els.import.textContent;
-				try {
-					this.els.import.disabled = true;
-					this.els.import.textContent = 'Importing...';
-
-					const folderTag = this.$('.folder-tag').value === 'true';
-					const { count } = await Nooklog.import(file, { folderTag });
-					if (count == null)
-						return;
-
-					const message = count > 0 ?
-						`Successfully imported ${count} bookmarks! ✨` :
-						'All bookmarks are already up to date.';
-					app.notify({ text: message, duration: 3000 });
-					hub.emit('ConfigDialog:import');
-				} finally {
-					this.els.import.disabled = false;
-					this.els.import.textContent = buttonText;
-				}
-			};
-			input.click();
-		});
+			const message = count > 0 ?
+				`Successfully imported ${count} bookmarks! ✨` :
+				'All bookmarks are already up to date.';
+			app.notify({ text: message, duration: 3000 });
+			hub.emit('ConfigDialog:import');
+		};
 
 		const download = (e, options) => {
 			const range = e.target.closest('.container').querySelector('.export-range').value;
@@ -168,14 +152,22 @@ class ConfigDialog extends Component {
 			app.notify({ text: 'New API Key generated.' });
 		});
 
-		$.on(this.$('button.backfill-content'), 'click', async e => {
+		this.$('nl-busy-button.backfill-content').onClick = async () => {
 			const limit = +this.$('.backfill-limit').value || 100;
 			const { count } = await Nooklog.backfillContent({ limit });
 			if (count > 0)
 				app.notify({ text: `Backfill started for ${count} bookmarks.`, duration: 4000 });
 			else
 				app.notify({ text: 'All bookmarks are already up to date.' });
-		});
+		};
+
+		this.$('nl-busy-button.clear-vector-table').onClick = async () => {
+			if (!confirm('This will delete all existing vector data and recreate the table. Are you sure?'))
+				return;
+
+			await Nooklog.clearVectorTable();
+			app.notify({ text: 'Vector table cleared successfully. Re-embedding will start in the background.' });
+		};
 	}
 
 	showModal() {
