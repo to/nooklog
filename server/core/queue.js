@@ -3,7 +3,8 @@ import hub from './hub.js';
 import { wait } from './util.js';
 
 // Central task queue with concurrency control to prevent engine overload
-const queue = new PQueue({ concurrency: 1 });
+// Concurrency is set > 1 to avoid deadlocks when a task triggers another task (e.g. Backfill -> Save)
+const queue = new PQueue({ concurrency: 2 });
 const activeJobs = new Map();
 
 // Run a single task

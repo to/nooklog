@@ -206,20 +206,38 @@ const nooklog = {
 		log.info({ count: bookmarks.length, force }, 'backfilling content');
 
 		queue.batch('Backfilling content', async ([b]) => {
-			await this._fillHTML(b);
+			await this._fillHTML(b, { force });
 			this._fillMarkdown(b);
+
+			// If still missing content after backfill, mark as error to prevent infinite retries
+			if (!b.title || !b.markdown)
+				b.meta = { ...b.meta, fetch_error: 'missing_content' };
+
 			await this.save(b);
-		}, bookmarks, { size: 1, interval: 2000, priority: 1, mode: 'replace' });
+		}, bookmarks, { size: 1, interval: 1000, priority: 1, mode: 'replace' });
 
 		return { count: bookmarks.length };
 	},
 
 	// Fill content by crawling the URL
-	async _fillHTML(b) {
-		// Fetch content if missing
-		if (((!b.html && !b.markdown) || !b.title) && b.url) {
+	async _fillHTML(b, { force = false } = {}) {
+		// Fetch content if missing or forced, provided there's no existing error
+		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta?.fetch_error || force)) {
 			try {
+				// Fetch content and handle potential redirects
 				const res = await ingest.browser.fetch(b.url);
+				if (res.url && res.url !== b.url) {
+					// Detect if the destination is a login page to avoid data pollution
+					if (res.html.includes('type="password"')) {
+						b.meta = { ...b.meta, fetch_error: 'login_required' };
+						log.info({ url: b.url, redirect: res.url }, 'fetch skipped: login required');
+						return b;
+					}
+
+					b.meta = { originalUrl: b.url, ...b.meta };
+					b.url = res.url;
+				}
+
 				b.html = res.html;
 				b.title = b.title || res.title;
 				delete b.meta?.fetch_error;
