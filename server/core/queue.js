@@ -70,6 +70,8 @@ export const batch = (label, run, items, {
 
 			throw err;
 		} finally {
+			emitProgress(total);
+
 			// Ensure we only remove the job if it's still the same instance (prevents race conditions)
 			if (activeJobs.get(label) === job)
 				activeJobs.delete(label);

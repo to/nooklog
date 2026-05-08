@@ -267,7 +267,8 @@
 
 			<div data-vector-enabled="true">
 				<label>Vector Model</label>
-				<select name="sentence.vector.model"></select>
+				<input type="text" name="sentence.vector.model" list="vector-models" placeholder="gemma">
+				<datalist id="vector-models"></datalist>
 				<span class="description error none">Changing the model will cause all current vectors to be LOST and trigger a
 					background re-indexing.</span>
 			</div>

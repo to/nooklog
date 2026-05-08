@@ -235,9 +235,7 @@ class ConfigDialog extends Component {
 		}
 
 		const models = await Nooklog.getVectorModels(url);
-		const elSelect = this.$('select[name="sentence.vector.model"]');
-		const current = config['sentence.vector.model'];
-		const options = Array.from(new Set([current, ...models].filter(Boolean)))
+		const options = Array.from(new Set(models.filter(Boolean)))
 			.sort((a, b) => {
 				const aE = /embed/i.test(a);
 				const bE = /embed/i.test(b);
@@ -245,9 +243,7 @@ class ConfigDialog extends Component {
 					return bE - aE;
 				return a.localeCompare(b);
 			});
-
-		elSelect.innerHTML = options.map(m => `<option value="${m}">${m}</option>`).join('');
-		elSelect.value = current;
+		this.$('#vector-models').innerHTML = options.map(m => `<option value="${m}">${m}</option>`).join('');
 	}
 
 	_updateBookmarklet() {
