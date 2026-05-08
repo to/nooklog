@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { createClient } from '@libsql/client';
@@ -120,7 +120,7 @@ const database = {
 
 		const migrationDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migration');
 		const files = fs.readdirSync(migrationDir)
-			.filter(f => f.endsWith('.sql'))
+			.filter(f => f.endsWith('.js'))
 			.sort();
 
 		let version = parseInt(await this.getMeta('version') || '0');
@@ -128,19 +128,10 @@ const database = {
 			const v = parseInt(file.match(/^(\d+)/)?.[0] || '0');
 			if (v > version) {
 				log.info({ file }, `applying migration ${file}`);
-				await wait(32); // Yield to ensure log is flushed
+				await wait(32);
 
-				const sql = fs.readFileSync(path.join(migrationDir, file), 'utf-8');
-				const batch = sql.split(';').map(s => s.trim()).filter(Boolean);
-
-				// VACUUM cannot be executed within a transaction (batch 'write' mode)
-				const hasVacuum = batch.some(s => s.toUpperCase().includes('VACUUM'));
-				if (hasVacuum) {
-					for (const s of batch)
-						await this.client.execute(s);
-				} else {
-					await this.client.batch(batch, 'write');
-				}
+				const migration = await import(pathToFileURL(path.join(migrationDir, file)).href);
+				await migration.default(this);
 
 				version = v;
 				await this.setMeta('version', version.toString());
@@ -182,31 +173,18 @@ const database = {
 		const current = config['sentence.vector.model'];
 		const old = await this.getMeta('vector_model');
 
-		// Handle model change (Re-create table)
+		// Handle model change (Re-create table if needed)
 		if (enabled && old !== current) {
-			const batch = ['DROP TABLE IF EXISTS bookmark_vector'];
-			if (current === '') {
-				log.info('initializing vector stub table');
-				batch.push(`CREATE TABLE bookmark_vector (
-					row_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id INTEGER, vector F32_BLOB(768))`);
-			} else {
-				// Avoid CASCADE to prevent child vector loss on REPLACE
-				const dimension = await sentence.getDimension();
-				log.info({ from: old, to: current, dimension }, 'model changed, re-initializing vector table');
-				batch.push(
-					`-- Vector Search
-					CREATE TABLE bookmark_vector (
-						row_id INTEGER PRIMARY KEY AUTOINCREMENT,
-						bookmark_id INTEGER,
-						chunk_index INTEGER,
-						field TEXT,
-						content TEXT,
-						position INTEGER,
-						vector F32_BLOB(${dimension}) -- dimension depends on the model
-					)`,
-					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
-			}
-			await this.client.batch(batch, 'write');
+			const info = await this.getVectorTableInfo();
+			const dimension = current === '' ? 768 : await sentence.getDimension();
+
+			// If empty, keep if exists. If set, reuse if dimension matches.
+			const needsInit = current === '' ? !info.exists : (info.dimension !== dimension);
+			if (needsInit)
+				await this.recreateVectorTable(dimension);
+			else
+				log.info({ model: current || 'none', dimension }, 'reusing existing vector table');
+
 			await this.setMeta('vector_model', current);
 		}
 
@@ -227,6 +205,32 @@ const database = {
 			log.info('dropping vector index (ANN disabled)');
 			await this.execute('DROP INDEX IF EXISTS bookmark_vector_idx');
 		}
+	},
+
+	async getVectorTableInfo() {
+		const info = await this.execute("PRAGMA table_info('bookmark_vector')");
+		const vectorCol = info.find(c => c.name === 'vector');
+		return {
+			exists: info.length > 0,
+			dimension: parseInt(vectorCol?.type.match(/\((\d+)\)/)?.[1] || '0'),
+		};
+	},
+
+	async recreateVectorTable(dimension) {
+		log.info({ dimension }, 're-initializing vector table');
+		await this.client.batch([
+			'DROP TABLE IF EXISTS bookmark_vector',
+			`CREATE TABLE bookmark_vector (
+				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+				bookmark_id INTEGER,
+				chunk_index INTEGER,
+				field TEXT,
+				content TEXT,
+				position INTEGER,
+				vector F32_BLOB(${dimension})
+			)`,
+			'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
+		], 'write');
 	},
 
 	// Due to concurrent reader locks and driver limitations, 5-10% of "waste" (freelist pages)
