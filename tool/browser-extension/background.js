@@ -71,10 +71,13 @@ chrome.action.onClicked.addListener(tab => {
 	const action = config['extension.actionBehavior'] || 'embed';
 	if (action === 'sidepanel')
 		openUpdatePanel(tab);
+
 	else if (action === 'window')
 		openUpdateWindowForTab(tab);
+
 	else if (action === 'save')
 		saveBookmark(tab);
+
 	else
 		openUpdateFrame(tab);
 });
@@ -243,11 +246,6 @@ async function openUpdateWindowForTab(tab) {
 
 async function openUpdatePanel(tab) {
 	// Query parameters cannot be passed in Vivaldi
-	const sidePanelPath = 'content/frame.html';
-	chrome.sidePanel.setOptions({
-		path: sidePanelPath,
-		enabled: true,
-	});
 	chrome.sidePanel.open({ windowId: tab.windowId });
 
 	refreshUpdatePanel(tab);
