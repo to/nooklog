@@ -6,6 +6,7 @@ import { wait } from './util.js';
 // Concurrency is set > 1 to avoid deadlocks when a task triggers another task (e.g. Backfill -> Save)
 const queue = new PQueue({ concurrency: 2 });
 const activeJobs = new Map();
+const allJobs = new Set();
 
 // Run a single task
 export const task = (label, run, opt) => batch(label, run, 1, { ...opt, size: 1 });
@@ -35,8 +36,15 @@ export const batch = (label, run, items, {
 
 	const prev = mode !== 'parallel' ? activeJobs.get(label) : null;
 
+	// Register job before promise starts to ensure tracking even for synchronous exits
+	const job = { controller };
+	allJobs.add(job);
+
 	const promise = (async () => {
 		try {
+			if (mode !== 'parallel')
+				activeJobs.set(label, job);
+
 			if (prev) {
 				if (mode === 'replace')
 					prev.controller.abort();
@@ -78,26 +86,19 @@ export const batch = (label, run, items, {
 		} finally {
 			emitProgress(total);
 
-			// Ensure we only remove the job if it's still the same instance (prevents race conditions)
+			allJobs.delete(job);
+
 			if (activeJobs.get(label) === job)
 				activeJobs.delete(label);
 		}
 	})();
 
-	const job = {
-		promise,
-		controller,
-		abort: () => promise.abort(),
-	};
-
-	if (mode !== 'parallel')
-		activeJobs.set(label, job);
-
-	// Trigger cancellation and return the promise so others can wait for disposal
-	promise.abort = () => {
+	job.promise = promise;
+	job.abort = () => {
 		controller.abort();
 		return promise;
 	};
+	promise.abort = job.abort;
 
 	return promise;
 };
@@ -105,7 +106,8 @@ export const batch = (label, run, items, {
 export const idle = () => queue.onIdle();
 export const clear = () => {
 	queue.clear();
-	const promises = Array.from(activeJobs.values()).map(j => j.abort());
+
+	const promises = Array.from(allJobs).map(j => j.abort());
 	activeJobs.clear();
 	return Promise.allSettled(promises);
 };
