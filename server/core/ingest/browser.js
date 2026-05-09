@@ -16,8 +16,13 @@ async function getBrowser() {
 	}
 
 	if (!browserServer || !browserServer.process()) {
+		// Prevent Playwright from killing the parent process prematurely during shutdown
+		// Browser processes still receive signals and exit normally on their own
 		browserServer = await playwrightChromium.launchServer({
 			args: ['--disable-gpu', '--disable-dev-shm-usage'],
+			handleSIGINT: false,
+			handleSIGTERM: false,
+			handleSIGHUP: false,
 		});
 	}
 
@@ -25,43 +30,6 @@ async function getBrowser() {
 		browser = await playwrightChromium.connect(browserServer.wsEndpoint());
 
 	return browser;
-}
-
-export async function dispose() {
-	log.info('disposing browser');
-	if (browser) {
-		try {
-			await browser.close();
-		} catch (e) {
-			// ignore
-		}
-		browser = null;
-	}
-
-	if (browserServer) {
-		// Prevent the browser process from hanging the shutdown sequence
-		const proc = browserServer.process();
-		const forceKill = setTimeout(() => {
-			if (browserServer) {
-				log.warn('browser server close timed out, forcing kill');
-				try {
-					proc?.kill('SIGKILL');
-				} catch (e) {
-					// ignore
-				}
-			}
-		}, 3000);
-		forceKill.unref();
-
-		try {
-			await browserServer.close();
-		} catch (e) {
-			log.warn({ error: e.message }, 'browser server close error');
-		} finally {
-			clearTimeout(forceKill);
-			browserServer = null;
-		}
-	}
 }
 
 export async function fetch(url) {

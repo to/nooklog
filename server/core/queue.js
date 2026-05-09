@@ -43,7 +43,12 @@ export const batch = (label, run, items, {
 
 				// Ensure serialization by waiting for previous job to finish/abort
 				try {
-					await prev.promise;
+					await Promise.race([
+						prev.promise,
+						new Promise(r => signal.addEventListener('abort', r, { once: true })),
+					]);
+					if (signal.aborted)
+						return;
 				} catch { }
 			}
 

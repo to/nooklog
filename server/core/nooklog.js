@@ -48,7 +48,8 @@ const nooklog = {
 
 		await queue.clear();
 		await db.dispose();
-		await ingest?.browser.dispose();
+
+		// Browser cleanup is handled by the OS on exit
 	},
 
 	getConfig() {
