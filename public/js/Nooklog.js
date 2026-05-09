@@ -114,7 +114,7 @@ const Nooklog = {
 	},
 
 	async rpc(path, data = {}, def = undefined) {
-		const res = await this.net.post('/rpc/' + path, { json: data }, def);
+		const res = await this.net.post('/rpc/' + path, { json: data }, { json: def });
 		return res?.json;
 	},
 

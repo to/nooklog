@@ -93,11 +93,14 @@ input[type="date"] {
 	}
 
 	/* Calendar placeholder */
-	&::-webkit-datetime-edit-text,
-	&::-webkit-datetime-edit-month-field,
-	&::-webkit-datetime-edit-day-field,
-	&::-webkit-datetime-edit-year-field {
-		color: var(--ink-4);
+	&.is-empty {
+		&::-webkit-datetime-edit {
+			color: var(--ink-4);
+		}
+	}
+
+	&::-webkit-datetime-edit-text {
+		margin-inline: 0.2em;
 	}
 }
 

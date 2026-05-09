@@ -32,6 +32,7 @@ class SearchForm extends Component {
 
 			this._updateVisibility();
 			this._updateVectorOptionsVisibility();
+			this._updateDateInputState();
 		});
 	}
 
@@ -112,6 +113,9 @@ class SearchForm extends Component {
 				this._search();
 		});
 
+		$.on(this.els.from, 'input', () => this._updateDateInputState());
+		$.on(this.els.to, 'input', () => this._updateDateInputState());
+
 		$.on(this.els.prevTerm, 'click', () => this._shiftDate(-1));
 		$.on(this.els.nextTerm, 'click', () => this._shiftDate(1));
 	}
@@ -134,6 +138,8 @@ class SearchForm extends Component {
 			if (relevance)
 				relevance.checked = true;
 		}
+
+		this._updateDateInputState();
 	}
 
 	getQuery(full = false) {
@@ -191,6 +197,7 @@ class SearchForm extends Component {
 		$.check(this.els.sortBy, ps.sortBy);
 
 		this._updateVectorOptionsVisibility();
+		this._updateDateInputState();
 	}
 
 	_updateURL() {
@@ -251,6 +258,11 @@ class SearchForm extends Component {
 			$.check(this.els.sortBy, 'relevance');
 
 		this._updateVectorOptionsVisibility();
+	}
+
+	_updateDateInputState() {
+		this.els.from.classList.toggle('is-empty', !this.els.from.value);
+		this.els.to.classList.toggle('is-empty', !this.els.to.value);
 	}
 
 	_updateVectorOptionsVisibility() {

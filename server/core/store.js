@@ -497,19 +497,26 @@ const store = {
 			params.push(rating);
 		}
 
+		// Normalize and swap dates if necessary
+		if (from && to) {
+			if (new Date(from).getTime() > new Date(to).getTime())
+				[from, to] = [to, from];
+		}
+
 		if (from) {
+			from = new Date(from).getTime();
 			conditions.push('b.created_at >= ?');
-			params.push((from instanceof Date) ? from.getTime() : new Date(from).getTime());
+			params.push(from);
 		}
 
 		if (to) {
-			// Make inclusive for date-only strings (e.g., YYYY-MM-DD)
-			let time = (to instanceof Date) ? to.getTime() : new Date(to).getTime();
-			if (typeof to === 'string' && to.length <= 10)
-				time += (24 * 60 * 60 * 1000) - 1;
+			const isShort = typeof to === 'string' && to.length <= 10;
+			to = new Date(to).getTime();
+			if (isShort)
+				to += (24 * 60 * 60 * 1000) - 1;
 
 			conditions.push('b.created_at <= ?');
-			params.push(time);
+			params.push(to);
 		}
 
 		const ftsUrl = this._buildFtsMatch(url, ['url']);

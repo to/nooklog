@@ -143,7 +143,7 @@ eventSource.onmessage = event => {
 	const msg = JSON.parse(event.data);
 	hub.emit(`server:${msg.type}`, msg);
 };
-eventSource.onerror = error => eventSource.close();
+eventSource.onerror = error => { };
 
 window.onerror = error => app.error(error);
 window.onunhandledrejection = event => app.error(event.reason);

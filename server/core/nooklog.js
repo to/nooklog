@@ -175,6 +175,10 @@ const nooklog = {
 		await this._fillHTML(b);
 		this._fillMarkdown(b);
 
+		// If we now have both title and markdown, it's no longer in an error state
+		if (b.title && b.markdown)
+			delete b.meta?.fetch_error;
+
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
 
@@ -224,9 +228,11 @@ const nooklog = {
 		// Fetch content if missing or forced, provided there's no existing error
 		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta?.fetch_error || force)) {
 			try {
+
 				// Fetch content and handle potential redirects
 				const res = await ingest.browser.fetch(b.url);
 				if (res.url && res.url !== b.url) {
+
 					// Detect if the destination is a login page to avoid data pollution
 					if (res.html.includes('type="password"')) {
 						b.meta = { ...b.meta, fetch_error: 'login_required' };
