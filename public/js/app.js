@@ -181,8 +181,8 @@ const updateTint = () => {
 	const theme = config['client.theme'];
 	const ink = matchingGrays[tint];
 	const steps = theme.endsWith('-gray')
-		? [5, 6, 8, 9, 9, 11, 12]
-		: [2, 3, 6, 8, 9, 11, 12];
+		? [5, 6, 8, 9, 10, 11, 12]
+		: [2, 3, 6, 8, 10, 11, 12];
 	steps.forEach((step, i) => {
 		root.style.setProperty(`--ink-${i}`,
 			theme.endsWith('-gray') ?

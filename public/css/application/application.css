@@ -41,7 +41,8 @@ textarea,
 select {
 	width: 100%;
 	padding: var(--space-s);
-	font-size: var(--font-size-s);
+	font-family: inherit;
+	font-size: inherit;
 	color: inherit;
 	outline: none;
 	background-color: var(--ink-0);
@@ -85,7 +86,7 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 
 input[type="date"] {
 	position: relative;
-	width: 9.2em;
+	width: 9.8em;
 
 	/* Calendar icon */
 	&::-webkit-calendar-picker-indicator {

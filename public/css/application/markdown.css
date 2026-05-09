@@ -82,7 +82,7 @@
 	blockquote {
 		padding: 0 var(--space-m);
 		margin: 0 0 var(--space-m) 0;
-		color: color-mix(in hsl, var(--ink-4), var(--ink-5));
+		color: var(--ink-4);
 		border-left: 0.25em solid var(--ink-1);
 
 		> :last-child {

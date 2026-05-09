@@ -2,7 +2,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: calc(var(--space-2s) * 0.5);
-	width: 10rem;
 
 	&.none {
 		display: none;
