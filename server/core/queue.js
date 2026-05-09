@@ -3,53 +3,79 @@ import hub from './hub.js';
 import { wait } from './util.js';
 
 // Central task queue with concurrency control to prevent engine overload
-const queue = new PQueue({ concurrency: 1 });
-const activeBatches = new Map();
+// Concurrency is set > 1 to avoid deadlocks when a task triggers another task (e.g. Backfill -> Save)
+const queue = new PQueue({ concurrency: 2 });
+const activeJobs = new Map();
+const allJobs = new Set();
 
-export const batch = (list, task, {
+// Run a single task
+export const task = (label, run, opt) => batch(label, run, 1, { ...opt, size: 1 });
+
+// Run a task in batches over a list or a number of times
+export const batch = (label, run, items, {
 	size = 100,
 	interval = 16,
-	label = 'batch',
 	priority = 0,
+	mode = 'queue', // queue (serialize), replace (abort previous), parallel
 } = {}) => {
 	const controller = new AbortController();
 	const { signal } = controller;
 
-	// Keep track of the previous batch promise at this priority level to ensure serialization
-	const prev = activeBatches.get(priority) || Promise.resolve();
+	const isNumeric = typeof items === 'number';
+	const total = isNumeric ? items : items.length;
+
+	const emitProgress = v => {
+		if (total > size) {
+			hub.emit('queue.progress', {
+				label,
+				value: Math.min(v, total),
+				total,
+			});
+		}
+	};
+
+	const prev = mode !== 'parallel' ? activeJobs.get(label) : null;
+
+	// Register job before promise starts to ensure tracking even for synchronous exits
+	const job = { controller };
+	allJobs.add(job);
 
 	const promise = (async () => {
 		try {
-			// Wait for the previous batch of the same priority to complete (ignore its success/failure)
-			try {
-				await prev;
-			} catch {
-				// Continue to next batch even if previous failed
+			if (mode !== 'parallel')
+				activeJobs.set(label, job);
+
+			if (prev) {
+				if (mode === 'replace')
+					prev.controller.abort();
+
+				// Ensure serialization by waiting for previous job to finish/abort
+				try {
+					await Promise.race([
+						prev.promise,
+						new Promise(r => signal.addEventListener('abort', r, { once: true })),
+					]);
+					if (signal.aborted)
+						return;
+				} catch { }
 			}
 
-			if (list.length > size)
-				hub.emit('queue.progress', { label, value: 0, total: list.length });
+			emitProgress(0);
 
-			for (let i = 0; i < list.length; i += size) {
+			for (let i = 0; i < total; i += size) {
 				if (signal.aborted)
 					return;
 
-				const slice = list.slice(i, i + size);
+				const slice = isNumeric ? Math.min(size, total - i) : items.slice(i, i + size);
 				await queue.add(async () => {
 					// PQueue with signal will automatically skip if aborted, but task also needs it
-					await task(slice, i, signal);
+					await run(slice, i, signal);
 				}, { priority, signal });
 
-				if (list.length > size) {
-					hub.emit('queue.progress', {
-						label,
-						value: Math.min(i + size, list.length),
-						total: list.length,
-					});
-				}
+				emitProgress(i + size);
 
 				// Yield control to let higher-priority tasks jump ahead during this wait
-				if (i + size < list.length)
+				if (i + size < total)
 					await wait(interval);
 			}
 		} catch (err) {
@@ -57,27 +83,37 @@ export const batch = (list, task, {
 				return;
 
 			throw err;
+		} finally {
+			emitProgress(total);
+
+			allJobs.delete(job);
+
+			if (activeJobs.get(label) === job)
+				activeJobs.delete(label);
 		}
 	})();
 
-	// Update the map to chain next batches to this one
-	activeBatches.set(priority, promise);
-
-	// Trigger cancellation and return the promise so others can wait for disposal
-	promise.abort = () => {
+	job.promise = promise;
+	job.abort = () => {
 		controller.abort();
 		return promise;
 	};
+	promise.abort = job.abort;
+
 	return promise;
 };
 
 export const idle = () => queue.onIdle();
 export const clear = () => {
 	queue.clear();
-	activeBatches.clear();
+
+	const promises = Array.from(allJobs).map(j => j.abort());
+	activeJobs.clear();
+	return Promise.allSettled(promises);
 };
 
 export default {
+	task,
 	batch,
 	idle,
 	clear,

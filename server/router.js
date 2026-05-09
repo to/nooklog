@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { EventPublisher } from '@orpc/server';
 import archiver from 'archiver';
 import nooklog from './core/nooklog.js';
+import db from './core/database.js';
 import * as ingestHtml from './core/ingest/html.js';
+import _ from './core/util.js';
 import baseLog from './core/log.js';
 import hub from './core/hub.js';
 
@@ -241,8 +243,18 @@ export const router = {
 			markdown: z.string(),
 		}))
 		.handler(async ({ input }) => {
-			const { html, ...rest } = ingestHtml.process(input.url, input.html);
-			return rest;
+			return _.omit(
+				ingestHtml.process(input.url, input.html), ['html']);
+		}),
+
+	clearVectorTable: orpc
+		.route({
+			method: 'POST',
+			path: '/database/clearVectorTable',
+			tags: ['internal'],
+		})
+		.handler(async () => {
+			await db.clearVectorTable();
 		}),
 
 	config: {

@@ -2,20 +2,37 @@ const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
 
 $.show = el => el?.classList.remove('none');
+
 $.hide = el => el?.classList.add('none');
+
 $.on = (el, type, fn, opts) => el?.addEventListener(type, fn, opts);
+
 $.toggle = (el, force) => el?.classList.toggle('none', force != null ? !force : undefined);
+
 $.create = (tag, props = {}) => Object.assign(document.createElement(tag), props);
+
 $.observeResize = (el, fn) => {
 	new ResizeObserver(entries =>
 		requestAnimationFrame(() => fn(entries[0]))).observe(el);
 };
+
 $.check = (els, val) => {
 	if (val == null)
 		return;
 	const list = Array.isArray(val) ? val : String(val).split(',').filter(Boolean);
 	els.forEach(el => el.checked = list.includes(el.value));
 };
+
+$.selectFile = accept => new Promise(resolve => {
+	const input = $.create('input', { type: 'file', accept });
+	input.onchange = () => resolve(input.files[0]);
+	input.click();
+
+	// Detect cancellation by monitoring window focus return
+	window.addEventListener('focus', () => {
+		setTimeout(() => resolve(input.files[0]), 500);
+	}, { once: true });
+});
 
 const qs = obj => new URLSearchParams(obj).toString();
 const getSearchParams = () => Object.fromEntries(new URLSearchParams(location.search));

@@ -105,12 +105,16 @@ const Nooklog = {
 		return await this.rpc('backfillContent', ps);
 	},
 
+	async clearVectorTable() {
+		return await this.rpc('clearVectorTable');
+	},
+
 	async import(file, options = {}) {
 		return await this.net.post(`/api/import?${qs(options)}`, file, {});
 	},
 
 	async rpc(path, data = {}, def = undefined) {
-		const res = await this.net.post('/rpc/' + path, { json: data }, def);
+		const res = await this.net.post('/rpc/' + path, { json: data }, { json: def });
 		return res?.json;
 	},
 

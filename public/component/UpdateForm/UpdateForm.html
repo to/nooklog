@@ -28,7 +28,9 @@
 			<label class="icon" title="Memo"><input type="radio" name="mode" value="memo" checked>notes</label>
 			<label class="icon" title="Preview"><input type="radio" name="mode" value="preview">visibility</label>
 		</div>
-		<button type="submit" title="Ctrl + Enter">Save</button>
+		<nl-busy-button>
+			<button type="submit" title="Ctrl + Enter" data-busy-text="Saving...">Save</button>
+		</nl-busy-button>
 	</footer>
 
 	<input type="hidden" name="html">

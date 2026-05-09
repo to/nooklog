@@ -88,10 +88,12 @@ const vector = {
 
 	async _request(inputs) {
 		if (!config['sentence.vector.enabled'])
-			return [];
+			throw new Warning('Vector embedding is disabled');
 
-		const model = config['sentence.vector.model'];
 		const baseUrl = config['sentence.vector.baseUrl'].replace(/\/$/, '');
+		const model = config['sentence.vector.model'];
+		if (!model)
+			throw new Warning('Vector model is not configured');
 
 		try {
 			const data = await this._fetch(`${baseUrl}/v1/embeddings`, {

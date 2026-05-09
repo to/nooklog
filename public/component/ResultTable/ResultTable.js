@@ -42,21 +42,19 @@ class ResultTable extends Component {
 
 			const button = e.target.closest('button');
 			if (button) {
+				console.log(button);
+
 				const id = row.dataset.id;
 				if (button.classList.contains('edit'))
 					this._openEdit(id);
 				else if (button.classList.contains('delete'))
 					this._delete(id, row);
+				else if (button.classList.contains('date'))
+					hub.emit('ResultTable:selectDate', button.textContent.trim());
 				else if (button.classList.contains('tag'))
-					hub.emit('ResultTable:selectTag', button.textContent);
+					hub.emit('ResultTable:selectTag', button.textContent.trim());
 				else if (button.classList.contains('host'))
 					hub.emit('ResultTable:selectHost', button.querySelector('img').title);
-				return;
-			}
-
-			const dates = e.target.closest('.dates');
-			if (dates) {
-				hub.emit('ResultTable:selectDate', dates.textContent);
 				return;
 			}
 
@@ -139,14 +137,14 @@ class ResultTable extends Component {
 					${r.chunk && r.chunkField == 'markdown' ?
 				`<div class="chunk">${sanitize(r.chunk.replace(/\n\n+/g, '\n')
 					.replace(/^((?:.*\n){4}.*)(?:\n[\s\S]*)?$/, '$1').slice(0, 200))}</div>` : ''}
-					<div class="flex justify-end items-end gap-s mt-auto">
+					<div class="flex justify-end items-center gap-s mt-auto">
 						<div class="tags flex flex-wrap gap-s">
-							${(r.tags || []).map(t => `<button class="tag flat">${t}</button>`).join('')}
+							${(r.tags || []).map(t => `<button type="button" class="tag flat">${t}</button>`).join('')}
 						</div>
 						${r.score !== undefined ?
 				`<span class="score hidden">${r.score.toFixed(2)}</span>` : ''}
-						<span class="dates" title="Updated: ${updatedAt}">${createdAt}</span>
-						<button class="delete flat icon ${config['server.mode'] === 'readonly' ? 'none' : ''}">delete</button>
+						<button type="button" class="date flat" title="Updated: ${updatedAt}">${createdAt}</span>
+						<button type="button" class="delete flat icon ${config['server.mode'] === 'readonly' ? 'none' : ''}">delete</button>
 					</div>
 				</div>
 			</div>

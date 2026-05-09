@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import fs from 'fs';
 import { createClient } from '@libsql/client';
@@ -13,7 +13,6 @@ const log = baseLog.child({ module: 'database' });
 
 const database = {
 	client: null,
-	vacuumJob: null,
 
 	async initialize() {
 		const isReadOnly = config['server.readonly'];
@@ -21,16 +20,16 @@ const database = {
 		const dbDir = path.join(config['server.data.path'], 'database');
 		if (!fs.existsSync(dbDir))
 			fs.mkdirSync(dbDir, { recursive: true });
-		const localDbUrl = `file:${path.join(dbDir, 'nooklog.db')}`;
+		this.localDbUrl = `file:${path.join(dbDir, 'nooklog.db')}`;
 
 		const tursoUrl = config['database.turso.url'];
 		const authToken = config['database.turso.token'];
 		if (tursoUrl && authToken) {
 			if (config['database.turso.replica']) {
 				// Turso Embedded Replica Mode (Local Cache + Sync)
-				log.info({ path: localDbUrl, sync: tursoUrl }, 'opening libsql database with Turso sync');
+				log.info({ path: this.localDbUrl, sync: tursoUrl }, 'opening libsql database with Turso sync');
 				this.client = createClient({
-					url: localDbUrl,
+					url: this.localDbUrl,
 					syncUrl: tursoUrl,
 					authToken: authToken,
 				});
@@ -50,9 +49,9 @@ const database = {
 			}
 		} else {
 			// Standard Local Mode
-			log.info({ path: localDbUrl }, 'opening local libsql database');
+			log.info({ path: this.localDbUrl }, 'opening local libsql database');
 			this.client = createClient({
-				url: localDbUrl,
+				url: this.localDbUrl,
 			});
 		}
 
@@ -95,7 +94,6 @@ const database = {
 
 	async dispose() {
 		log.info('disposing database');
-		await this.vacuumJob?.abort();
 		this.client?.close();
 	},
 
@@ -118,7 +116,7 @@ const database = {
 
 		const migrationDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migration');
 		const files = fs.readdirSync(migrationDir)
-			.filter(f => f.endsWith('.sql'))
+			.filter(f => f.endsWith('.js'))
 			.sort();
 
 		let version = parseInt(await this.getMeta('version') || '0');
@@ -126,19 +124,10 @@ const database = {
 			const v = parseInt(file.match(/^(\d+)/)?.[0] || '0');
 			if (v > version) {
 				log.info({ file }, `applying migration ${file}`);
-				await wait(32); // Yield to ensure log is flushed
+				await wait(32);
 
-				const sql = fs.readFileSync(path.join(migrationDir, file), 'utf-8');
-				const batch = sql.split(';').map(s => s.trim()).filter(Boolean);
-
-				// VACUUM cannot be executed within a transaction (batch 'write' mode)
-				const hasVacuum = batch.some(s => s.toUpperCase().includes('VACUUM'));
-				if (hasVacuum) {
-					for (const s of batch)
-						await this.client.execute(s);
-				} else {
-					await this.client.batch(batch, 'write');
-				}
+				const migration = await import(pathToFileURL(path.join(migrationDir, file)).href);
+				await migration.default(this);
 
 				version = v;
 				await this.setMeta('version', version.toString());
@@ -180,31 +169,18 @@ const database = {
 		const current = config['sentence.vector.model'];
 		const old = await this.getMeta('vector_model');
 
-		// Handle model change (Re-create table)
+		// Handle model change (Re-create table if needed)
 		if (enabled && old !== current) {
-			const batch = ['DROP TABLE IF EXISTS bookmark_vector'];
-			if (current === '') {
-				log.info('initializing vector stub table');
-				batch.push(`CREATE TABLE bookmark_vector (
-					row_id INTEGER PRIMARY KEY AUTOINCREMENT, bookmark_id INTEGER, vector F32_BLOB(768))`);
-			} else {
-				// Avoid CASCADE to prevent child vector loss on REPLACE
-				const dimension = await sentence.getDimension();
-				log.info({ from: old, to: current, dimension }, 'model changed, re-initializing vector table');
-				batch.push(
-					`-- Vector Search
-					CREATE TABLE bookmark_vector (
-						row_id INTEGER PRIMARY KEY AUTOINCREMENT,
-						bookmark_id INTEGER,
-						chunk_index INTEGER,
-						field TEXT,
-						content TEXT,
-						position INTEGER,
-						vector F32_BLOB(${dimension}) -- dimension depends on the model
-					)`,
-					'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)');
-			}
-			await this.client.batch(batch, 'write');
+			const info = await this.getVectorTableInfo();
+			const dimension = current === '' ? 768 : await sentence.getDimension();
+
+			// If empty, keep if exists. If set, reuse if dimension matches.
+			const needsInit = current === '' ? !info.exists : (info.dimension !== dimension);
+			if (needsInit)
+				await this.recreateVectorTable(dimension);
+			else
+				log.info({ model: current || 'none', dimension }, 'reusing existing vector table');
+
 			await this.setMeta('vector_model', current);
 		}
 
@@ -227,8 +203,43 @@ const database = {
 		}
 	},
 
+	async getVectorTableInfo() {
+		const info = await this.execute("PRAGMA table_info('bookmark_vector')");
+		const vectorCol = info.find(c => c.name === 'vector');
+		return {
+			exists: info.length > 0,
+			dimension: parseInt(vectorCol?.type.match(/\((\d+)\)/)?.[1] || '0'),
+		};
+	},
+
+	async recreateVectorTable(dimension) {
+		log.info({ dimension }, 're-initializing vector table');
+		await this.client.batch([
+			'DROP TABLE IF EXISTS bookmark_vector',
+			`CREATE TABLE bookmark_vector (
+				row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+				bookmark_id INTEGER,
+				chunk_index INTEGER,
+				field TEXT,
+				content TEXT,
+				position INTEGER,
+				vector F32_BLOB(${dimension})
+			)`,
+			'CREATE INDEX bookmark_vector_bookmark_id_idx ON bookmark_vector (bookmark_id)',
+		], 'write');
+	},
+
+	async clearVectorTable() {
+		const dimension = config['sentence.vector.enabled'] ?
+			await sentence.getDimension()
+			: 768;
+		await this.recreateVectorTable(dimension);
+	},
+
+	// Due to concurrent reader locks and driver limitations, 5-10% of "waste" (freelist pages)
+	// may remain even after a full sweep. This is an intentional trade-off for a non-blocking background process.
 	async vacuum() {
-		if (config['server.readonly'])
+		if (config['server.readonly'] || (config['database.turso.url'] && !config['database.turso.replica']))
 			return;
 
 		const { page_size, page_count, freelist_count } = await this.getPragma([
@@ -246,21 +257,29 @@ const database = {
 		if (wastePercent <= 20 || wasteBytes <= 100 * 1024 * 1024)
 			return;
 
-		await this.vacuumJob?.abort();
+		// Use a dedicated connection to prevent vacuum from blocking main transactions
+		const vacuumClient = createClient({ url: this.localDbUrl });
 
-		log.info({
-			waste: `${wastePercent.toFixed(1)}%`,
-			size: `${(wasteBytes / 1024 / 1024).toFixed(1)}MB`,
-		}, 'optimizing database (incremental vacuum)');
+		queue.batch('Vacuuming', async step => {
+			// Execute page-by-page to ensure all requested pages are processed
+			for (let i = 0; i < step; i++)
+				await vacuumClient.execute('PRAGMA incremental_vacuum(1)');
+		}, freelist_count, {
+			priority: -2,
+			size: 500,
+			mode: 'replace',
+			// Keep intervals short to avoid automatic checkpoint interruptions
+			interval: 64,
+		}).then(async () => {
+			// Wait for the vacuum connection to fully release its locks
+			vacuumClient.close();
+			await wait(2 * 1000);
 
-		const step = 300;
-		const steps = new Array(Math.ceil(freelist_count / step)).fill(0);
-		this.vacuumJob = queue.batch(steps, async () => {
-			await this.execute(`PRAGMA incremental_vacuum(${step})`);
-		}, { priority: -2, size: 1, interval: 500, label: 'Vacuuming' });
-
-		this.vacuumJob.then(() => {
-			this.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+			// Finalize vacuum changes and truncate the WAL file to reclaim space
+			await this.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+		}).catch(e => {
+			vacuumClient.close();
+			log.error({ error: e.message }, 'vacuuming failed');
 		});
 	},
 

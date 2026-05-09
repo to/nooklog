@@ -117,28 +117,24 @@
 		border-radius: var(--radius-m);
 	}
 
+	.date,
 	.tag {
-		font-size: var(--font-size-2s);
-		font-weight: bold;
 		--color: var(--ink-3);
-
-		line-height: var(--line-height-m);
 	}
 
 	.col-content{
 		.score,
-		.dates {
+		.date,
+		.tag {
 			font-size: var(--font-size-2s);
 			font-weight: bold;
-			font-variant-numeric: tabular-nums;
-			color: var(--ink-3);
+			line-height: var(--line-height-m);
 			white-space: nowrap;
-			cursor: pointer;
+		}
 
-			&:hover {
-				color: var(--ink-5);
-				text-decoration: underline;
-			}
+		.score,
+		.date {
+			font-variant-numeric: tabular-nums;
 		}
 
 		.icon{

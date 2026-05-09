@@ -11,12 +11,6 @@ const log = baseLog.child({ module: 'store' });
 const store = {
 	UNLIMITED: null,
 
-	async dispose() {
-		log.info('disposing store');
-		await this.reembedJob?.abort();
-		await this.reindexJob?.abort();
-	},
-
 	async find({ id, url, columns = ['*'] } = {}) {
 		if (!id && !url)
 			return null;
@@ -33,40 +27,42 @@ const store = {
 		return rows.map(r => this._parse(r));
 	},
 
-	async save(bookmarks, { fts = true, embed = true, embedFields = null } = {}) {
+	save(bookmarks, { fts = true, embed = true, embedFields = null } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
-		const batch = [];
-		for (let b of bookmarks) {
-			b = _.merge(db.createBookmark(), b);
-			batch.push({
-				sql: `
-					INSERT OR REPLACE INTO bookmark (
-						row_id, id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary, meta
-					) VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				args: [
-					b.id, b.id, b.url, b.title, b.memo, b.rating,
-					JSON.stringify(b.tags || []),
-					b.created_at, b.updated_at, b.html, b.markdown, b.summary,
-					JSON.stringify(b.meta || {}),
-				],
-			});
-		}
+		return queue.task('Update', async () => {
+			const batch = [];
+			for (let b of bookmarks) {
+				b = _.merge(db.createBookmark(), b);
+				batch.push({
+					sql: `
+						INSERT OR REPLACE INTO bookmark (
+							row_id, id, url, title, memo, rating, tags, created_at, updated_at, html, markdown, summary, meta
+						) VALUES ((SELECT row_id FROM bookmark WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					args: [
+						b.id, b.id, b.url, b.title, b.memo, b.rating,
+						JSON.stringify(b.tags || []),
+						b.created_at, b.updated_at, b.html, b.markdown, b.summary,
+						JSON.stringify(b.meta || {}),
+					],
+				});
+			}
 
-		await db.client.batch(batch, 'write');
+			await db.client.batch(batch, 'write');
 
-		if (fts)
-			this.indexFts(bookmarks);
+			if (fts)
+				this.indexFts(bookmarks);
 
-		if (embed)
-			this.embed(bookmarks, { fields: embedFields });
+			if (embed)
+				this.embed(bookmarks, { fields: embedFields });
+		});
 	},
 
-	indexFts(bookmarks, { priority = 20 } = {}) {
+	indexFts(bookmarks, { priority = 20, mode = 'queue' } = {}) {
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
 		const useUnigram = config['database.tokenizer'] === 'unigram';
-		return queue.batch(bookmarks, async slice => {
+		return queue.batch('FTS Indexing', async slice => {
 			const batch = slice.flatMap(b => [
 				{
 					sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
@@ -88,16 +84,16 @@ const store = {
 			]);
 
 			await db.client.batch(batch, 'write');
-		}, { priority, size: 50, label: 'FTS Indexing' });
+		}, bookmarks, { priority, size: 50, mode });
 	},
 
-	embed(bookmarks, { priority = 10, fields = null } = {}) {
+	embed(bookmarks, { priority = 10, fields = null, mode = 'queue' } = {}) {
 		if (!config['sentence.vector.enabled'])
 			return;
 
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
-		return queue.batch(bookmarks, async slice => {
+		return queue.batch('Embedding', async slice => {
 			const batch = [];
 
 			// Fetch row_ids for all bookmarks in the slice
@@ -193,7 +189,7 @@ const store = {
 			}
 
 			await db.client.batch(batch, 'write');
-		}, { priority, size: 10, label: 'Embedding' });
+		}, bookmarks, { priority, size: 10, mode });
 	},
 
 	async reembed() {
@@ -207,8 +203,6 @@ const store = {
 			return;
 		}
 
-		await this.reembedJob?.abort();
-
 		const bookmarks = await db.execute(`
 			SELECT id, title, memo, summary, markdown FROM bookmark
 			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
@@ -217,15 +211,11 @@ const store = {
 			return;
 
 		log.info({ count: bookmarks.length }, 're-embedding missing vectors');
-		this.reembedJob = this.embed(bookmarks, { priority: 2 });
-
-		return this.reembedJob;
+		return this.embed(bookmarks, { priority: 2, mode: 'replace' });
 	},
 
 	async reindexFts() {
 		await db.initializeFtsTable();
-
-		await this.reindexJob?.abort();
 
 		const bookmarks = await db.execute(`
 			SELECT id, title, memo, summary, markdown, url FROM bookmark
@@ -234,9 +224,7 @@ const store = {
 			return;
 
 		log.info({ count: bookmarks.length }, 're-indexing bookmarks in FTS');
-		this.reindexJob = this.indexFts(bookmarks, { priority: 5 });
-
-		return this.reindexJob;
+		return this.indexFts(bookmarks, { priority: 5, mode: 'replace' });
 	},
 
 	async getBackfillContentTargets({ limit = 100, force = false } = {}) {
@@ -263,21 +251,23 @@ const store = {
 		return newBookmarks.length;
 	},
 
-	async delete(id) {
-		await db.client.batch([
-			{
-				sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
-				args: [id],
-			},
-			{
-				sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
-				args: [id],
-			},
-			{
-				sql: 'DELETE FROM bookmark WHERE id = ?',
-				args: [id],
-			},
-		], 'write');
+	delete(id) {
+		return queue.task('Update', async () => {
+			await db.client.batch([
+				{
+					sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = (SELECT row_id FROM bookmark WHERE id = ?)',
+					args: [id],
+				},
+				{
+					sql: 'DELETE FROM bookmark_fts WHERE rowid = (SELECT row_id FROM bookmark WHERE id = ?)',
+					args: [id],
+				},
+				{
+					sql: 'DELETE FROM bookmark WHERE id = ?',
+					args: [id],
+				},
+			], 'write');
+		});
 	},
 
 	async getTags() {
@@ -507,19 +497,26 @@ const store = {
 			params.push(rating);
 		}
 
+		// Normalize and swap dates if necessary
+		if (from && to) {
+			if (new Date(from).getTime() > new Date(to).getTime())
+				[from, to] = [to, from];
+		}
+
 		if (from) {
+			from = new Date(from).getTime();
 			conditions.push('b.created_at >= ?');
-			params.push((from instanceof Date) ? from.getTime() : new Date(from).getTime());
+			params.push(from);
 		}
 
 		if (to) {
-			// Make inclusive for date-only strings (e.g., YYYY-MM-DD)
-			let time = (to instanceof Date) ? to.getTime() : new Date(to).getTime();
-			if (typeof to === 'string' && to.length <= 10)
-				time += (24 * 60 * 60 * 1000) - 1;
+			const isShort = typeof to === 'string' && to.length <= 10;
+			to = new Date(to).getTime();
+			if (isShort)
+				to += (24 * 60 * 60 * 1000) - 1;
 
 			conditions.push('b.created_at <= ?');
-			params.push(time);
+			params.push(to);
 		}
 
 		const ftsUrl = this._buildFtsMatch(url, ['url']);

@@ -6,7 +6,7 @@ chrome.storage.local.get('config').then(r => {
 	Object.assign(config, r.config || {});
 
 	// Trigger integrity check upon worker startup
-	registerMessagingBridge();
+	registerEssentialScripts();
 });
 
 // Allow content scripts to access chrome.storage.session
@@ -71,10 +71,13 @@ chrome.action.onClicked.addListener(tab => {
 	const action = config['extension.actionBehavior'] || 'embed';
 	if (action === 'sidepanel')
 		openUpdatePanel(tab);
+
 	else if (action === 'window')
 		openUpdateWindowForTab(tab);
+
 	else if (action === 'save')
 		saveBookmark(tab);
+
 	else
 		openUpdateFrame(tab);
 });
@@ -149,7 +152,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 	Object.assign(config, values);
 
 	if (needsRegister)
-		registerMessagingBridge();
+		registerEssentialScripts();
 });
 
 bridge.on('Nooklog:updateConfig', values => {
@@ -243,11 +246,6 @@ async function openUpdateWindowForTab(tab) {
 
 async function openUpdatePanel(tab) {
 	// Query parameters cannot be passed in Vivaldi
-	const sidePanelPath = 'content/frame.html';
-	chrome.sidePanel.setOptions({
-		path: sidePanelPath,
-		enabled: true,
-	});
 	chrome.sidePanel.open({ windowId: tab.windowId });
 
 	refreshUpdatePanel(tab);
@@ -392,38 +390,62 @@ async function setIcon(tab, isBookmarked) {
 	}
 }
 
-async function registerMessagingBridge() {
-	const url = config['extension.serverAddress'];
-	if (!url)
+// Mutex: prevent concurrent registerEssentialScripts runs
+let _bridgeBusy = 0;
+
+async function registerEssentialScripts() {
+	if (_bridgeBusy++)
 		return;
 
-	const scripts = [{
-		id: 'messaging-bridge',
-		matches: [`${url}/*`],
-		js: ['content/bridge.js'],
-		runAt: 'document_start',
-		allFrames: true,
-	}];
-
-	if (config['extension.autoAppendSelection']) {
-		// Exclude the update form to prevent circular pasting (self-selection loops)
-		scripts.push({
-			id: 'capture-selection',
-			matches: ['<all_urls>'],
-			excludeMatches: [`${url}/update.html*`],
-			js: ['content/captureSelection.js'],
-			runAt: 'document_start',
-			allFrames: false,
-		});
-	}
-
 	try {
-		// Unregister all and overwrite with the latest settings
-		await chrome.scripting.unregisterContentScripts({
-			ids: ['messaging-bridge', 'capture-selection'],
-		}).catch(() => { });
-		await chrome.scripting.registerContentScripts(scripts);
+		const url = config['extension.serverAddress'];
+		if (!url)
+			return;
+
+		// Unregister each script individually (ignore "not found" errors)
+		for (const id of ['messaging-bridge', 'capture-selection']) {
+			await chrome.scripting.unregisterContentScripts({ ids: [id] })
+				.catch(() => { });
+		}
+
+		// Always register the messaging bridge
+		await registerContentScript({
+			id: 'messaging-bridge',
+			matches: [`${url}/*`],
+			js: ['content/bridge.js'],
+			runAt: 'document_start',
+			allFrames: true,
+		});
+
+		// Conditionally register selection capture
+		if (config['extension.autoAppendSelection']) {
+			// Exclude the update form to prevent circular pasting (self-selection loops)
+			await registerContentScript({
+				id: 'capture-selection',
+				matches: ['<all_urls>'],
+				excludeMatches: [`${url}/update.html*`],
+				js: ['content/captureSelection.js'],
+				runAt: 'document_start',
+				allFrames: false,
+			});
+		}
+	} finally {
+		// A newer call arrived while we were busy — re-run with the latest config
+		const retry = _bridgeBusy > 1;
+		_bridgeBusy = 0;
+		if (retry)
+			registerEssentialScripts();
+	}
+}
+
+async function registerContentScript(script) {
+	try {
+		await chrome.scripting.registerContentScripts([script]);
 	} catch (e) {
+		// Already registered (Vivaldi may fire duplicate events) — update instead
+		try {
+			await chrome.scripting.updateContentScripts([script]);
+		} catch { }
 	}
 }
 
