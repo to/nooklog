@@ -86,11 +86,14 @@ const nooklog = {
 
 		await db.saveConfig(input);
 
-		if (Object.keys(input).length > 3)
+		// Run heavy maintenance tasks only during full config updates (e.g. from UI settings)
+		// to avoid overhead on minor, individual setting changes (like UI tint or API keys)
+		if (Object.keys(input).length > 3) {
 			db.vacuum();
 
-		store.reindexFts();
-		store.reembed();
+			store.reindexFts();
+			store.reembed();
+		}
 
 		return config;
 	},
