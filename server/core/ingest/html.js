@@ -5,7 +5,7 @@ import normalizeUrl from 'normalize-url';
 import { parseHTML } from 'linkedom';
 import baseLog from '../log.js';
 
-const log = baseLog.child({ module: 'librarian' });
+const log = baseLog.child({ module: 'ingest' });
 
 const PROGRAM_KEYWORDS = [
 	'function', 'const', 'let', 'var', 'return', 'import', 'export',
@@ -182,7 +182,14 @@ export function process(url, html) {
 		});
 	}
 
-	const article = (new Readability(document)).parse();
+	let article;
+	try {
+		article = (new Readability(document)).parse();
+	} catch (e) {
+		// Handle rare crashes caused by malformed HTML structure in Readability.
+		log.warn({ url, cause: e.message }, 'Readability failed to parse');
+	}
+
 	if (article) {
 		page.title = article.title;
 		page.siteName = article.siteName;
