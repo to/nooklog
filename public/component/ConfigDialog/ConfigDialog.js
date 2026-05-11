@@ -73,8 +73,10 @@ class ConfigDialog extends Component {
 				updateTint();
 			}
 
-			if (name === 'sentence.vector.enabled')
+			if (name === 'sentence.vector.enabled') {
 				this._updateEmbeddingVisibility();
+				this._fetchVectorModels();
+			}
 
 			if (name === 'sentence.vector.baseUrl')
 				this._fetchVectorModels();
@@ -213,6 +215,9 @@ class ConfigDialog extends Component {
 	}
 
 	async _fetchVectorModels() {
+		if (!this.$('input[name="sentence.vector.enabled"]')?.checked)
+			return;
+
 		const elUrl = this.$('input[name="sentence.vector.baseUrl"]');
 		if (!elUrl)
 			return;
