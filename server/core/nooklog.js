@@ -207,13 +207,18 @@ const nooklog = {
 	},
 
 	async backfillContent({ limit = 100, force = false } = {}) {
-		const bookmarks = await store.getBackfillContentTargets({ limit, force });
-		if (bookmarks.length === 0)
+		// メモリ節約のため idのみ取得する
+		const targets = await store.getBackfillContentTargets({ limit, force });
+		if (targets.length === 0)
 			return { count: 0 };
 
-		log.info({ count: bookmarks.length, force }, 'backfilling content');
+		log.info({ count: targets.length, force }, 'backfilling content');
 
-		queue.batch('Backfilling content', async ([b]) => {
+		queue.batch('Backfilling content', async ([target]) => {
+			const b = await store.find({ id: target.id });
+			if (!b)
+				return;
+
 			await this._fillHTML(b, { force });
 			this._fillMarkdown(b);
 
@@ -222,9 +227,9 @@ const nooklog = {
 				b.meta = { ...b.meta, fetch_error: 'missing_content' };
 
 			await this.save(b);
-		}, bookmarks, { size: 1, interval: 1000, priority: 1, mode: 'replace' });
+		}, targets, { size: 1, interval: 1000, priority: 1, mode: 'replace' });
 
-		return { count: bookmarks.length };
+		return { count: targets.length };
 	},
 
 	// Fill content by crawling the URL

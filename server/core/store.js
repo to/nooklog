@@ -51,10 +51,10 @@ const store = {
 			await db.client.batch(batch, 'write');
 
 			if (fts)
-				this.indexFts(bookmarks);
+				await this.indexFts(bookmarks);
 
 			if (embed)
-				this.embed(bookmarks, { fields: embedFields });
+				await this.embed(bookmarks, { fields: embedFields });
 		});
 	},
 
@@ -255,7 +255,7 @@ const store = {
 
 	async getBackfillContentTargets({ limit = 100, force = false } = {}) {
 		const sql = `
-			SELECT * FROM bookmark
+			SELECT id FROM bookmark
 			WHERE (markdown IS NULL OR markdown = '' OR title IS NULL OR title = '')
 			${force ? '' : "AND json_extract(meta, '$.fetch_error') IS NULL"}
 			ORDER BY created_at DESC

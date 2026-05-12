@@ -14,7 +14,7 @@ const bookmarks = await store.query(`
 console.log(`\nFound ${bookmarks.length} URLs needing normalization...\n`);
 
 // Use bulk batch size to leverage store.save's array support
-await batch(bookmarks, async slice => {
+await batch('Normalizing URLs', async slice => {
 	const targets = [];
 	for (const b of slice) {
 		try {
@@ -38,7 +38,7 @@ await batch(bookmarks, async slice => {
 
 	// Bulk save for efficiency. No re-embedding needed for URL-only changes.
 	await store.save(targets, { embed: false });
-}, { size: 50, label: 'Normalizing URLs' });
+}, bookmarks, { size: 50 });
 
 console.log('\nNormalization completed! ✨');
 

@@ -46,14 +46,17 @@ turndown.addRule('fallbackTable', {
 		return `\n\n${header}\n${sep}\n${content.trim()}\n\n`;
 	},
 });
+
 turndown.addRule('fallbackTbody', {
 	filter: node => ['TBODY', 'THEAD', 'TFOOT'].includes(node.nodeName) && isHorizontalTable(node),
 	replacement: content => content,
 });
+
 turndown.addRule('fallbackTr', {
 	filter: node => node.nodeName === 'TR' && isHorizontalTable(node),
 	replacement: content => `| ${content.trim().replace(/\n+/g, ' ')} |\n`,
 });
+
 turndown.addRule('fallbackThTd', {
 	filter: node => ['TH', 'TD'].includes(node.nodeName) && isHorizontalTable(node),
 	replacement: (content, node) => {

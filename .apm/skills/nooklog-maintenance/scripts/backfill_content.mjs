@@ -26,7 +26,7 @@ const bookmarks = await store.query(`
 console.log(`\nStarting backfill for ${bookmarks.length} bookmarks...\n`);
 
 // Use the standard queue.batch for cooperative processing
-await batch(bookmarks, async slice => {
+await batch('Backfilling content', async slice => {
 	const b = slice[0];
 	console.log(`Fetching: ${b.url}`);
 	try {
@@ -55,9 +55,9 @@ await batch(bookmarks, async slice => {
 			},
 		});
 	}
-}, {
+}, bookmarks, {
 	// Use a polite interval between requests
-	size: 1, interval: 2 * 1000, label: 'Backfilling missing content',
+	size: 1, interval: 2 * 1000,
 });
 
 console.log('\nAll done! ✨');

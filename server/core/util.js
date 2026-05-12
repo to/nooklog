@@ -36,6 +36,11 @@ export const bench = async (task, label = 'bench') => {
 
 export const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+export const cutOff = (promise, ms) => Promise.race([
+	promise,
+	wait(ms),
+]);
+
 export const parseNumber = val => {
 	const n = parseInt(val);
 	return isNaN(n) ? undefined : n;
@@ -115,6 +120,7 @@ export default {
 	parseNumber,
 	retry,
 	wait,
+	cutOff,
 	groupBy,
 	Warning,
 	parseFrontmatter,
