@@ -219,14 +219,18 @@ const nooklog = {
 			if (!b)
 				return;
 
-			await this._fillHTML(b, { force });
-			this._fillMarkdown(b);
+			try {
+				await this._fillHTML(b, { force });
+				this._fillMarkdown(b);
 
-			// If still missing content after backfill, mark as error to prevent infinite retries
-			if (!b.title || !b.markdown)
-				b.meta = { ...b.meta, fetch_error: 'missing_content' };
+				// If still missing content after backfill, mark as error to prevent infinite retries
+				if ((!b.title || !b.markdown) && !b.meta?.fetch_error)
+					b.meta = { ...b.meta, fetch_error: 'missing_content' };
 
-			await this.save(b);
+				await this.save(b);
+			} catch (e) {
+				// Continue to next target if it was a transient error (already handled in _fillHTML)
+			}
 		}, targets, { size: 1, interval: 1000, priority: 1, mode: 'replace' });
 
 		return { count: targets.length };
@@ -256,13 +260,30 @@ const nooklog = {
 				b.html = res.html;
 				b.title = b.title || res.title;
 				delete b.meta?.fetch_error;
+
 				log.info({ url: b.url }, 'fetch success');
 			} catch (e) {
+				const message = e.message?.split?.('\n')?.[0]?.trim?.() || '';
+
+				// Transient network issues: throw to allow backfill to retry later
+				if ([
+					'ERR_NETWORK_CHANGED',
+					'ERR_INTERNET_DISCONNECTED',
+					'ERR_CONNECTION_CLOSED',
+					'ERR_CONNECTION_TIMED_OUT',
+					'ERR_FAILED',
+				].some(code => message.includes(code))) {
+					log.info({ url: b.url, error: message }, 'fetch transient error: will retry later');
+					throw e;
+				}
+
+				// Permanent errors: record only the first line to keep metadata clean
 				b.meta = {
 					...b.meta,
-					fetch_error: e.status || e.message,
+					fetch_error: e.status || message,
 				};
-				log.warn({ url: b.url, error: e.message }, 'fetch failed');
+
+				log.warn({ url: b.url, error: message }, 'fetch failed');
 			}
 		}
 

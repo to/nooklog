@@ -3,7 +3,6 @@ import _ from '../util.js';
 import baseLog from '../log.js';
 const log = baseLog.child({ module: 'ingest.browser' });
 
-let browserServer;
 let browser;
 let playwrightChromium;
 let fetchCount = 0;
@@ -20,25 +19,35 @@ async function getBrowser() {
 		playwrightChromium = chromium;
 	}
 
-	if (fetchCount >= MAX_FETCH_COUNT) {
+	fetchCount++;
+
+	if (fetchCount % MAX_FETCH_COUNT === 0) {
 		log.debug({ fetchCount }, 'restarting browser to release memory');
 		await dispose();
-		fetchCount = 0;
+
+		const { rss, heapUsed } = process.memoryUsage();
+		log.debug({
+			fetchCount,
+			rss: `${Math.floor(rss / 1024 / 1024)}MB`,
+			heap: `${Math.floor(heapUsed / 1024 / 1024)}MB`,
+		}, 'fetching');
 	}
 
-	if (!browserServer || !browserServer.process()) {
-		// Prevent Playwright from killing the parent process prematurely during shutdown
-		// Browser processes still receive signals and exit normally on their own
-		browserServer = await playwrightChromium.launchServer({
-			args: ['--disable-gpu', '--disable-dev-shm-usage'],
+	if (!browser || !browser.isConnected()) {
+		// Launch browser directly instead of using launchServer + connect
+		// to reduce WebSocket communication overhead in Node.js RSS
+		browser = await playwrightChromium.launch({
+			args: [
+				'--disable-gpu',
+				'--disable-dev-shm-usage',
+				'--ssl-version-min=tls1',
+				'--ignore-certificate-errors',
+			],
 			handleSIGINT: false,
 			handleSIGTERM: false,
 			handleSIGHUP: false,
 		});
 	}
-
-	if (!browser || !browser.isConnected())
-		browser = await playwrightChromium.connect(browserServer.wsEndpoint());
 
 	return browser;
 }
@@ -47,11 +56,6 @@ export async function dispose() {
 	if (browser) {
 		await _.cutOff(browser.close(), 5000);
 		browser = null;
-	}
-
-	if (browserServer) {
-		await _.cutOff(browserServer.close(), 5000);
-		browserServer = null;
 	}
 
 	if (global.gc) {
@@ -65,14 +69,6 @@ export async function dispose() {
 
 export async function fetch(url) {
 	const browser = await getBrowser();
-	fetchCount++;
-
-	const { rss, heapUsed } = process.memoryUsage();
-	log.debug({
-		fetchCount,
-		rss: `${Math.floor(rss / 1024 / 1024)}MB`,
-		heap: `${Math.floor(heapUsed / 1024 / 1024)}MB`,
-	}, 'fetching');
 
 	const context = await browser.newContext({
 		ignoreHTTPSErrors: true,
@@ -86,13 +82,33 @@ export async function fetch(url) {
 		// Block unnecessary resources to speed up
 		await page.route(
 			'**/*.{png,jpg,jpeg,gif,webp,svg,mp4,webm,ogg,mp3,wav,woff,woff2,ttf,otf,css}',
-			route => route.abort());
+			route => {
+				return (route.request().resourceType() === 'document')
+					? route.continue()
+					: route.abort();
+			});
 
 		// Shorter timeout and lighter wait condition
 		const response = await page.goto(url, {
 			waitUntil: 'domcontentloaded',
 			timeout: 10000,
 		});
+
+		// Fetch raw HTML immediately before the page has a chance to navigate away
+		let rawHtml = '';
+		try {
+			rawHtml = await response.text();
+		} catch (e) {
+			const isProtocolError =
+				e.message.includes('No resource with given identifier found') ||
+				e.message.includes('Response body is unavailable for redirect responses');
+			if (isProtocolError) {
+				// Silent fallback: rawHtml is unavailable due to browser/protocol limits,
+				// but page.content() will provide the rendered version later.
+			} else {
+				throw e;
+			}
+		}
 
 		if (!response.ok()) {
 			const error = new Error(`HTTP ${response.status()}: ${url}`);
@@ -104,14 +120,23 @@ export async function fetch(url) {
 		// Wait a bit for SPA content
 		await page.waitForTimeout(1500);
 
+		// Safely retrieve title and content, falling back to rawHtml if page is already navigating
+		let html = rawHtml;
+		let title = '';
+		try {
+			html = await page.content();
+			title = await page.title();
+		} catch (_) {
+			// Fallback to initial response if page became inaccessible
+		}
+
 		return {
-			html: await page.content(),
-			rawHtml: await response.text(),
+			html,
+			rawHtml,
 			url: page.url(),
-			title: await page.title(),
+			title: title,
 		};
 	} finally {
-		//
 		if (page)
 			await _.cutOff(page.close(), 3000);
 
