@@ -181,7 +181,7 @@ const nooklog = {
 
 		// If we now have both title and markdown, it's no longer in an error state
 		if (b.title && b.markdown)
-			delete b.meta?.fetch_error;
+			delete b.meta.fetch_error;
 
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
@@ -207,7 +207,7 @@ const nooklog = {
 	},
 
 	async backfillContent({ limit = 100, force = false } = {}) {
-		// メモリ節約のため idのみ取得する
+		// Fetch only IDs to save memory
 		const targets = await store.getBackfillContentTargets({ limit, force });
 		if (targets.length === 0)
 			return { count: 0 };
@@ -224,14 +224,16 @@ const nooklog = {
 				this._fillMarkdown(b);
 
 				// If still missing content after backfill, mark as error to prevent infinite retries
-				if ((!b.title || !b.markdown) && !b.meta?.fetch_error)
+				if ((!b.title || !b.markdown) && !b.meta.fetch_error)
 					b.meta = { ...b.meta, fetch_error: 'missing_content' };
 
 				await this.save(b);
 			} catch (e) {
 				// Continue to next target if it was a transient error (already handled in _fillHTML)
+				if (!e.isTransient)
+					throw e;
 			}
-		}, targets, { size: 1, interval: 1000, priority: 1, mode: 'replace' });
+		}, targets, { size: 1, interval: 5000, priority: 1, mode: 'replace' });
 
 		return { count: targets.length };
 	},
@@ -239,11 +241,19 @@ const nooklog = {
 	// Fill content by crawling the URL
 	async _fillHTML(b, { force = false } = {}) {
 		// Fetch content if missing or forced, provided there's no existing error
-		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta?.fetch_error || force)) {
+		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta.fetch_error || force)) {
 			try {
+				// Determine archive date: use exact date for legacy links, or IA origin (1996) for others
+				let archiveDate = null;
+				if (b.created_at) {
+					const d = new Date(b.created_at);
+					archiveDate = (d < new Date('2025-01-01'))
+						? d.toLocaleDateString('sv').replace(/-/g, '')
+						: '1996';
+				}
 
 				// Fetch content and handle potential redirects
-				const res = await ingest.browser.fetch(b.url);
+				const res = await ingest.browser.fetch(b.url, archiveDate);
 				if (res.url && res.url !== b.url) {
 
 					// Detect if the destination is a login page to avoid data pollution
@@ -253,37 +263,38 @@ const nooklog = {
 						return b;
 					}
 
-					b.meta = { originalUrl: b.url, ...b.meta };
-					b.url = res.url;
+					b.meta = { ...b.meta, finalUrl: res.url };
 				}
 
 				b.html = res.html;
 				b.title = b.title || res.title;
-				delete b.meta?.fetch_error;
+
+				delete b.meta.fetch_error;
+				delete b.meta.archive_error;
+				delete b.meta.fetch_retry;
 
 				log.info({ url: b.url }, 'fetch success');
 			} catch (e) {
-				const message = e.message?.split?.('\n')?.[0]?.trim?.() || '';
-
 				// Transient network issues: throw to allow backfill to retry later
-				if ([
-					'ERR_NETWORK_CHANGED',
-					'ERR_INTERNET_DISCONNECTED',
-					'ERR_CONNECTION_CLOSED',
-					'ERR_CONNECTION_TIMED_OUT',
-					'ERR_FAILED',
-				].some(code => message.includes(code))) {
-					log.info({ url: b.url, error: message }, 'fetch transient error: will retry later');
-					throw e;
+				if (e.isTransient) {
+					b.meta.fetch_retry = (b.meta.fetch_retry ?? 0) + 1;
+					if (b.meta.fetch_retry < 3) {
+						log.debug({ url: b.url, error: e.message, retry: b.meta.fetch_retry }, 'fetch transient error: will retry later');
+						await store.save(b, { fts: false, embed: false });
+						throw e;
+					}
+					log.debug({ url: b.url, error: e.message }, 'fetch transient error: max retries reached');
 				}
 
-				// Permanent errors: record only the first line to keep metadata clean
 				b.meta = {
 					...b.meta,
-					fetch_error: e.status || message,
+					fetch_error: e.status || e.message,
 				};
 
-				log.warn({ url: b.url, error: message }, 'fetch failed');
+				if (e.archiveError)
+					b.meta.archive_error = e.archiveError.status || e.archiveError.message;
+
+				log.warn({ url: b.url, error: e.message }, 'fetch failed');
 			}
 		}
 

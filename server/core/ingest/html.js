@@ -133,11 +133,19 @@ export function process(url, html) {
 	url = resolveURL(url, undefined, normalizeUrlOptions);
 
 	html = html
+		.replace(/<!-- BEGIN WAYBACK TOOLBAR INSERT -->[\s\S]*?<!-- END WAYBACK TOOLBAR INSERT -->/g, '')
 		.replace(JUNK_REGEX_TAG, '')
 		.replace(JUNK_REGEX_OPEN, '')
 		.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
+
+	// Use <base> tag for URL resolution if present, then remove it to avoid confusing Readability.
+	const baseEl = document.querySelector('base');
+	baseEl?.remove();
+
+	const baseURL = baseEl?.getAttribute('href') || url;
+	const archiveUrl = (baseURL.includes('//web.archive.org/') && !url.includes('//web.archive.org/')) ? baseURL : null;
 
 	// Merge paginated content to help Readability identify the full article
 	document.querySelectorAll('[id^="uAutoPagerize-divider-"]').forEach(divider => {
@@ -154,7 +162,7 @@ export function process(url, html) {
 	document.querySelectorAll('a').forEach(el => {
 		const href = el.getAttribute('href');
 		if (href)
-			el.setAttribute('href', resolveURL(href, url, normalizeUrlOptions));
+			el.setAttribute('href', resolveURL(href, baseURL, normalizeUrlOptions));
 	});
 	document.querySelectorAll('img').forEach(el => {
 		const src = el.getAttribute('src');
@@ -162,7 +170,7 @@ export function process(url, html) {
 			return el.remove();
 
 		if (src)
-			el.setAttribute('src', resolveURL(src, url));
+			el.setAttribute('src', resolveURL(src, baseURL, normalizeUrlOptions));
 	});
 	document.querySelectorAll('table caption').forEach(caption => {
 		const table = caption.closest('table');
@@ -176,6 +184,7 @@ export function process(url, html) {
 
 	const page = {
 		url,
+		archiveUrl,
 		description: document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || '',
 	};
 
@@ -220,6 +229,7 @@ function generateMarkdown(page) {
 		page.title && `title: "${page.title.replace(/"/g, '\\"')}"`,
 		page.siteName && `site: "${page.siteName.replace(/"/g, '\\"')}"`,
 		page.url && `url: "${page.url}"`,
+		page.archiveUrl && `archive: "${page.archiveUrl}"`,
 		page.description && `description: "${page.description.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
 		'---',
 	].filter(Boolean).join('\n');
