@@ -233,7 +233,7 @@ const nooklog = {
 				if (!e.isTransient)
 					throw e;
 			}
-		}, targets, { size: 1, interval: 5000, priority: 1, mode: 'replace' });
+		}, targets, { size: 1, interval: 10 * 1000, priority: 1, mode: 'replace' });
 
 		return { count: targets.length };
 	},
@@ -257,7 +257,10 @@ const nooklog = {
 				if (res.url && res.url !== b.url) {
 
 					// Detect if the destination is a login page to avoid data pollution
-					if (res.html.includes('type="password"')) {
+					const isLogin = res.html.includes('type="password"');
+					const isTitleDifferent = b.title && !_.isSimilarText(b.title, res.title);
+					const isLoginTitle = /login|signin|ログイン|サインイン/i.test(res.title || '');
+					if (isLogin && (isTitleDifferent || isLoginTitle)) {
 						b.meta = { ...b.meta, fetch_error: 'login_required' };
 						log.info({ url: b.url, redirect: res.url }, 'fetch skipped: login required');
 						return b;
@@ -278,23 +281,31 @@ const nooklog = {
 				// Transient network issues: throw to allow backfill to retry later
 				if (e.isTransient) {
 					b.meta.fetch_retry = (b.meta.fetch_retry ?? 0) + 1;
-					if (b.meta.fetch_retry < 3) {
-						log.debug({ url: b.url, error: e.message, retry: b.meta.fetch_retry }, 'fetch transient error: will retry later');
+					if (b.meta.fetch_retry < 4) {
+						log.info({
+							cause: (e.archiveError || e).message,
+							url: b.url,
+							retry: b.meta.fetch_retry,
+						}, `fetch transient error(${b.meta.fetch_retry})`);
 						await store.save(b, { fts: false, embed: false });
 						throw e;
+					} else {
+						log.debug({
+							cause: (e.archiveError || e).message,
+							url: b.url,
+						}, `fetch transient error(max)`);
 					}
-					log.debug({ url: b.url, error: e.message }, 'fetch transient error: max retries reached');
 				}
 
 				b.meta = {
 					...b.meta,
-					fetch_error: e.status || e.message,
+					fetch_error: e.message,
 				};
 
 				if (e.archiveError)
 					b.meta.archive_error = e.archiveError.status || e.archiveError.message;
 
-				log.warn({ url: b.url, error: e.message }, 'fetch failed');
+				log.warn({ cause: e.message, url: b.url }, 'fetch failed');
 			}
 		}
 

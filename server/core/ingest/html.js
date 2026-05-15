@@ -139,6 +139,13 @@ export function process(url, html) {
 		.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
+	if (!document.documentElement) {
+		log.warn({ url }, 'linkedom failed to parse document (documentElement is null)');
+		return {
+			html,
+			markdown: generateMarkdown({ url, archiveUrl: null, title: '', content: '' }),
+		};
+	}
 
 	// Use <base> tag for URL resolution if present, then remove it to avoid confusing Readability.
 	const baseEl = document.querySelector('base');

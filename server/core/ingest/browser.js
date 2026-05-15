@@ -71,35 +71,6 @@ export async function dispose() {
 	}
 }
 
-function isTransient(e) {
-	const msg = e.message || '';
-	return [
-		'ERR_NETWORK_CHANGED',
-		'ERR_INTERNET_DISCONNECTED',
-		'ERR_CONNECTION_RESET',
-		'ERR_CONNECTION_CLOSED',
-		'ERR_CONNECTION_TIMED_OUT',
-		'ERR_TIMED_OUT',
-		'ERR_FAILED',
-	].some(code => msg.includes(code));
-}
-
-async function getText(response) {
-	try {
-		return await response.text();
-	} catch (e) {
-		const isProtocolError =
-			e.message.includes('No resource with given identifier found') ||
-			e.message.includes('Response body is unavailable for redirect responses');
-
-		// Silent fallback: rawHtml is unavailable due to browser/protocol limits
-		if (isProtocolError)
-			return '';
-
-		throw e;
-	}
-}
-
 export async function fetch(url, date = null) {
 	const isArchive = url.includes('//web.archive.org/');
 	const browser = await getBrowser();
@@ -154,7 +125,7 @@ export async function fetch(url, date = null) {
 		// Shorter timeout and lighter wait condition
 		const response = await page.goto(url, {
 			waitUntil: 'domcontentloaded',
-			timeout: isArchive ? 50000 : 10000,
+			timeout: isArchive ? 50000 : 15000,
 		});
 
 		if (!response.ok()) {
@@ -189,24 +160,30 @@ export async function fetch(url, date = null) {
 			rawHtml,
 		};
 	} catch (e) {
-		// Clean up error message to keep only the first line
-		e.message = e.message?.split?.('\n')?.[0]?.trim?.() || e.message;
+		normalizeError(e);
 
-		if (isTransient(e)) {
-			e.isTransient = true;
+		if (e.isTransient)
 			throw e;
-		}
 
-		// Fallback to Internet Archive if date is provided and not already an archive URL
 		if (date && !isArchive) {
-			const archiveUrl = `https://web.archive.org/web/${date}/${url}`;
+			log.debug({ cause: e.message, url }, 'fetch failed');
+
+			// Resolve direct archive URL to bypass interstitial redirect pages
+			const archiveUrl = await resolveArchiveUrl(url, date);
+			if (!archiveUrl) {
+				log.debug('archive not available');
+				e.archiveError = { message: 'not_available' };
+				throw e;
+			}
+
 			try {
 				const res = await fetch(archiveUrl);
-				log.debug({ url, archiveUrl }, 'fetch success via archive');
+				log.debug({ url: res.url }, 'archive fetch success');
 				res.html = `<base href="${res.url}">\n${res.html}`;
 				return res;
 			} catch (ae) {
-				log.debug({ url, archiveUrl, error: ae.message }, 'archive fetch failed');
+				normalizeError(ae);
+				log.debug({ cause: ae.message, url: archiveUrl }, 'archive fetch failed');
 				e.archiveError = ae;
 				e.isTransient = ae.isTransient;
 				throw e;
@@ -219,5 +196,91 @@ export async function fetch(url, date = null) {
 			await _.cutOff(page.close(), 3000);
 
 		await _.cutOff(context.close(), 3000);
+	}
+}
+
+export async function resolveArchiveUrl(url, timestamp) {
+	const getSnapshot = async ts => {
+		const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}${ts ? `&timestamp=${ts}` : ''}`;
+		try {
+			const response = await globalThis.fetch(api);
+			if (!response.ok) {
+				const body = (await response.text()).trim().slice(0, 100);
+				log.debug({ status: response.status, body }, 'archive api error');
+
+				const e = new Error(`HTTP ${response.status}`);
+				e.status = response.status;
+				throw e;
+			}
+
+			const data = await response.json();
+			const snapshot = data.archived_snapshots?.closest;
+			if (snapshot?.available && snapshot.url) {
+				const status = '' + (snapshot.status || '');
+				if (status.startsWith('3')) {
+					log.debug({ url, status }, 'archive snapshot redirect');
+					return null;
+				}
+
+				// Ensure it's a direct link to the content, not a calendar
+				return snapshot.url.replace(/\/web\/(\d+)\*\//, '/web/$1/');
+			}
+		} catch (e) {
+			normalizeError(e);
+
+			if (e.isTransient)
+				throw e;
+
+			log.debug({ cause: e.message, url }, 'archive check failed');
+		}
+		return null;
+	};
+
+	// 1st attempt: with timestamp
+	let result = await getSnapshot(timestamp);
+	if (result)
+		return result;
+
+	// 2nd attempt: without timestamp (fallback to latest available)
+	if (timestamp) {
+		log.debug({ url }, 'archive retry latest');
+		await _.wait(3 * 1000);
+		result = await getSnapshot(null);
+	}
+
+	return result;
+}
+
+function normalizeError(e) {
+	const msg = e.message || '';
+	e.isTransient ||= (e.status && (e.status === 429 || e.status >= 500)) || [
+		'ERR_NETWORK_CHANGED',
+		'ERR_INTERNET_DISCONNECTED',
+		'ERR_CONNECTION_RESET',
+		'ERR_CONNECTION_CLOSED',
+		'ERR_CONNECTION_TIMED_OUT',
+		'ERR_TIMED_OUT',
+		'ERR_FAILED',
+	].some(code => msg.includes(code));
+
+	let formatted = msg.split('\n')[0].trim().replace(/^page\.\w+: /, '');
+	const match = formatted.match(/net::(ERR_[A-Z_]+)/);
+	e.message = e.status ? '' + e.status : (match ? match[1] : formatted);
+	return e.message;
+}
+
+async function getText(response) {
+	try {
+		return await response.text();
+	} catch (e) {
+		const isProtocolError =
+			e.message.includes('No resource with given identifier found') ||
+			e.message.includes('Response body is unavailable for redirect responses');
+
+		// Silent fallback: rawHtml is unavailable due to browser/protocol limits
+		if (isProtocolError)
+			return '';
+
+		throw e;
 	}
 }

@@ -81,6 +81,16 @@ export class Warning extends Error {
 	}
 }
 
+export const isSimilarText = (a, b) => {
+	const normalize = s => (s || '').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+	const na = normalize(a);
+	const nb = normalize(b);
+	if (!na || !nb)
+		return false;
+
+	return na.includes(nb) || nb.includes(na);
+};
+
 export const parseFrontmatter = (text = '') => {
 	const end = text.startsWith('---') ? text.indexOf('\n---', 3) : -1;
 	if (end === -1)
@@ -123,5 +133,6 @@ export default {
 	cutOff,
 	groupBy,
 	Warning,
+	isSimilarText,
 	parseFrontmatter,
 };
