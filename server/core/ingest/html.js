@@ -22,11 +22,6 @@ const JUNK_TAGS = [
 	'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
 ];
 
-const JUNK_REGEX_TAG =
-	new RegExp(`<(${JUNK_TAGS.join('|')})\\b[^>]*>[\\s\\S]*?<\\/\\1>`, 'gi');
-const JUNK_REGEX_OPEN =
-	new RegExp(`<(${JUNK_TAGS.join('|')})\\b[^>]*>`, 'gi');
-
 const turndown = new TurndownService({
 	headingStyle: 'atx',
 	codeBlockStyle: 'fenced',
@@ -132,11 +127,7 @@ export function process(url, html) {
 	};
 	url = resolveURL(url, undefined, normalizeUrlOptions);
 
-	html = html
-		.replace(/<!-- BEGIN WAYBACK TOOLBAR INSERT -->[\s\S]*?<!-- END WAYBACK TOOLBAR INSERT -->/g, '')
-		.replace(JUNK_REGEX_TAG, '')
-		.replace(JUNK_REGEX_OPEN, '')
-		.replace(/<!--[\s\S]*?-->/g, '');
+	html = html.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
 	if (!document.documentElement) {
@@ -146,6 +137,11 @@ export function process(url, html) {
 			markdown: generateMarkdown({ url, archiveUrl: null, title: '', content: '' }),
 		};
 	}
+
+	// Remove Wayback Machine toolbar and other junk tags
+	document.getElementById('wm-ipp-base')?.remove();
+	document.getElementById('wm-ipp-print')?.remove();
+	document.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
 
 	// Use <base> tag for URL resolution if present, then remove it to avoid confusing Readability.
 	const baseEl = document.querySelector('base');
@@ -224,7 +220,7 @@ export function process(url, html) {
 	}
 
 	return {
-		html,
+		html: document.toString(),
 		markdown: generateMarkdown(page),
 	};
 }
