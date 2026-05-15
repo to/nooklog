@@ -71,7 +71,7 @@ export async function dispose() {
 	}
 }
 
-export async function fetch(url, date = null) {
+export async function fetch(url) {
 	const isArchive = url.includes('//web.archive.org/');
 	const browser = await getBrowser();
 
@@ -165,11 +165,11 @@ export async function fetch(url, date = null) {
 		if (e.isTransient)
 			throw e;
 
-		if (date && !isArchive) {
+		if (!isArchive) {
 			log.debug({ cause: e.message, url }, 'fetch failed');
 
 			// Resolve direct archive URL to bypass interstitial redirect pages
-			const archiveUrl = await resolveArchiveUrl(url, date);
+			const archiveUrl = await resolveArchiveUrl(url);
 			if (!archiveUrl) {
 				log.debug('archive not available');
 				e.archiveError = { message: 'not_available' };
@@ -199,56 +199,36 @@ export async function fetch(url, date = null) {
 	}
 }
 
-export async function resolveArchiveUrl(url, timestamp) {
-	const getSnapshot = async ts => {
-		const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}${ts ? `&timestamp=${ts}` : ''}`;
-		try {
-			const response = await globalThis.fetch(api);
-			if (!response.ok) {
-				const body = (await response.text()).trim().slice(0, 100);
-				log.debug({ status: response.status, body }, 'archive api error');
+export async function resolveArchiveUrl(url) {
+	const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`;
+	try {
+		// Default to the latest snapshot to avoid inaccurate timestamp lookups and HTTP 429 rate limits
+		const res = await globalThis.fetch(api);
+		if (!res.ok)
+			throw new Error(`HTTP ${res.status}`);
 
-				const e = new Error(`HTTP ${response.status}`);
-				e.status = response.status;
-				throw e;
+		const { archived_snapshots } = await res.json();
+		const snapshot = archived_snapshots?.closest;
+
+		if (snapshot?.available && snapshot.url) {
+			if ((snapshot.status + '').startsWith('3')) {
+				log.debug({ url, status: snapshot.status }, 'archive snapshot redirect');
+				return null;
 			}
 
-			const data = await response.json();
-			const snapshot = data.archived_snapshots?.closest;
-			if (snapshot?.available && snapshot.url) {
-				const status = '' + (snapshot.status || '');
-				if (status.startsWith('3')) {
-					log.debug({ url, status }, 'archive snapshot redirect');
-					return null;
-				}
-
-				// Ensure it's a direct link to the content, not a calendar
-				return snapshot.url.replace(/\/web\/(\d+)\*\//, '/web/$1/');
-			}
-		} catch (e) {
-			normalizeError(e);
-
-			if (e.isTransient)
-				throw e;
-
-			log.debug({ cause: e.message, url }, 'archive check failed');
+			// Ensure it's a direct link to the content, not a calendar
+			return snapshot.url.replace(/\/web\/(\d+)\*\//, '/web/$1/');
 		}
-		return null;
-	};
+	} catch (e) {
+		normalizeError(e);
 
-	// 1st attempt: with timestamp
-	let result = await getSnapshot(timestamp);
-	if (result)
-		return result;
+		if (e.isTransient)
+			throw e;
 
-	// 2nd attempt: without timestamp (fallback to latest available)
-	if (timestamp) {
-		log.debug({ url }, 'archive retry latest');
-		await _.wait(3 * 1000);
-		result = await getSnapshot(null);
+		log.debug({ cause: e.message, url }, 'archive check failed');
 	}
 
-	return result;
+	return null;
 }
 
 function normalizeError(e) {

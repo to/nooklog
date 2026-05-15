@@ -233,7 +233,7 @@ const nooklog = {
 				if (!e.isTransient)
 					throw e;
 			}
-		}, targets, { size: 1, interval: 10 * 1000, priority: 1, mode: 'replace' });
+		}, targets, { size: 1, interval: 5 * 1000, priority: 1, mode: 'replace' });
 
 		return { count: targets.length };
 	},
@@ -243,17 +243,8 @@ const nooklog = {
 		// Fetch content if missing or forced, provided there's no existing error
 		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta.fetch_error || force)) {
 			try {
-				// Determine archive date: use exact date for legacy links, or IA origin (1996) for others
-				let archiveDate = null;
-				if (b.created_at) {
-					const d = new Date(b.created_at);
-					archiveDate = (d < new Date('2025-01-01'))
-						? d.toLocaleDateString('sv').replace(/-/g, '')
-						: '1996';
-				}
-
 				// Fetch content and handle potential redirects
-				const res = await ingest.browser.fetch(b.url, archiveDate);
+				const res = await ingest.browser.fetch(b.url);
 				if (res.url && res.url !== b.url) {
 
 					// Detect if the destination is a login page to avoid data pollution
