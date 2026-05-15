@@ -294,7 +294,7 @@ const nooklog = {
 				};
 
 				if (e.archiveError)
-					b.meta.archive_error = e.archiveError.status || e.archiveError.message;
+					b.meta.archive_error = e.archiveError.message;
 
 				log.warn({ cause: e.message, url: b.url }, 'fetch failed');
 			}

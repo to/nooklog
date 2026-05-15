@@ -58,4 +58,41 @@ test('ingest/html.js - process', async t => {
 		assert.strictEqual(result.markdown.includes('| | |'), false, 'Standard table should not include dummy header');
 		assert.ok(result.markdown.includes('| Header 1 | Header 2 |'), 'Headers should be output correctly');
 	});
+	await t.test('Wayback Machine <base> tag should set archiveUrl and resolve relative links', () => {
+		const archiveBase = 'https://web.archive.org/web/20241130163753/https://techable.jp/archives/95388';
+		const html = `
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<base href="${archiveBase}">
+			</head>
+			<body>
+				<a href="relative-page">Link</a>
+				<img src="img/test.jpg">
+			</body>
+			</html>
+		`;
+		const url = 'https://techable.jp/archives/95388';
+		const result = process(url, html);
+
+		// Assert archiveUrl is extracted into YAML frontmatter
+		assert.ok(result.markdown.includes(`archive: "${archiveBase}"`), 'Should include archive URL in YAML');
+
+		// Assert relative links are resolved using the base URL
+		assert.ok(result.markdown.includes('(https://web.archive.org/web/20241130163753/https://techable.jp/archives/relative-page)'), 'Relative link should be resolved using archive base');
+
+		// Assert the base tag is preserved in result.html (due to our capture-before-cleaning fix)
+		assert.ok(result.html.includes(`<base href="${archiveBase}">`), 'Original base tag should be preserved in result.html');
+	});
+
+	await t.test('Malformed HTML should fall back to URL-only Markdown', () => {
+		const html = '   '; // Empty/whitespace only
+		const url = 'https://example.com/failed';
+		const result = process(url, html);
+
+		assert.ok(result.markdown.includes('url: "https://example.com/failed"'), 'Should still include URL in YAML');
+		assert.strictEqual(result.markdown.includes('title:'), false, 'Should not include title');
+		assert.strictEqual(result.markdown.includes('archive:'), false, 'Should not include archive');
+		assert.strictEqual(result.html, html, 'Should return original HTML as is');
+	});
 });

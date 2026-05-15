@@ -126,7 +126,6 @@ export function process(url, html) {
 		removeDirectoryIndex: false,
 	};
 	url = resolveURL(url, undefined, normalizeUrlOptions);
-
 	html = html.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
@@ -134,7 +133,7 @@ export function process(url, html) {
 		log.warn({ url }, 'linkedom failed to parse document (documentElement is null)');
 		return {
 			html,
-			markdown: generateMarkdown({ url, archiveUrl: null, title: '', content: '' }),
+			markdown: generateMarkdown({ url }),
 		};
 	}
 
@@ -142,6 +141,7 @@ export function process(url, html) {
 	document.getElementById('wm-ipp-base')?.remove();
 	document.getElementById('wm-ipp-print')?.remove();
 	document.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
+	html = document.toString();
 
 	// Use <base> tag for URL resolution if present, then remove it to avoid confusing Readability.
 	const baseEl = document.querySelector('base');
@@ -167,6 +167,7 @@ export function process(url, html) {
 		if (href)
 			el.setAttribute('href', resolveURL(href, baseURL, normalizeUrlOptions));
 	});
+
 	document.querySelectorAll('img').forEach(el => {
 		const src = el.getAttribute('src');
 		if (src?.startsWith('data:'))
@@ -175,6 +176,7 @@ export function process(url, html) {
 		if (src)
 			el.setAttribute('src', resolveURL(src, baseURL, normalizeUrlOptions));
 	});
+
 	document.querySelectorAll('table caption').forEach(caption => {
 		const table = caption.closest('table');
 		if (table?.parentNode)
@@ -220,7 +222,7 @@ export function process(url, html) {
 	}
 
 	return {
-		html: document.toString(),
+		html,
 		markdown: generateMarkdown(page),
 	};
 }

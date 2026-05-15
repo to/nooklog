@@ -1,4 +1,5 @@
 import _ from '../util.js';
+import ky from 'ky';
 
 import baseLog from '../log.js';
 const log = baseLog.child({ module: 'ingest.browser' });
@@ -9,7 +10,7 @@ let fetchCount = 0;
 
 const MAX_FETCH_COUNT = 50;
 
-async function getBrowser() {
+async function newContext(options = {}) {
 	if (!playwrightChromium) {
 		const [{ chromium }, { default: stealth }] = await Promise.all([
 			import('playwright-extra'),
@@ -53,7 +54,12 @@ async function getBrowser() {
 		});
 	}
 
-	return browser;
+	return await browser.newContext({
+		ignoreHTTPSErrors: true,
+		userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+		viewport: { width: 1280, height: 800 },
+		...options,
+	});
 }
 
 export async function dispose() {
@@ -73,13 +79,7 @@ export async function dispose() {
 
 export async function fetch(url) {
 	const isArchive = url.includes('//web.archive.org/');
-	const browser = await getBrowser();
-
-	const context = await browser.newContext({
-		ignoreHTTPSErrors: true,
-		userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-		viewport: { width: 1280, height: 800 },
-	});
+	const context = await newContext();
 
 	let page;
 	try {
@@ -123,17 +123,10 @@ export async function fetch(url) {
 		});
 
 		// Shorter timeout and lighter wait condition
-		const response = await page.goto(url, {
+		const response = await act(() => page.goto(url, {
 			waitUntil: 'domcontentloaded',
 			timeout: isArchive ? 50000 : 15000,
-		});
-
-		if (!response.ok()) {
-			const error = new Error(`HTTP ${response.status()}: ${url}`);
-			error.status = response.status();
-			error.url = url;
-			throw error;
-		}
+		}));
 
 		// Ensure we have the raw HTML from the initial response
 		rawHtml ||= await getText(response);
@@ -160,7 +153,7 @@ export async function fetch(url) {
 			rawHtml,
 		};
 	} catch (e) {
-		normalizeError(e);
+		normalizeError(e, isArchive);
 
 		if (e.isTransient)
 			throw e;
@@ -168,22 +161,22 @@ export async function fetch(url) {
 		if (!isArchive) {
 			log.debug({ cause: e.message, url }, 'fetch failed');
 
-			// Resolve direct archive URL to bypass interstitial redirect pages
-			const archiveUrl = await resolveArchiveUrl(url);
-			if (!archiveUrl) {
-				log.debug('archive not available');
-				e.archiveError = { message: 'not_available' };
-				throw e;
-			}
-
 			try {
-				const res = await fetch(archiveUrl);
-				log.debug({ url: res.url }, 'archive fetch success');
-				res.html = `<base href="${res.url}">\n${res.html}`;
-				return res;
+				// Resolve direct archive URL to bypass interstitial redirect pages
+				let archiveUrl = await resolveArchiveUrl(url);
+				if (archiveUrl) {
+					const res = await fetch(archiveUrl);
+					log.debug({ url: res.url }, 'archive fetch success');
+					res.html = `<base href="${res.url}">\n${res.html}`;
+					return res;
+				} else {
+					log.debug('archive not available');
+					e.archiveError = { message: 'not_available' };
+				}
 			} catch (ae) {
-				normalizeError(ae);
-				log.debug({ cause: ae.message, url: archiveUrl }, 'archive fetch failed');
+				normalizeError(ae, true);
+
+				log.debug({ cause: ae.message, url }, 'archive fetch failed');
 				e.archiveError = ae;
 				e.isTransient = ae.isTransient;
 				throw e;
@@ -200,52 +193,75 @@ export async function fetch(url) {
 }
 
 export async function resolveArchiveUrl(url) {
-	const api = `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`;
 	try {
-		// Default to the latest snapshot to avoid inaccurate timestamp lookups and HTTP 429 rate limits
-		const res = await globalThis.fetch(api);
-		if (!res.ok)
-			throw new Error(`HTTP ${res.status}`);
+		// Availability API (Fast path)
+		const res = await ky(`https://archive.org/wayback/available?url=${encodeURIComponent(url)}`, {
+			timeout: 20 * 1000,
+		}).json();
 
-		const { archived_snapshots } = await res.json();
-		const snapshot = archived_snapshots?.closest;
+		const closest = res?.archived_snapshots?.closest;
+		if (closest?.available && closest?.status === '200')
+			return closest.url;
+	} catch (_) { }
 
-		if (snapshot?.available && snapshot.url) {
-			if ((snapshot.status + '').startsWith('3')) {
-				log.debug({ url, status: snapshot.status }, 'archive snapshot redirect');
-				return null;
-			}
+	// await _.wait(3000);
+	log.debug({ url }, 'archive fallback');
 
-			// Ensure it's a direct link to the content, not a calendar
-			return snapshot.url.replace(/\/web\/(\d+)\*\//, '/web/$1/');
-		}
-	} catch (e) {
-		normalizeError(e);
+	// CDX API (Accurate path)
+	const api = `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(url)}&output=json&limit=-1&fastLatest=true&filter=statuscode:200`;
+	const json = await ky(api, {
+		timeout: 40 * 1000,
+		retry: { limit: 2, statusCodes: [503] },
+	}).json();
+	if (!Array.isArray(json))
+		throw new Error('Invalid response');
 
-		if (e.isTransient)
-			throw e;
+	if (json.length < 2)
+		return null;
 
-		log.debug({ cause: e.message, url }, 'archive check failed');
-	}
-
-	return null;
+	const [, timestamp, original] = json[1];
+	return `https://web.archive.org/web/${timestamp}/${original}`;
 }
 
-function normalizeError(e) {
-	const msg = e.message || '';
-	e.isTransient ||= (e.status && (e.status === 429 || e.status >= 500)) || [
+async function act(fn) {
+	const res = await fn();
+	if (res.ok())
+		return res;
+
+	const error = new Error(`HTTP ${res.status()}`);
+	error.status = res.status();
+	throw error;
+}
+
+function normalizeError(e, isArchive = false) {
+	e.status ||= e.response?.status;
+
+	const message = e.message || '';
+	const codes = [
 		'ERR_NETWORK_CHANGED',
 		'ERR_INTERNET_DISCONNECTED',
 		'ERR_CONNECTION_RESET',
 		'ERR_CONNECTION_CLOSED',
-		'ERR_CONNECTION_TIMED_OUT',
-		'ERR_TIMED_OUT',
 		'ERR_FAILED',
-	].some(code => msg.includes(code));
+		'ECONNRESET',
+		'ETIMEDOUT',
+		'ENOTFOUND',
+	].concat(isArchive ? [
+		'ERR_TIMED_OUT',
+		'ERR_CONNECTION_TIMED_OUT',
+		'Invalid response',
+		'Timeout',
+		'timed out',
+	] : []);
+	e.isTransient = (e.status && (e.status === 429 || e.status >= 500)) || codes.some(c => message.includes(c));
 
-	let formatted = msg.split('\n')[0].trim().replace(/^page\.\w+: /, '');
+	let formatted = message.split('\n')[0].trim();
 	const match = formatted.match(/net::(ERR_[A-Z_]+)/);
-	e.message = e.status ? '' + e.status : (match ? match[1] : formatted);
+	e.message = e.status
+		? '' + e.status
+		: (match ? match[1] : formatted
+			.replace(/^(page|apiRequestContext)\.\w+: /, '')
+			.replace(/: .*/, ''));
 	return e.message;
 }
 
