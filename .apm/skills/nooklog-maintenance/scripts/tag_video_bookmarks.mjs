@@ -22,7 +22,7 @@ const bookmarks = await store.query(`
 console.log(`\nChecking ${bookmarks.length} video bookmarks for tagging...\n`);
 
 // Batch process to add the 'video' tag
-await batch(bookmarks, async slice => {
+await batch('Tagging Videos', async slice => {
 	const targets = [];
 	for (const b of slice) {
 		try {
@@ -40,7 +40,7 @@ await batch(bookmarks, async slice => {
 
 	// Bulk save without re-embedding to keep it fast
 	await store.save(targets, { embed: false });
-}, { size: 50, label: 'Tagging Videos' });
+}, bookmarks, { size: 50 });
 
 console.log('\nTagging completed! 🎬✨');
 

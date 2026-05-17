@@ -36,12 +36,17 @@ export const bench = async (task, label = 'bench') => {
 
 export const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+export const cutOff = (promise, ms) => Promise.race([
+	promise,
+	wait(ms),
+]);
+
 export const parseNumber = val => {
 	const n = parseInt(val);
 	return isNaN(n) ? undefined : n;
 };
 
-export const retry = async (task, { maxAttempts = 3, delay = 500, module = 'retry', onRetry } = {}) => {
+export const retry = async (task, { maxAttempts = 3, delay = 0, module = 'retry', onRetry } = {}) => {
 	for (let i = 0; i < maxAttempts; i++) {
 		try {
 			return await task();
@@ -49,7 +54,7 @@ export const retry = async (task, { maxAttempts = 3, delay = 500, module = 'retr
 			if (i === maxAttempts - 1)
 				throw e;
 
-			log.warn({ module, attempt: i + 1, error: e.message }, 'task failed, retrying...');
+			log.debug({ module, attempt: i + 1, cause: e.message }, 'task failed, retrying...');
 			if (onRetry)
 				await onRetry(e, i + 1);
 
@@ -75,6 +80,16 @@ export class Warning extends Error {
 		this.name = 'Warning';
 	}
 }
+
+export const isSimilarText = (a, b) => {
+	const normalize = s => (s || '').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+	const na = normalize(a);
+	const nb = normalize(b);
+	if (!na || !nb)
+		return false;
+
+	return na.includes(nb) || nb.includes(na);
+};
 
 export const parseFrontmatter = (text = '') => {
 	const end = text.startsWith('---') ? text.indexOf('\n---', 3) : -1;
@@ -115,7 +130,9 @@ export default {
 	parseNumber,
 	retry,
 	wait,
+	cutOff,
 	groupBy,
 	Warning,
+	isSimilarText,
 	parseFrontmatter,
 };

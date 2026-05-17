@@ -2,6 +2,7 @@ module.exports = {
 	apps: [{
 		name: 'nooklog',
 		script: 'server/server.js',
+		node_args: '--expose-gc',
 		watch: false,
 		autorestart: true,
 		ignore_watch: [

@@ -130,7 +130,7 @@ class ResultTable extends Component {
 			<div class="td col-content">
 				<div class="flex flex-col h-full gap-2s">
 					<div>
-						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${sanitize(r.title) || ' [No Title]'}</a>
+						<a href="${r.url}" target="_blank" rel="noopener noreferrer" class="title">${sanitize(r.title) || app.noTitle}</a>
 					</div>
 					${r.summary ? `<div class="summary">${sanitize(r.summary)}</div>` : ''}
 					<div class="memo">${sanitize(r.memo || '')}</div>

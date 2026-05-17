@@ -345,17 +345,6 @@
 			<h2>Tools</h2>
 
 			<div>
-				<label>Backfill Content</label>
-				<div class="flex items-center gap-m">
-					<input type="number" class="backfill-limit" value="100">
-					<nl-busy-button class="backfill-content">
-						<button type="button" data-busy-text="Running...">Backfill</button>
-					</nl-busy-button>
-				</div>
-				<span class="description">Processes bookmarks that are missing titles or content.</span>
-			</div>
-
-			<div>
 				<label>Import</label>
 				<div class="flex items-center gap-m">
 					<select class="folder-tag">
@@ -408,6 +397,19 @@
 				<span class="description">Export bookmarked content as Markdown(.md) files.<br />"Search" follows the current
 					search
 					filters.</span>
+			</div>
+
+			<hr>
+
+			<div>
+				<label>Backfill Content</label>
+				<div class="flex items-center gap-m">
+					<input type="number" class="backfill-limit" value="100">
+					<nl-busy-button class="backfill-content">
+						<button type="button" data-busy-text="Running...">Backfill</button>
+					</nl-busy-button>
+				</div>
+				<span class="description">Processes bookmarks that are missing titles or content.</span>
 			</div>
 
 			<div>

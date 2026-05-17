@@ -51,10 +51,10 @@ const store = {
 			await db.client.batch(batch, 'write');
 
 			if (fts)
-				this.indexFts(bookmarks);
+				await this.indexFts(bookmarks);
 
 			if (embed)
-				this.embed(bookmarks, { fields: embedFields });
+				await this.embed(bookmarks, { fields: embedFields });
 		});
 	},
 
@@ -88,11 +88,9 @@ const store = {
 	},
 
 	embed(bookmarks, { priority = 10, fields = null, mode = 'queue' } = {}) {
-		if (!config['sentence.vector.enabled'])
-			return;
-
 		bookmarks = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
 
+		let lastError = null;
 		return queue.batch('Embedding', async slice => {
 			const batch = [];
 
@@ -103,93 +101,119 @@ const store = {
 				args: ids,
 			})).map(r => [r.id, r.row_id]));
 
-			for (let b of slice) {
-				const rowId = idMap.get(b.id);
-				if (rowId == null)
-					continue;
-
-				b = { ...db.createBookmark(), ...b };
-
-				if (fields) {
-					batch.push({
-						sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND (field IN (${fields.map(() => '?').join(',')}) OR field = 'none')`,
-						args: [rowId, ...fields],
-					});
-				} else {
-					batch.push({
-						sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = ?',
-						args: [rowId],
-					});
-				}
-
-				let targets = [];
-
-				if (!fields || fields.includes('title'))
-					targets.push({ field: 'title', title: b.title, position: 0 });
-				if (!fields || fields.includes('summary'))
-					targets.push({ field: 'summary', text: b.summary, position: 0 });
-				if (!fields || fields.includes('memo'))
-					targets.push({ field: 'memo', text: b.memo, position: 0 });
-
-				// Set H2 or higher as title
-				if (!fields || fields.includes('markdown')) {
-					targets.push(...sentence.chunkMarkdown(b.markdown).map(c => ({
-						field: 'markdown',
-						title: c.titles
-							.filter(t => t.startsWith('##'))
-							.map(t => t.replace(/^#+\s*/, ''))
-							.join(' > '),
-						text: c.text,
-						position: c.position.offset,
-					})));
-				}
-
-				for (const field of ['summary', 'memo']) {
-					if (fields && !fields.includes(field))
+			try {
+				for (let b of slice) {
+					const rowId = idMap.get(b.id);
+					if (rowId == null)
 						continue;
 
-					const chunks = sentence.split(b[field]);
-					if (chunks.length > 1) {
-						targets.push(...chunks.map(c => ({
-							field,
-							text: c.text,
-							position: c.position,
-						})));
-					}
-				}
+					b = { ...db.createBookmark(), ...b };
 
-				targets = targets.filter(t => t.text?.trim() || t.title?.trim());
-
-				if (targets.length === 0) {
-					// Mark as processed to prevent infinite re-embedding loop
-					if (!fields) {
+					// Delete existing vectors
+					// If offline, we delete EVERYTHING to mark it as "needs re-embedding" for reembed().
+					// If online and partial, we only delete the requested fields to stay efficient.
+					if (fields && config['sentence.vector.enabled']) {
 						batch.push({
-							sql: `
-							INSERT INTO bookmark_vector (
-								bookmark_id, chunk_index, field, content, position, vector
-							) VALUES (?, 0, 'none', '', 0, NULL)`,
+							sql: `DELETE FROM bookmark_vector WHERE bookmark_id = ? AND field IN (${fields.map(() => '?').join(',')})`,
+							args: [rowId, ...fields],
+						});
+					} else {
+						batch.push({
+							sql: 'DELETE FROM bookmark_vector WHERE bookmark_id = ?',
 							args: [rowId],
 						});
 					}
-					continue;
+
+					// If Ollama is offline, stop here. Stale vectors are gone,
+					// and reembed() will catch this bookmark once the service is back.
+					if (!config['sentence.vector.enabled'])
+						continue;
+
+					// Collect targets for embedding
+					let targets = [];
+
+					if (!fields || fields.includes('title'))
+						targets.push({ field: 'title', title: b.title, position: 0 });
+
+					if (!fields || fields.includes('summary'))
+						targets.push({ field: 'summary', text: b.summary, position: 0 });
+
+					if (!fields || fields.includes('memo'))
+						targets.push({ field: 'memo', text: b.memo, position: 0 });
+
+					if (!fields || fields.includes('markdown')) {
+						targets.push(...sentence.chunkMarkdown(b.markdown).map(c => ({
+							field: 'markdown',
+							title: c.titles
+								.filter(t => t.startsWith('##'))
+								.map(t => t.replace(/^#+\s*/, ''))
+								.join(' > '),
+							text: c.text,
+							position: c.position.offset,
+						})));
+					}
+
+					for (const field of ['summary', 'memo']) {
+						if (fields && !fields.includes(field))
+							continue;
+
+						const chunks = sentence.split(b[field]);
+						if (chunks.length > 1) {
+							targets.push(...chunks.map(c => ({
+								field,
+								text: c.text,
+								position: c.position,
+							})));
+						}
+					}
+
+					targets = targets.filter(t => t.text?.trim() || t.title?.trim());
+
+					if (targets.length > 0) {
+						// Vectorize and insert real chunks
+						const vectors = await sentence.embedDocument(targets);
+						batch.push(...targets.map((t, i) => ({
+							sql: `
+							INSERT INTO bookmark_vector (
+								bookmark_id, chunk_index, field, content, position, vector
+							) VALUES (?, ?, ?, ?, ?, vector32(?))`,
+							args: [
+								rowId, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
+								JSON.stringify(vectors[i]),
+							],
+						})));
+					}
+
+					// Mark all target fields as processed to ensure consistency and prevent loops
+					const targetFields = new Set(targets.map(t => t.field));
+					(fields || ['title', 'summary', 'memo', 'markdown']).forEach(field => {
+						if (!targetFields.has(field)) {
+							batch.push({
+								sql: `
+								INSERT INTO bookmark_vector (
+									bookmark_id, chunk_index, field, content, position, vector
+								) VALUES (?, 0, ?, '', 0, NULL)`,
+								args: [rowId, field],
+							});
+						}
+					});
 				}
 
-				// Vectorize (pass title and body together)
-				const vectors = await sentence.embedDocument(targets);
-				batch.push(...targets.map((t, i) => ({
-					sql: `
-					INSERT INTO bookmark_vector (
-						bookmark_id, chunk_index, field, content, position, vector
-					) VALUES (?, ?, ?, ?, ?, vector32(?))`,
-					args: [
-						rowId, i, t.field, [t.title, t.text].filter(Boolean).join('\n'), t.position,
-						JSON.stringify(vectors[i]),
-					],
-				})));
+				if (batch.length > 0)
+					await db.client.batch(batch, 'write');
+			} catch (e) {
+				lastError = e;
+				const rowIds = Array.from(idMap.values()).filter(Boolean);
+				if (rowIds.length > 0) {
+					await db.execute(
+						`DELETE FROM bookmark_vector WHERE bookmark_id IN (${rowIds.map(() => '?').join(',')})`, rowIds);
+				}
+				// Don't throw so other slices can still be invalidated
 			}
-
-			await db.client.batch(batch, 'write');
-		}, bookmarks, { priority, size: 10, mode });
+		}, bookmarks, { priority, size: 10, mode }).then(() => {
+			if (lastError)
+				throw lastError;
+		});
 	},
 
 	async reembed() {
@@ -203,9 +227,11 @@ const store = {
 			return;
 		}
 
+		// Find bookmarks that are missing vectors entirely
+		// (Stateless design: any update made while offline clears all vectors to trigger this)
 		const bookmarks = await db.execute(`
-			SELECT id, title, memo, summary, markdown FROM bookmark
-			WHERE row_id NOT IN (SELECT DISTINCT bookmark_id FROM bookmark_vector)
+			SELECT id, title, memo, summary, markdown FROM bookmark b
+			WHERE row_id NOT IN (SELECT bookmark_id FROM bookmark_vector)
 			ORDER BY updated_at DESC`);
 		if (bookmarks.length === 0)
 			return;
@@ -229,7 +255,7 @@ const store = {
 
 	async getBackfillContentTargets({ limit = 100, force = false } = {}) {
 		const sql = `
-			SELECT * FROM bookmark
+			SELECT id FROM bookmark
 			WHERE (markdown IS NULL OR markdown = '' OR title IS NULL OR title = '')
 			${force ? '' : "AND json_extract(meta, '$.fetch_error') IS NULL"}
 			ORDER BY created_at DESC
@@ -390,7 +416,7 @@ const store = {
 		if (ftsConditions.length > 0)
 			sql += ' JOIN bookmark_fts f ON f.rowid = b.row_id';
 
-		const where = [...ftsConditions];
+		const where = ['bv.vector IS NOT NULL', ...ftsConditions];
 		args.push(...ftsParams);
 
 		if (fields.length > 0) {

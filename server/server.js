@@ -312,9 +312,9 @@ let shutdown = async signal => {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('message', msg => {
-	log.info({ msg }, 'process received message');
-	if (msg === 'shutdown')
+process.on('message', message => {
+	log.debug({ message }, 'process received message');
+	if (message === 'shutdown')
 		shutdown('PM2 shutdown message');
 });
 

@@ -73,8 +73,10 @@ class ConfigDialog extends Component {
 				updateTint();
 			}
 
-			if (name === 'sentence.vector.enabled')
+			if (name === 'sentence.vector.enabled') {
 				this._updateEmbeddingVisibility();
+				this._fetchVectorModels();
+			}
 
 			if (name === 'sentence.vector.baseUrl')
 				this._fetchVectorModels();
@@ -155,6 +157,8 @@ class ConfigDialog extends Component {
 		this.$('nl-busy-button.backfill-content').onClick = async () => {
 			const limit = +this.$('.backfill-limit').value || 100;
 			const { count } = await Nooklog.backfillContent({ limit });
+			this.els.dialog.close();
+
 			if (count > 0)
 				app.notify({ text: `Backfill started for ${count} bookmarks.`, duration: 4000 });
 			else
@@ -213,6 +217,9 @@ class ConfigDialog extends Component {
 	}
 
 	async _fetchVectorModels() {
+		if (!this.$('input[name="sentence.vector.enabled"]')?.checked)
+			return;
+
 		const elUrl = this.$('input[name="sentence.vector.baseUrl"]');
 		if (!elUrl)
 			return;

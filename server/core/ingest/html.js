@@ -4,8 +4,9 @@ import { gfm } from 'turndown-plugin-gfm';
 import normalizeUrl from 'normalize-url';
 import { parseHTML } from 'linkedom';
 import baseLog from '../log.js';
+import _ from '../util.js';
 
-const log = baseLog.child({ module: 'librarian' });
+const log = baseLog.child({ module: 'ingest' });
 
 const PROGRAM_KEYWORDS = [
 	'function', 'const', 'let', 'var', 'return', 'import', 'export',
@@ -21,11 +22,6 @@ const JUNK_TAGS = [
 	'form', 'input', 'button', 'select', 'textarea',
 	'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
 ];
-
-const JUNK_REGEX_TAG =
-	new RegExp(`<(${JUNK_TAGS.join('|')})\\b[^>]*>[\\s\\S]*?<\\/\\1>`, 'gi');
-const JUNK_REGEX_OPEN =
-	new RegExp(`<(${JUNK_TAGS.join('|')})\\b[^>]*>`, 'gi');
 
 const turndown = new TurndownService({
 	headingStyle: 'atx',
@@ -46,14 +42,17 @@ turndown.addRule('fallbackTable', {
 		return `\n\n${header}\n${sep}\n${content.trim()}\n\n`;
 	},
 });
+
 turndown.addRule('fallbackTbody', {
 	filter: node => ['TBODY', 'THEAD', 'TFOOT'].includes(node.nodeName) && isHorizontalTable(node),
 	replacement: content => content,
 });
+
 turndown.addRule('fallbackTr', {
 	filter: node => node.nodeName === 'TR' && isHorizontalTable(node),
 	replacement: content => `| ${content.trim().replace(/\n+/g, ' ')} |\n`,
 });
+
 turndown.addRule('fallbackThTd', {
 	filter: node => ['TH', 'TD'].includes(node.nodeName) && isHorizontalTable(node),
 	replacement: (content, node) => {
@@ -128,13 +127,29 @@ export function process(url, html) {
 		removeDirectoryIndex: false,
 	};
 	url = resolveURL(url, undefined, normalizeUrlOptions);
-
-	html = html
-		.replace(JUNK_REGEX_TAG, '')
-		.replace(JUNK_REGEX_OPEN, '')
-		.replace(/<!--[\s\S]*?-->/g, '');
+	html = html.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
+	if (!document.documentElement) {
+		log.warn({ url }, 'linkedom failed to parse document (documentElement is null)');
+		return {
+			html,
+			markdown: generateMarkdown({ url }),
+		};
+	}
+
+	// Remove Wayback Machine toolbar and other junk tags
+	document.getElementById('wm-ipp-base')?.remove();
+	document.getElementById('wm-ipp-print')?.remove();
+	document.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
+	html = document.toString();
+
+	// Use <base> tag for URL resolution if present, then remove it to avoid confusing Readability.
+	const baseEl = document.querySelector('base');
+	baseEl?.remove();
+
+	const baseURL = baseEl?.getAttribute('href') || url;
+	const archiveUrl = (baseURL.includes('//web.archive.org/') && !url.includes('//web.archive.org/')) ? baseURL : null;
 
 	// Merge paginated content to help Readability identify the full article
 	document.querySelectorAll('[id^="uAutoPagerize-divider-"]').forEach(divider => {
@@ -151,16 +166,18 @@ export function process(url, html) {
 	document.querySelectorAll('a').forEach(el => {
 		const href = el.getAttribute('href');
 		if (href)
-			el.setAttribute('href', resolveURL(href, url, normalizeUrlOptions));
+			el.setAttribute('href', resolveURL(href, baseURL, normalizeUrlOptions));
 	});
+
 	document.querySelectorAll('img').forEach(el => {
 		const src = el.getAttribute('src');
 		if (src?.startsWith('data:'))
 			return el.remove();
 
 		if (src)
-			el.setAttribute('src', resolveURL(src, url));
+			el.setAttribute('src', resolveURL(src, baseURL, normalizeUrlOptions));
 	});
+
 	document.querySelectorAll('table caption').forEach(caption => {
 		const table = caption.closest('table');
 		if (table?.parentNode)
@@ -173,6 +190,7 @@ export function process(url, html) {
 
 	const page = {
 		url,
+		archiveUrl,
 		description: document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || '',
 	};
 
@@ -182,7 +200,14 @@ export function process(url, html) {
 		});
 	}
 
-	const article = (new Readability(document)).parse();
+	let article;
+	try {
+		article = (new Readability(document)).parse();
+	} catch (e) {
+		// Handle rare crashes caused by malformed HTML structure in Readability.
+		log.warn({ url, cause: e.message }, 'Readability failed to parse');
+	}
+
 	if (article) {
 		page.title = article.title;
 		page.siteName = article.siteName;
@@ -210,6 +235,7 @@ function generateMarkdown(page) {
 		page.title && `title: "${page.title.replace(/"/g, '\\"')}"`,
 		page.siteName && `site: "${page.siteName.replace(/"/g, '\\"')}"`,
 		page.url && `url: "${page.url}"`,
+		page.archiveUrl && `archive: "${page.archiveUrl}"`,
 		page.description && `description: "${page.description.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
 		'---',
 	].filter(Boolean).join('\n');
@@ -249,4 +275,12 @@ function normalizeProgramPre(document) {
 		if (parentCode)
 			parentCode.replaceWith(...parentCode.childNodes);
 	});
+}
+
+export function isLogin(html, title, originalTitle) {
+	const hasPassword = html.includes('type="password"');
+	const isTitleDifferent = originalTitle && !_.isSimilarText(originalTitle, title);
+	const isLoginTitle = /log\s?in|sign\s?in|ログイン|サインイン/i.test(title || '');
+
+	return hasPassword && (isTitleDifferent || isLoginTitle);
 }

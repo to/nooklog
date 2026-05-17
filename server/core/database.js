@@ -94,7 +94,16 @@ const database = {
 
 	async dispose() {
 		log.info('disposing database');
-		this.client?.close();
+
+		// Swap with a dummy client to allow pending operations to "finish" silently
+		const client = this.client;
+		this.client = {
+			execute: async () => ({ rows: [] }),
+			batch: async () => [],
+			close: () => { },
+			sync: async () => { },
+		};
+		client?.close();
 	},
 
 	async loadConfig() {
@@ -251,7 +260,7 @@ const database = {
 			return;
 
 		// Optimize if waste is > 20% and > 100MB
-		const wastePercent = (freelist_count / page_count) * 100;
+		const wastePercent = Number(((freelist_count / page_count) * 100).toFixed(1));
 		const wasteBytes = freelist_count * page_size;
 		log.debug({ wastePercent, wasteBytes }, 'vacuum threshold check');
 		if (wastePercent <= 20 || wasteBytes <= 100 * 1024 * 1024)

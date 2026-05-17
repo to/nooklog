@@ -6,6 +6,8 @@ const app = {
 	// view modes: embed, sidepanel, window, popup, or empty (home screen)
 	view: getSearchParams().view || 'home',
 
+	noTitle: '[No Title]',
+
 	set(key, value) {
 		this[key] = value;
 		localStorage.setItem('ui', JSON.stringify(this));
@@ -61,45 +63,26 @@ const app = {
 	},
 
 	renderMarkdown(b = {}) {
-		let markdown = b.markdown || '';
-		let frontmatterHtml = '';
+		const { meta, body } = parseFrontmatter(b.markdown || '');
+
 		const headers = [];
-		const match = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---\s*(\r?\n|$)/);
-
-		if (match) {
-			const content = match[1];
-			markdown = markdown.slice(match[0].length);
-
-			const meta = {};
-			let key;
-			content.split('\n').forEach(line => {
-				const parts = line.match(/^([^:\s]+):\s*(.*)$/);
-				if (parts) {
-					key = parts[1];
-					const val = parts[2].trim();
-					meta[key] = val === '|-' ? '' : val.replace(/^["'](.*)["']$/, '$1');
-				} else if (key && line.startsWith('  ')) {
-					meta[key] += (meta[key] ? '\n' : '') + line.slice(2);
-				}
-			});
-
-			if (meta.title) {
-				const text = meta.site ? `${meta.title} - ${meta.site}` : meta.title;
-				const inner = meta.url ? `<a href="${sanitize(meta.url)}" target="_blank">${sanitize(text)}</a>` : sanitize(text);
-				headers.push(`<h1>${inner}</h1>`);
-			}
-
-			['description', 'summary'].forEach(k => {
-				const val = meta[k] || b[k];
-				if (val)
-					headers.push(`<p>${sanitize(val).replace(/\n/g, '<br>')}</p>`);
-			});
-
-			if (headers.length > 0)
-				frontmatterHtml = `<div class="frontmatter">${headers.join('')}</div>`;
+		if (meta.title || meta.url || meta.archive) {
+			const text = sanitize(meta.site ? `${meta.title} - ${meta.site}` : meta.title || app.noTitle);
+			const url = meta.archive || meta.url;
+			const inner = url
+				? `<a href="${sanitize(url)}" target="_blank">${text}</a>`
+				: text;
+			headers.push(`<h1>${inner}</h1>`);
 		}
 
-		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(markdown))}</div>`;
+		['description', 'summary'].forEach(k => {
+			const val = meta[k] || b[k];
+			if (val)
+				headers.push(`<p>${sanitize(val).replace(/\n/g, '<br>')}</p>`);
+		});
+
+		const frontmatterHtml = headers.length > 0 ? `<div class="frontmatter">${headers.join('')}</div>` : '';
+		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(body))}</div>`;
 	},
 };
 document.documentElement.dataset.view = app.view;
@@ -191,3 +174,23 @@ const updateTint = () => {
 	});
 	root.style.setProperty('--color-1', `var(--${tint}-11)`);
 };
+
+function parseFrontmatter(text = '') {
+	const match = text.match(/^---\s*\r?\n([\s\S]*?)\r?\n---\s*(\r?\n|$)/);
+	if (!match)
+		return { meta: {}, body: text };
+
+	const meta = {};
+	let key;
+	match[1].split('\n').forEach(line => {
+		const parts = line.match(/^([^:\s]+):\s*(.*)$/);
+		if (parts) {
+			key = parts[1];
+			const val = parts[2].trim();
+			meta[key] = val === '|-' ? '' : val.replace(/^["'](.*)["']$/, '$1');
+		} else if (key && line.startsWith('  ')) {
+			meta[key] += (meta[key] ? '\n' : '') + line.slice(2);
+		}
+	});
+	return { meta, body: text.slice(match[0].length) };
+}

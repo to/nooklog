@@ -4,7 +4,7 @@ import { wait } from './util.js';
 
 // Central task queue with concurrency control to prevent engine overload
 // Concurrency is set > 1 to avoid deadlocks when a task triggers another task (e.g. Backfill -> Save)
-const queue = new PQueue({ concurrency: 2 });
+const queue = new PQueue({ concurrency: 4 });
 const activeJobs = new Map();
 const allJobs = new Set();
 

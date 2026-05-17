@@ -46,8 +46,8 @@ const nooklog = {
 	async dispose() {
 		log.info('disposing resources...');
 
-		await queue.clear();
 		await db.dispose();
+		await _.cutOff(queue.clear(), 1000);
 
 		// Browser cleanup is handled by the OS on exit
 	},
@@ -86,11 +86,14 @@ const nooklog = {
 
 		await db.saveConfig(input);
 
-		if (Object.keys(input).length > 3)
+		// Run heavy maintenance tasks only during full config updates (e.g. from UI settings)
+		// to avoid overhead on minor, individual setting changes (like UI tint or API keys)
+		if (Object.keys(input).length > 3) {
 			db.vacuum();
 
-		store.reindexFts();
-		store.reembed();
+			store.reindexFts();
+			store.reembed();
+		}
 
 		return config;
 	},
@@ -177,8 +180,10 @@ const nooklog = {
 		this._fillMarkdown(b);
 
 		// If we now have both title and markdown, it's no longer in an error state
-		if (b.title && b.markdown)
-			delete b.meta?.fetch_error;
+		if (b.title && b.markdown) {
+			delete b.meta.fetch_error;
+			delete b.meta.archive_error;
+		}
 
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
@@ -204,57 +209,70 @@ const nooklog = {
 	},
 
 	async backfillContent({ limit = 100, force = false } = {}) {
-		const bookmarks = await store.getBackfillContentTargets({ limit, force });
-		if (bookmarks.length === 0)
+		// Fetch only IDs to save memory
+		const targets = await store.getBackfillContentTargets({ limit, force });
+		if (targets.length === 0)
 			return { count: 0 };
 
-		log.info({ count: bookmarks.length, force }, 'backfilling content');
+		log.info({ count: targets.length, force }, 'backfilling content');
 
-		queue.batch('Backfilling content', async ([b]) => {
-			await this._fillHTML(b, { force });
-			this._fillMarkdown(b);
+		queue.batch('Backfilling content', async ([target]) => {
+			const b = await store.find({ id: target.id });
+			if (!b)
+				return;
 
-			// If still missing content after backfill, mark as error to prevent infinite retries
-			if (!b.title || !b.markdown)
-				b.meta = { ...b.meta, fetch_error: 'missing_content' };
+			try {
+				await this._fillHTML(b, { force });
+				this._fillMarkdown(b);
 
-			await this.save(b);
-		}, bookmarks, { size: 1, interval: 1000, priority: 1, mode: 'replace' });
+				// If still missing content after backfill, mark as error to prevent infinite retries
+				if ((!b.title || !b.markdown) && !b.meta.fetch_error)
+					b.meta = { ...b.meta, fetch_error: 'missing_content' };
 
-		return { count: bookmarks.length };
+				await this.save(b);
+			} catch (e) {
+				// Continue to next target if it was a transient error (already handled in _fillHTML)
+				if (!e.isTransient)
+					throw e;
+			}
+		}, targets, { size: 1, interval: 2 * 1000, priority: 1, mode: 'replace' });
+
+		return { count: targets.length };
 	},
 
 	// Fill content by crawling the URL
 	async _fillHTML(b, { force = false } = {}) {
 		// Fetch content if missing or forced, provided there's no existing error
-		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta?.fetch_error || force)) {
+		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta.fetch_error || force)) {
 			try {
-
 				// Fetch content and handle potential redirects
 				const res = await ingest.browser.fetch(b.url);
 				if (res.url && res.url !== b.url) {
+					b.meta.final_url = res.url;
 
-					// Detect if the destination is a login page to avoid data pollution
-					if (res.html.includes('type="password"')) {
-						b.meta = { ...b.meta, fetch_error: 'login_required' };
+					if (ingest.html.isLogin(res.html, res.title, b.title)) {
+						b.meta.fetch_error = 'login_required';
 						log.info({ url: b.url, redirect: res.url }, 'fetch skipped: login required');
 						return b;
 					}
-
-					b.meta = { originalUrl: b.url, ...b.meta };
-					b.url = res.url;
 				}
 
 				b.html = res.html;
 				b.title = b.title || res.title;
-				delete b.meta?.fetch_error;
+
 				log.info({ url: b.url }, 'fetch success');
 			} catch (e) {
-				b.meta = {
-					...b.meta,
-					fetch_error: e.status || e.message,
-				};
-				log.warn({ url: b.url, error: e.message }, 'fetch failed');
+				// Transient network issues: throw to allow backfill to retry later
+				if (e.isTransient) {
+					log.info({ cause: (e.archiveError || e).message, url: b.url }, `fetch transient error (skip)`);
+					throw e;
+				}
+
+				if (e.archiveError)
+					b.meta.archive_error = e.archiveError.message;
+				b.meta.fetch_error = e.message;
+
+				log.warn({ cause: e.message, url: b.url }, 'fetch failed');
 			}
 		}
 

@@ -19,6 +19,7 @@ export default [
 			'semi': ['error', 'always'],
 			'comma-dangle': ['error', 'always-multiline'],
 			'no-unused-vars': 'off', // Allow free usage
+			'no-useless-assignment': 'off', // Allow re-assignment for variable reuse
 			'no-useless-escape': 'off', // Lean towards safety for regex escapes
 			'no-console': 'off',
 			'no-undef': 'off', // Disable because defining everything is tedious!

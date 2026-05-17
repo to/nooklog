@@ -98,6 +98,8 @@ const Nooklog = {
 	},
 
 	async getVectorModels(url) {
+		if (!config['sentence.vector.enabled'] && !url)
+			return [];
 		return await this.rpc('getVectorModels', url, []);
 	},
 
