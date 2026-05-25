@@ -6,6 +6,7 @@ class ConfigDialog extends Component {
 			open: this.$('button.open'),
 			close: this.$('button.close'),
 			import: this.$('nl-busy-button.import'),
+			backfill: this.$('nl-busy-button.backfill'),
 			submit: this.$('button[type="submit"]'),
 		};
 		this.results = null;
@@ -154,16 +155,14 @@ class ConfigDialog extends Component {
 			app.notify({ text: 'New API Key generated.' });
 		});
 
-		this.$('nl-busy-button.backfill-content').onClick = async () => {
-			const limit = +this.$('.backfill-limit').value || 100;
-			const { count } = await Nooklog.backfillContent({ limit });
-			this.els.dialog.close();
+		this.els.backfill.onClick = () => this._backfill();
 
-			if (count > 0)
-				app.notify({ text: `Backfill started for ${count} bookmarks.`, duration: 4000 });
-			else
-				app.notify({ text: 'All bookmarks are already up to date.' });
-		};
+		$.on(this.$('.backfill-limit'), 'keydown', e => {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				this.els.backfill.button.click();
+			}
+		});
 
 		this.$('nl-busy-button.clear-vector-table').onClick = async () => {
 			if (!confirm('This will delete all existing vector data and recreate the table. Are you sure?'))
@@ -204,6 +203,17 @@ class ConfigDialog extends Component {
 		} finally {
 			this._setSubmitting(false);
 		}
+	}
+
+	async _backfill() {
+		const limit = +this.$('.backfill-limit').value || 100;
+		const { count } = await Nooklog.backfillContent({ limit });
+		this.els.dialog.close();
+
+		if (count > 0)
+			app.notify({ text: `Backfill started for ${count} bookmarks.`, duration: 4000 });
+		else
+			app.notify({ text: 'All bookmarks are already up to date.' });
 	}
 
 	_setSubmitting(active) {

@@ -114,12 +114,15 @@
 		padding: var(--space-s);
 		margin-bottom: var(--space-m);
 		overflow: auto;
+		line-height: var(--line-height-s);
+		tab-size: 2;
 		background-color: var(--ink-1);
 		border-radius: var(--radius-m);
 
 		code {
 			padding: 0;
 			margin: 0;
+			font-size: var(--font-size-s);
 			word-break: normal;
 			white-space: pre;
 			background-color: transparent;

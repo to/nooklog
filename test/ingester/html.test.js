@@ -95,4 +95,13 @@ test('ingest/html.js - process', async t => {
 		assert.strictEqual(result.markdown.includes('archive:'), false, 'Should not include archive');
 		assert.strictEqual(result.html, html, 'Should return original HTML as is');
 	});
+
+	await t.test('Page with only script tag should process gracefully without TypeError', () => {
+		const html = '<script>sessionStorage.x5referer = window.location.href;</script>';
+		const url = 'https://example.com/test';
+		const result = process(url, html);
+
+		assert.ok(result.markdown.includes('url: "https://example.com/test"'));
+		assert.strictEqual(result.markdown.includes('title:'), false);
+	});
 });

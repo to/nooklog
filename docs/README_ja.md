@@ -83,26 +83,10 @@ unigramは 中国/日本/韓国など スペース区切りではない言語や
 ★★★☆☆ レート入力。 レート順の並び替え。\
 不要な場合は非表示にできます。
 
-**⚙️ libsql/Turso**\
-Tursoは ローカルと全く同じように リモートにあるSQLiteデータベースにアクセスできる 素晴らしいサービスです。\
-自宅と職場など 2つの場所から 一つのデータに安価に同期することができます。
-
-**⚙️ Open API**\
-[Open API(Scalar)](https://p01--nooklog-demo--dxnz489y9tm9.code.run/openapi.html)
-
-**⚙️ バッチ変更**\
-タグの一括置換や URLの整形 クローラによるコンテンツの補完など データベースに対する一括処理は 以下を確認してください。 エージェントさんに読んでもらい スクリプトを生成してもらうと かんたんです。
-
-**[📖 メンテナンスガイド](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-maintenance/SKILL_ja.md)**
-
-**⚙️ user.js/ユーザースタイルによるパッチ**\
-user.js(Tampermonkey/Greasemonkey)で 自由にに機能を追加できます。以下のサンプルスクリプトを 参考にしてください。\
-
-- [Auto_Save.user.js](../tool/userjs/Auto_Save.user.js) (特定のサイトの閲覧を自動的にバックグラウンドで保存する。 ログ。)
-- [Auto_Tagging.user.js](../tool/userjs/Auto_Tagging.user.js) (URLを元にタグを自動的に決定する。)
-- [Auto_Summary.user.js](../tool/userjs/Auto_Summary.user.js) (LLMに要約を生成してもらう。)
-
-ユーザースタイル()で見た目を お好みに合わせて自由に変更することもできます。
+**⚙️ コンテンツのバックフィル**\
+URLとタイトルしかない古いブックマークの コンテンツを一括で取得し 検索や閲覧ができるようになります。\
+Internet Archiveへのフォールバック機能もあり 消えてしまった素晴らしいコンテンツを復元することもできます。\
+URLのみのリストをAPIで渡すような システム連携にも便利です。
 
 **⚙️ インポート**\
 以下の形式のブックマークをインポートできます。\
@@ -114,6 +98,27 @@ user.js(Tampermonkey/Greasemonkey)で 自由にに機能を追加できます。
 完全なテキストを含む JSON形式でもエクスポートできます。 大切なデータが 取り出せなくなる不安は 全くありません ;-)\
 コンテンツのテキスト(Markdown)だけを mdファイルとして zipにまとめてダウンロードすることもできます。\
 エクスポート対象は 全体と 検索結果が選べます。 「特定のキーワード 特定のサイトだけの 全てのテキストファイルを抽出」 そんな使い方ができます。
+
+**⚙️ libsql/Turso**\
+Tursoは ローカルと全く同じように リモートにあるSQLiteデータベースにアクセスできる 素晴らしいサービスです。\
+自宅と職場など 2つの場所から 一つのデータに安価に同期することができます。
+
+**⚙️ Open API**\
+[Open API(Scalar)](https://p01--nooklog-demo--dxnz489y9tm9.code.run/openapi.html)
+
+**⚙️ バッチ変更**\
+タグの一括置換や URLやメモの整形など データベースに対する一括処理は 以下を確認してください。 エージェントさんに読んでもらい スクリプトを生成してもらうと かんたんです。
+
+**[📖 メンテナンスガイド](https://github.com/to/nooklog/blob/main/.apm/skills/nooklog-maintenance/SKILL_ja.md)**
+
+**⚙️ user.js/ユーザースタイルによるパッチ**\
+user.js(Tampermonkey/Greasemonkey)で 自由にに機能を追加できます。以下のサンプルスクリプトを 参考にしてください。\
+
+- [Auto_Save.user.js](../tool/userjs/Auto_Save.user.js) (特定のサイトの閲覧を自動的にバックグラウンドで保存する。 ログ。)
+- [Auto_Tagging.user.js](../tool/userjs/Auto_Tagging.user.js) (URLを元にタグを自動的に決定する。)
+- [Auto_Summary.user.js](../tool/userjs/Auto_Summary.user.js) (LLMに要約を生成してもらう。)
+
+ユーザースタイル()で見た目を お好みに合わせて自由に変更することもできます。
 
 ## インストール
 簡単な起動や動作確認は以下です。

@@ -2,7 +2,7 @@ import _ from '../util.js';
 import ky from 'ky';
 
 import baseLog from '../log.js';
-const log = baseLog.child({ module: 'ingest.browser' });
+const log = baseLog.child({ module: 'ingest' });
 
 let browser;
 let playwrightChromium;
@@ -44,6 +44,13 @@ async function newContext(options = {}) {
 				'--ssl-version-min=tls1',
 				'--ignore-certificate-errors',
 				'--disable-blink-features=AutomationControlled',
+				'--blink-settings=imagesEnabled=false',
+				'--disable-extensions',
+				'--disable-background-networking',
+				'--disable-site-isolation-trials',
+				'--disable-sync',
+				'--disable-default-apps',
+				'--mute-audio',
 			],
 			ignoreDefaultArgs: [
 				'--enable-automation',
@@ -58,6 +65,7 @@ async function newContext(options = {}) {
 		ignoreHTTPSErrors: true,
 		userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
 		viewport: { width: 1280, height: 800 },
+		serviceWorkers: 'block',
 		...options,
 	});
 }
@@ -79,17 +87,28 @@ export async function dispose() {
 
 export async function fetch(url) {
 	const isArchive = url.includes('//web.archive.org/');
+	const MAX_ATTEMPTS = isArchive ? 3 : 2;
+
 	let attempts = 0;
-	while (attempts++ < 2) {
+	while (attempts++ < MAX_ATTEMPTS) {
+		if (attempts > 1)
+			await _.wait(3 * 1000);
+
 		const context = await newContext();
 		const page = await context.newPage();
 		try {
 			await setupCapture(page);
 
-			const response = await act(() => page.goto(url, {
+			const response = await page.goto(url, {
 				waitUntil: 'domcontentloaded',
-				timeout: isArchive ? 50000 : 15000,
-			}));
+				timeout: isArchive ? 40000 : 10000,
+			});
+
+			if (!response.ok()) {
+				const error = new Error(`HTTP ${response.status()}`);
+				error.status = response.status();
+				throw error;
+			}
 
 			await page.waitForTimeout(1500);
 
@@ -101,50 +120,38 @@ export async function fetch(url) {
 		} catch (e) {
 			normalizeError(e, isArchive);
 
+			if (attempts < MAX_ATTEMPTS && e.isRetryable) {
+				log.debug({ attempt: attempts, cause: e.message, url }, 'fetch retrying');
+				continue;
+			}
+
 			if (e.isTransient)
 				throw e;
 
-			const retryableCodes = [
-				'ERR_EMPTY_RESPONSE',
-				'ERR_CONNECTION_RESET',
-				'ERR_CONNECTION_CLOSED',
-				'ERR_FAILED',
-				'ERR_CONNECTION_TIMED_OUT',
-				'ERR_TIMED_OUT',
-				'ETIMEDOUT',
-				'Invalid response',
-				'Timeout',
-				'timed out',
-			];
-			const shouldRetry = !isArchive && (
-				e.status >= 500 || retryableCodes.some(c => e.message.includes(c)));
+			if (!isArchive) {
+				log.debug({ cause: e.message, url }, 'fetch failed');
 
-			if (attempts === 2 || !shouldRetry) {
-				if (!isArchive) {
-					log.debug({ cause: e.message, url }, 'fetch failed');
-
-					let archiveUrl;
-					try {
-						archiveUrl = await resolveArchiveUrl(url);
-						if (archiveUrl) {
-							const res = await fetch(archiveUrl);
-							log.debug({ url: res.url }, 'archive fetch success');
-							res.html = `<base href="${res.url}">\n${res.html}`;
-							return res;
-						} else {
-							log.debug('archive not available');
-							e.archiveError = { message: 'not_available' };
-						}
-					} catch (ae) {
-						normalizeError(ae, true);
-						log.debug({ cause: ae.message, url: archiveUrl || url }, 'archive fetch failed');
-						e.archiveError = ae;
-						e.isTransient = ae.isTransient;
+				let archiveUrl;
+				try {
+					archiveUrl = await resolveArchiveUrl(url);
+					if (archiveUrl) {
+						const res = await fetch(archiveUrl);
+						log.debug({ url: res.url }, 'archive fetch success');
+						res.html = `<base href="${res.url}">\n${res.html}`;
+						return res;
+					} else {
+						log.debug('archive not available');
+						e.archiveError = { message: 'not_available' };
 					}
+				} catch (ae) {
+					normalizeError(ae, true);
+					log.debug({ cause: ae.message, url: archiveUrl || url }, 'archive fetch failed');
+
+					e.archiveError = ae;
+					e.isTransient = ae.isTransient;
 				}
-				throw e;
 			}
-			log.debug({ attempt: attempts, cause: e.message }, 'task failed, retrying...');
+			throw e;
 		} finally {
 			await _.cutOff(page.close(), 3000);
 			await _.cutOff(context.close(), 3000);
@@ -162,7 +169,10 @@ export async function resolveArchiveUrl(url) {
 		const closest = res?.archived_snapshots?.closest;
 		if (closest?.available && closest?.status === '200')
 			return closest.url;
-	} catch (_) { }
+	} catch (e) {
+		normalizeError(e, true);
+		log.debug({ cause: e.message, url }, 'archive fetch failed: Availability API');
+	}
 
 	log.debug({ url }, 'archive fallback');
 
@@ -170,7 +180,7 @@ export async function resolveArchiveUrl(url) {
 	const api = `https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(url)}&output=json&limit=1&fastLatest=true&filter=statuscode:200`;
 	const json = await ky(api, {
 		timeout: 30 * 1000,
-		retry: { limit: 2, statusCodes: [503] },
+		retry: { limit: 2, statusCodes: [503], retryOnTimeout: true },
 	}).json();
 	if (!Array.isArray(json))
 		throw new Error('Invalid response');
@@ -180,16 +190,6 @@ export async function resolveArchiveUrl(url) {
 
 	const [, timestamp, original] = json[1];
 	return `https://web.archive.org/web/${timestamp}/${original}`;
-}
-
-async function act(fn) {
-	const res = await fn();
-	if (res.ok())
-		return res;
-
-	const error = new Error(`HTTP ${res.status()}`);
-	error.status = res.status();
-	throw error;
 }
 
 async function setupCapture(page) {
@@ -209,10 +209,16 @@ async function setupCapture(page) {
 			if (!initialDone) {
 				initialDone = true;
 				try {
-					const response = await route.fetch();
+					// Throw on redirect to fallback to route.continue() and prevent timeout
+					const response = await route.fetch({ maxRedirects: 0 });
+					if (response.status() >= 300 && response.status() < 400)
+						throw new Error('Redirected');
+
 					html = await response.text();
 					return route.fulfill({ response });
 				} catch (_) {
+					// Reset so the redirected request can be captured
+					initialDone = false;
 					return route.continue();
 				}
 			}
@@ -222,9 +228,23 @@ async function setupCapture(page) {
 			return route.fulfill({ body: '' });
 		}
 
+		// Proxy requests with a timeout to avoid tarpits
+		const url = req.url();
+		const isDynamic = /^(script|xhr|fetch)$/.test(type) &&
+			/^(http|https):/.test(url);
+
+		if (isDynamic) {
+			try {
+				const response = await route.fetch({ timeout: 3000 });
+				return route.fulfill({ response });
+			} catch (_) {
+				return route.abort();
+			}
+		}
+
 		// Block unnecessary binary resources
-		const isAsset = /^(image|media|font|stylesheet)$/.test(type) ||
-			/\.(png|jpg|jpeg|gif|webp|svg|mp4|webm|ogg|mp3|wav|woff|woff2|ttf|otf|css)(\?.*)?$/.test(req.url());
+		const isAsset = /^(media|font)$/.test(type) ||
+			/\.(mp4|webm|ogg|mp3|wav|woff|woff2|ttf|otf)(\?.*)?$/.test(url);
 
 		return isAsset ? route.abort() : route.continue();
 	});
@@ -244,6 +264,7 @@ function normalizeError(e, isArchive = false) {
 
 	const message = e.message || '';
 
+	// isTransient: Do not persist error to DB so it can be retried later
 	const codes = [
 		'ERR_NETWORK_CHANGED',
 		'ERR_INTERNET_DISCONNECTED',
@@ -251,6 +272,21 @@ function normalizeError(e, isArchive = false) {
 	];
 	e.isTransient = codes.some(c => message.includes(c)) || (
 		isArchive && (!e.status || e.status === 429 || e.status >= 500));
+
+	// isRetryable: Retry immediately in the current fetch loop
+	const retryableCodes = [
+		'ERR_EMPTY_RESPONSE',
+		'ERR_CONNECTION_RESET',
+		'ERR_CONNECTION_CLOSED',
+		'ERR_FAILED',
+		'ERR_CONNECTION_TIMED_OUT',
+		'ERR_TIMED_OUT',
+		'ETIMEDOUT',
+		'Invalid response',
+		'Timeout',
+		'timed out',
+	];
+	e.isRetryable = e.status >= 500 || retryableCodes.some(c => message.includes(c));
 
 	let formatted = message.split('\n')[0].trim();
 	const match = formatted.match(/net::(ERR_[A-Z_]+)/);

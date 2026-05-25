@@ -307,7 +307,11 @@ let shutdown = async signal => {
 	await server.close();
 
 	log.info('shutdown complete');
-	process.exit(0);
+
+	// Never perform SIGINT, SIGKILL, or exit(0)
+	// (Let PM2 wait without reacting to the shutdown)
+	if (!process.env.pm_uptime)
+		process.exit(0);
 };
 
 process.on('SIGINT', () => shutdown('SIGINT'));

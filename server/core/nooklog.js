@@ -223,11 +223,9 @@ const nooklog = {
 
 			try {
 				await this._fillHTML(b, { force });
-				this._fillMarkdown(b);
 
-				// If still missing content after backfill, mark as error to prevent infinite retries
-				if ((!b.title || !b.markdown) && !b.meta.fetch_error)
-					b.meta = { ...b.meta, fetch_error: 'missing_content' };
+				// Default to missing content; save() will clear it on success
+				b.meta.fetch_error = 'missing_content';
 
 				await this.save(b);
 			} catch (e) {

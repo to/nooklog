@@ -130,19 +130,21 @@ export function process(url, html) {
 	html = html.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
+	if (document.documentElement) {
+		// Remove Wayback Machine toolbar and other junk tags
+		document.getElementById('wm-ipp-base')?.remove();
+		document.getElementById('wm-ipp-print')?.remove();
+		document.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
+		html = document.toString();
+	}
+
 	if (!document.documentElement) {
-		log.warn({ url }, 'linkedom failed to parse document (documentElement is null)');
+		log.debug({ url }, 'linkedom failed to parse document (documentElement is null)');
 		return {
 			html,
 			markdown: generateMarkdown({ url }),
 		};
 	}
-
-	// Remove Wayback Machine toolbar and other junk tags
-	document.getElementById('wm-ipp-base')?.remove();
-	document.getElementById('wm-ipp-print')?.remove();
-	document.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
-	html = document.toString();
 
 	// Use <base> tag for URL resolution if present, then remove it to avoid confusing Readability.
 	const baseEl = document.querySelector('base');
@@ -200,25 +202,26 @@ export function process(url, html) {
 		});
 	}
 
-	let article;
-	try {
-		article = (new Readability(document)).parse();
-	} catch (e) {
-		// Handle rare crashes caused by malformed HTML structure in Readability.
-		log.warn({ url, cause: e.message }, 'Readability failed to parse');
-	}
+	// Save fallback values before Readability mutates the document
+	page.title = document.title;
+	page.content = document.body.textContent || '';
 
-	if (article) {
-		page.title = article.title;
-		page.siteName = article.siteName;
-		page.content = turndown.turndown(article.content);
-	} else {
-		page.title = document.title;
+	try {
+		const article = new Readability(document).parse();
+		if (article != null) {
+			page.title = article.title || page.title;
+			page.siteName = article.siteName || '';
+			page.content = turndown.turndown(article.content);
+		} else {
+			throw { message: 'Readability could not parse the document' };
+		}
+	} catch (e) {
+		log.debug({ url, cause: e.message }, 'HTML parsing fallback triggered');
 		try {
-			// Try converting entire body to Markdown
-			page.content = turndown.turndown(document.body.innerHTML);
-		} catch (e) {
-			page.content = document.body.textContent || '';
+			page.content = turndown.turndown(html);
+		} catch (err) {
+			// Keep the pre-saved textContent in page.content
+			log.debug({ url, cause: err.message }, 'HTML turndown fallback failed');
 		}
 	}
 
@@ -249,11 +252,7 @@ function normalizeProgramPre(document) {
 		const text = el.textContent || '';
 
 		// Check for program keyword occurrences
-		let keywordHit = 0;
-		for (const kw of PROGRAM_KEYWORDS) {
-			if (text.includes(kw))
-				keywordHit++;
-		}
+		const keywordHit = PROGRAM_KEYWORDS.filter(kw => text.includes(kw)).length;
 
 		// Check for symbol occurrences (; { } ( ) = )
 		const symbolMatch = (text.match(/[;\{\}\(\)=]/g) || []).length;
@@ -262,8 +261,8 @@ function normalizeProgramPre(document) {
 		// Decision logic:
 		// - Multiple keywords exist
 		// - Or many symbols and multiple lines (code-block-like)
-		// Skip otherwise
-		if (!(!keywordHit >= 2 || (lines > 3 && symbolMatch > 3)))
+		// Skip if neither condition matches (fails to look like code)
+		if (keywordHit < 2 && !(lines > 3 && symbolMatch > 3))
 			return;
 
 		// Wrap in code if it's only pre without code
