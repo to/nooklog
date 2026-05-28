@@ -225,6 +225,27 @@
 					<code>Bearer</code> token.</span>
 			</div>
 
+			<h2>Ingest</h2>
+
+			<div>
+				<label>Extractor</label>
+				<div class="radio-flat">
+					<label><input type="radio" name="ingest.extractor" value="readability">Readability</label>
+					<label><input type="radio" name="ingest.extractor" value="defuddle">Defuddle</label>
+				</div>
+				<span class="description"><span class="value">Readability: </span>Standard HTML extraction engine based on
+					Firefox Reader View.</span>
+				<span class="description"><span class="value">Defuddle: </span>The core engine of Obsidian Web Clipper.</span>
+			</div>
+
+			<div>
+				<label>Save Original HTML</label>
+				<label class="toggle">
+					<input type="checkbox" name="ingest.saveHTML"><span></span>
+				</label>
+				<span class="description">Saved for backup and manual maintenance only.</span>
+			</div>
+
 			<h2>Vector Search</h2>
 
 			<div>

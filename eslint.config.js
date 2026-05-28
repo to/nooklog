@@ -14,6 +14,7 @@ export default [
 			},
 		},
 		rules: {
+			'no-misleading-character-class': 'off',
 			'quotes': ['error', 'single', { 'avoidEscape': true, 'allowTemplateLiterals': true }],
 			'indent': ['error', 'tab', { 'ignoredNodes': ['TemplateLiteral *'] }],
 			'semi': ['error', 'always'],

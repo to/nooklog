@@ -162,6 +162,14 @@
 		max-width: 100%;
 	}
 
+	iframe {
+		width: 16rem;
+		height: 8rem;
+		margin-bottom: var(--space-m);
+		border: 1px solid var(--ink-2);
+		border-radius: var(--radius-m);
+	}
+
 	img:not([src]),
 	img[src=""] {
 		display: none;

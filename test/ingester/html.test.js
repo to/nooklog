@@ -4,7 +4,7 @@ import { process } from '../../server/core/ingest/html.js';
 
 test('ingest/html.js - process', async t => {
 
-	await t.test('Horizontal table (th td td) should be converted to fallback Markdown format', () => {
+	await t.test('Horizontal table (th td td) should be converted to fallback Markdown format', async () => {
 		const html = `
 			<!DOCTYPE html>
 			<html>
@@ -27,7 +27,7 @@ test('ingest/html.js - process', async t => {
 		`;
 		const url = 'https://example.com/test';
 
-		const result = process(url, html);
+		const result = await process(url, html);
 
 		assert.ok(result.markdown.includes('| | | |'), 'Should include dummy header with 3 columns');
 		assert.ok(result.markdown.includes('|---|---|---|'), 'Should include dummy header separator with 3 columns');
@@ -36,7 +36,7 @@ test('ingest/html.js - process', async t => {
 		assert.ok(result.markdown.includes('| **Name** | John | Jane |'), 'Second row should be converted correctly');
 	});
 
-	await t.test('Standard table (first row all th) should use default GFM behavior', () => {
+	await t.test('Standard table (first row all th) should use default GFM behavior', async () => {
 		const html = `
 			<!DOCTYPE html>
 			<html>
@@ -52,20 +52,18 @@ test('ingest/html.js - process', async t => {
 			</body>
 			</html>
 		`;
-		const result = process('https://example.com', html);
+		const result = await process('https://example.com', html);
 
 		// Standard tables (GFM) should not have dummy headers inserted
 		assert.strictEqual(result.markdown.includes('| | |'), false, 'Standard table should not include dummy header');
 		assert.ok(result.markdown.includes('| Header 1 | Header 2 |'), 'Headers should be output correctly');
 	});
-	await t.test('Wayback Machine <base> tag should set archiveUrl and resolve relative links', () => {
+	await t.test('Wayback Machine <base> tag should set archiveUrl and resolve relative links', async () => {
 		const archiveBase = 'https://web.archive.org/web/20241130163753/https://techable.jp/archives/95388';
 		const html = `
+			<base href="${archiveBase}">
 			<!DOCTYPE html>
 			<html>
-			<head>
-				<base href="${archiveBase}">
-			</head>
 			<body>
 				<a href="relative-page">Link</a>
 				<img src="img/test.jpg">
@@ -73,7 +71,7 @@ test('ingest/html.js - process', async t => {
 			</html>
 		`;
 		const url = 'https://techable.jp/archives/95388';
-		const result = process(url, html);
+		const result = await process(url, html);
 
 		// Assert archiveUrl is extracted into YAML frontmatter
 		assert.ok(result.markdown.includes(`archive: "${archiveBase}"`), 'Should include archive URL in YAML');
@@ -85,23 +83,59 @@ test('ingest/html.js - process', async t => {
 		assert.ok(result.html.includes(`<base href="${archiveBase}">`), 'Original base tag should be preserved in result.html');
 	});
 
-	await t.test('Malformed HTML should fall back to URL-only Markdown', () => {
+	await t.test('Malformed HTML should fall back to URL-only Markdown', async () => {
 		const html = '   '; // Empty/whitespace only
 		const url = 'https://example.com/failed';
-		const result = process(url, html);
+		const result = await process(url, html);
 
-		assert.ok(result.markdown.includes('url: "https://example.com/failed"'), 'Should still include URL in YAML');
+		assert.ok(result.markdown.includes('source: "https://example.com/failed"'), 'Should still include URL in YAML');
 		assert.strictEqual(result.markdown.includes('title:'), false, 'Should not include title');
 		assert.strictEqual(result.markdown.includes('archive:'), false, 'Should not include archive');
 		assert.strictEqual(result.html, html, 'Should return original HTML as is');
 	});
 
-	await t.test('Page with only script tag should process gracefully without TypeError', () => {
+	await t.test('Page with only script tag should process gracefully without TypeError', async () => {
 		const html = '<script>sessionStorage.x5referer = window.location.href;</script>';
 		const url = 'https://example.com/test';
-		const result = process(url, html);
+		const result = await process(url, html);
 
-		assert.ok(result.markdown.includes('url: "https://example.com/test"'));
+		assert.ok(result.markdown.includes('source: "https://example.com/test"'));
 		assert.strictEqual(result.markdown.includes('title:'), false);
+	});
+
+	await t.test('Page with iframe should preserve the iframe in Markdown output', async () => {
+		const html = `
+			<!DOCTYPE html>
+			<html>
+			<body>
+				<h1>Test Page</h1>
+				<iframe src="https://example.com/embed/123" frameborder="0"></iframe>
+			</body>
+			</html>
+		`;
+		const url = 'https://example.com/test-iframe';
+		const result = await process(url, html);
+
+		assert.ok(result.markdown.includes('<iframe src="https://example.com/embed/123"></iframe>'), 'Should preserve iframe');
+	});
+
+	await t.test('Page with wrapped iframe (negative class names) should preserve the iframe in Markdown output', async () => {
+		const html = `
+			<!DOCTYPE html>
+			<html>
+			<body>
+				<h1>Test Page</h1>
+				<div class="jetpack-video-wrapper">
+					<div class="embed-youtube">
+						<iframe title="Test Video" src="https://example.com/embed/456" frameborder="0"></iframe>
+					</div>
+				</div>
+			</body>
+			</html>
+		`;
+		const url = 'https://example.com/test-wrapped-iframe';
+		const result = await process(url, html);
+
+		assert.ok(result.markdown.includes('<iframe src="https://example.com/embed/456"></iframe>'), 'Should preserve wrapped iframe');
 	});
 });

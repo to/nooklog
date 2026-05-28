@@ -121,7 +121,7 @@ const nooklog = {
 		if (b.memo == null)
 			b = { ...await this.find(b), ...b };
 
-		return this._fillMarkdown(b);
+		return await this._fillMarkdown(b);
 	},
 
 	async find(ps) {
@@ -177,7 +177,7 @@ const nooklog = {
 		_.merge(b, _.omit(n, ['id']));
 
 		await this._fillHTML(b);
-		this._fillMarkdown(b);
+		await this._fillMarkdown(b);
 
 		// If we now have both title and markdown, it's no longer in an error state
 		if (b.title && b.markdown) {
@@ -188,7 +188,7 @@ const nooklog = {
 		if (b.markdown === USER_MARK)
 			b.markdown = '';
 
-		if (!config['database.saveHTML'])
+		if (!config['ingest.saveHTML'])
 			b.html = '';
 
 		const ftsColumns = ['url', 'title', 'memo', 'summary', 'markdown'];
@@ -278,9 +278,9 @@ const nooklog = {
 	},
 
 	// Process HTML into Markdown
-	_fillMarkdown(b) {
+	async _fillMarkdown(b) {
 		if (b.html) {
-			const res = ingest.html.process(b.url, b.html);
+			const res = await ingest.html.process(b.url, b.html);
 			b.html = res.html;
 
 			if (!this.isEdited(b.markdown))

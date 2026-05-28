@@ -3,7 +3,9 @@ import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 import normalizeUrl from 'normalize-url';
 import { parseHTML } from 'linkedom';
+import { Defuddle } from 'defuddle/node';
 import baseLog from '../log.js';
+import config from '../config.js';
 import _ from '../util.js';
 
 const log = baseLog.child({ module: 'ingest' });
@@ -16,11 +18,25 @@ const PROGRAM_KEYWORDS = [
 ];
 
 const JUNK_TAGS = [
-	'script', 'style', 'iframe', 'link',
+	'script', 'style', 'link',
 	'video', 'audio', 'svg', 'noscript',
 	'canvas', 'template', 'object', 'embed',
 	'form', 'input', 'button', 'select', 'textarea',
 	'option', 'optgroup', 'label', 'fieldset', 'legend', 'datalist', 'output',
+];
+
+const ALLOWED_IFRAME_DOMAINS = [
+	'youtube.com',
+	'youtube-nocookie.com',
+	'youtu.be',
+	'player.vimeo.com',
+	'google.com/maps',
+	'slideshare.net',
+	'speakerdeck.com',
+	'giphy.com',
+	'codepen.io',
+	'jsfiddle.net',
+	'open.spotify.com',
 ];
 
 const turndown = new TurndownService({
@@ -73,7 +89,7 @@ function isHorizontalTable(node) {
 
 // Split multiple elements inside a link
 turndown.addRule('smartLink', {
-	filter: 'a',
+	filter: node => node.nodeName === 'A',
 	replacement: function (content, node) {
 		const href = node.getAttribute('href');
 		const title = node.title ? ` "${node.title}"` : '';
@@ -111,27 +127,28 @@ turndown.addRule('smartLink', {
 	},
 });
 
-function resolveURL(target, base, options) {
-	try {
-		const resolved = base ? new URL(target, base).href : new URL(target).href;
-		return options ? normalizeUrl(resolved, options) : resolved;
-	} catch (e) {
-		return target;
-	}
+export async function process(url, html) {
+
+	return config['ingest.extractor'] === 'defuddle'
+		? processByDefuddle(url, html)
+		: processByReadability(url, html);
 }
 
-export function process(url, html) {
-	const normalizeUrlOptions = {
-		stripWWW: false,
-		removeTrailingSlash: false,
-		removeDirectoryIndex: false,
+export async function processByDefuddle(url, html) {
+	const result = await Defuddle(html, url, { markdown: true });
+	return {
+		html,
+		markdown: generateMarkdown({ url, siteName: result.site, ...result }),
+		metadata: result,
 	};
-	url = resolveURL(url, undefined, normalizeUrlOptions);
+}
+
+export async function processByReadability(url, html) {
+	url = resolveURL(url);
 	html = html.replace(/<!--[\s\S]*?-->/g, '');
 
 	const { document } = parseHTML(html);
 	if (document.documentElement) {
-		// Remove Wayback Machine toolbar and other junk tags
 		document.getElementById('wm-ipp-base')?.remove();
 		document.getElementById('wm-ipp-print')?.remove();
 		document.querySelectorAll(JUNK_TAGS.join(',')).forEach(el => el.remove());
@@ -168,7 +185,7 @@ export function process(url, html) {
 	document.querySelectorAll('a').forEach(el => {
 		const href = el.getAttribute('href');
 		if (href)
-			el.setAttribute('href', resolveURL(href, baseURL, normalizeUrlOptions));
+			el.setAttribute('href', resolveURL(href, baseURL));
 	});
 
 	document.querySelectorAll('img').forEach(el => {
@@ -177,7 +194,7 @@ export function process(url, html) {
 			return el.remove();
 
 		if (src)
-			el.setAttribute('src', resolveURL(src, baseURL, normalizeUrlOptions));
+			el.setAttribute('src', resolveURL(src, baseURL));
 	});
 
 	document.querySelectorAll('table caption').forEach(caption => {
@@ -188,7 +205,18 @@ export function process(url, html) {
 		caption.remove();
 	});
 
+	['code-toolbar'].forEach(cls => {
+		document.querySelectorAll(`.${cls}`).forEach(el => el.classList.remove(cls));
+	});
+
 	normalizeProgramPre(document);
+
+	// Replace allowed iframes with text placeholders to bypass Readability stripping
+	document.querySelectorAll('iframe').forEach(el => {
+		const src = el.getAttribute('src');
+		if (src && isAllowedIframe(src))
+			el.replaceWith(document.createTextNode(`[iframe:${src}]`));
+	});
 
 	const page = {
 		url,
@@ -218,10 +246,13 @@ export function process(url, html) {
 	} catch (e) {
 		log.debug({ url, cause: e.message }, 'HTML parsing fallback triggered');
 		try {
-			page.content = turndown.turndown(html);
+			return {
+				html,
+				markdown: (await processByDefuddle(url, html)).markdown,
+			};
 		} catch (err) {
 			// Keep the pre-saved textContent in page.content
-			log.debug({ url, cause: err.message }, 'HTML turndown fallback failed');
+			log.debug({ url, cause: err.message }, 'HTML defuddle fallback failed');
 		}
 	}
 
@@ -231,19 +262,52 @@ export function process(url, html) {
 	};
 }
 
+function resolveURL(target, base) {
+	try {
+		const resolved = base ? new URL(target, base).href : new URL(target).href;
+		return normalizeUrl(resolved, {
+			stripWWW: false,
+			removeTrailingSlash: false,
+			removeDirectoryIndex: false,
+		});
+	} catch (e) {
+		return target;
+	}
+}
+
+function isAllowedIframe(src) {
+	try {
+		const url = new URL(src);
+		return ALLOWED_IFRAME_DOMAINS.some(domain => url.hostname.includes(domain));
+	} catch (e) {
+		return false;
+	}
+}
+
 // Generate text in Markdown format
 function generateMarkdown(page) {
 	const frontmatter = [
 		'---',
 		page.title && `title: "${page.title.replace(/"/g, '\\"')}"`,
 		page.siteName && `site: "${page.siteName.replace(/"/g, '\\"')}"`,
-		page.url && `url: "${page.url}"`,
+		page.url && `source: "${page.url}"`,
 		page.archiveUrl && `archive: "${page.archiveUrl}"`,
+		page.author && `author: "${page.author.replace(/"/g, '\\"')}"`,
+		page.published && `published: "${page.published}"`,
+		page.language && `language: "${page.language}"`,
 		page.description && `description: "${page.description.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
 		'---',
 	].filter(Boolean).join('\n');
 
-	return `${frontmatter}\n\n${page.content ? page.content.replace(/\n{3,}/g, '\n\n') : ''}`.trim();
+	let body = (page.content || '')
+		.replace(/^(\s*-\s)\s+/gm, '$1')
+		.replace(/(```[a-zA-Z0-9-]*)\n\n+/g, '$1\n')
+		.replace(/\n{3,}/g, '\n\n');
+	body = body.replace(/\\?\[iframe:(.*?)\\?\]/g, (match, url) => {
+		const cleanUrl = url.replace(/\\/g, '');
+		return `<iframe src="${cleanUrl}"></iframe>`;
+	});
+	return `${frontmatter}\n\n${body}`.trim();
 }
 
 // Normalize program-like pre element to fenced code block

@@ -66,9 +66,9 @@ const app = {
 		const { meta, body } = parseFrontmatter(b.markdown || '');
 
 		const headers = [];
-		if (meta.title || meta.url || meta.archive) {
+		if (meta.title || meta.source || meta.url || meta.archive) {
 			const text = sanitize(meta.site ? `${meta.title} - ${meta.site}` : meta.title || app.noTitle);
-			const url = meta.archive || meta.url;
+			const url = meta.archive || meta.source || meta.url;
 			const inner = url
 				? `<a href="${sanitize(url)}" target="_blank">${text}</a>`
 				: text;
@@ -82,7 +82,10 @@ const app = {
 		});
 
 		const frontmatterHtml = headers.length > 0 ? `<div class="frontmatter">${headers.join('')}</div>` : '';
-		return `<div class="markdown">${frontmatterHtml}${DOMPurify.sanitize(marked.parse(body))}</div>`;
+		const bodyHtml = DOMPurify.sanitize(marked.parse(body), {
+			ADD_TAGS: ['iframe'],
+		});
+		return `<div class="markdown">${frontmatterHtml}${bodyHtml}</div>`;
 	},
 };
 document.documentElement.dataset.view = app.view;

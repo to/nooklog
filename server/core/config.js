@@ -24,6 +24,8 @@ const config = {
 	'server.port': 5050,
 	'server.password': '',
 	'server.apiKey': '',
+	'ingest.extractor': 'readability', // 'readability', 'defuddle'
+	'ingest.saveHTML': false,
 	'sentence.vector.enabled': false,
 	'sentence.vector.queryPrefix': '', // Use preset if empty
 	'sentence.vector.documentTitlePrefix': '', // Use preset if empty
@@ -35,7 +37,6 @@ const config = {
 	'database.searchLimit': 300,
 	'database.tokenizer': 'word', // 'word', 'unigram'
 	'database.useVectorIndex': true, // Use ANN index (fast) or brute-force (accurate)
-	'database.saveHTML': false,
 };
 
 export const env = {

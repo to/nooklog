@@ -244,7 +244,7 @@ export const router = {
 		}))
 		.handler(async ({ input }) => {
 			return _.omit(
-				ingestHtml.process(input.url, input.html), ['html']);
+				await ingestHtml.process(input.url, input.html), ['html']);
 		}),
 
 	clearVectorTable: orpc
