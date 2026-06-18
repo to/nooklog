@@ -6,6 +6,11 @@
 	box-sizing: border-box;
 }
 
+html {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
 body {
 	margin: 0;
 	line-height: var(--line-height-m);

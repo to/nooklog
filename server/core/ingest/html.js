@@ -127,23 +127,35 @@ turndown.addRule('smartLink', {
 	},
 });
 
-export async function process(url, html) {
+export async function process(url, title, html) {
 
 	return config['ingest.extractor'] === 'defuddle'
-		? processByDefuddle(url, html)
-		: processByReadability(url, html);
+		? processByDefuddle(url, title, html)
+		: processByReadability(url, title, html);
 }
 
-export async function processByDefuddle(url, html) {
-	const result = await Defuddle(html, url, { markdown: true });
-	return {
-		html,
-		markdown: generateMarkdown({ url, siteName: result.site, ...result }),
-		metadata: result,
-	};
+export async function processByDefuddle(url, title, html) {
+	const _error = console.error;
+	console.error = () => { };
+
+	const { document } = parseHTML(html);
+	const archiveUrl = getArchiveUrl(url, document.querySelector('base')?.getAttribute('href'));
+
+	try {
+		const result = await Defuddle(html, url, { markdown: true });
+		return {
+			html,
+			markdown: generateMarkdown({ ...result, url, archiveUrl, siteName: result.site, title: result.title || title }),
+			metadata: result,
+			title: result.title || title,
+		};
+	} finally {
+		console.error = _error;
+	}
 }
 
-export async function processByReadability(url, html) {
+export async function processByReadability(url, title, html) {
+	const originalHtml = html;
 	url = resolveURL(url);
 	html = html.replace(/<!--[\s\S]*?-->/g, '');
 
@@ -159,7 +171,8 @@ export async function processByReadability(url, html) {
 		log.debug({ url }, 'linkedom failed to parse document (documentElement is null)');
 		return {
 			html,
-			markdown: generateMarkdown({ url }),
+			markdown: generateMarkdown({ url, title }),
+			title,
 		};
 	}
 
@@ -168,7 +181,7 @@ export async function processByReadability(url, html) {
 	baseEl?.remove();
 
 	const baseURL = baseEl?.getAttribute('href') || url;
-	const archiveUrl = (baseURL.includes('//web.archive.org/') && !url.includes('//web.archive.org/')) ? baseURL : null;
+	const archiveUrl = getArchiveUrl(url, baseURL);
 
 	// Merge paginated content to help Readability identify the full article
 	document.querySelectorAll('[id^="uAutoPagerize-divider-"]').forEach(divider => {
@@ -231,7 +244,7 @@ export async function processByReadability(url, html) {
 	}
 
 	// Save fallback values before Readability mutates the document
-	page.title = document.title;
+	page.title = title || document.title;
 	page.content = document.body.textContent || '';
 
 	try {
@@ -246,9 +259,11 @@ export async function processByReadability(url, html) {
 	} catch (e) {
 		log.debug({ url, cause: e.message }, 'HTML parsing fallback triggered');
 		try {
+			const res = await processByDefuddle(url, title, originalHtml);
 			return {
 				html,
-				markdown: (await processByDefuddle(url, html)).markdown,
+				markdown: res.markdown,
+				title: res.title,
 			};
 		} catch (err) {
 			// Keep the pre-saved textContent in page.content
@@ -259,7 +274,12 @@ export async function processByReadability(url, html) {
 	return {
 		html,
 		markdown: generateMarkdown(page),
+		title: page.title,
 	};
+}
+
+function getArchiveUrl(url, baseURL) {
+	return baseURL?.includes('//web.archive.org/') && !url.includes('//web.archive.org/') ? baseURL : null;
 }
 
 function resolveURL(target, base) {

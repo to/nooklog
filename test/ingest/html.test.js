@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { process } from '../../server/core/ingest/html.js';
+import { process, processByDefuddle } from '../../server/core/ingest/html.js';
 
 test('ingest/html.js - process', async t => {
 
@@ -27,7 +27,7 @@ test('ingest/html.js - process', async t => {
 		`;
 		const url = 'https://example.com/test';
 
-		const result = await process(url, html);
+		const result = await process(url, '', html);
 
 		assert.ok(result.markdown.includes('| | | |'), 'Should include dummy header with 3 columns');
 		assert.ok(result.markdown.includes('|---|---|---|'), 'Should include dummy header separator with 3 columns');
@@ -52,7 +52,7 @@ test('ingest/html.js - process', async t => {
 			</body>
 			</html>
 		`;
-		const result = await process('https://example.com', html);
+		const result = await process('https://example.com', '', html);
 
 		// Standard tables (GFM) should not have dummy headers inserted
 		assert.strictEqual(result.markdown.includes('| | |'), false, 'Standard table should not include dummy header');
@@ -71,7 +71,7 @@ test('ingest/html.js - process', async t => {
 			</html>
 		`;
 		const url = 'https://techable.jp/archives/95388';
-		const result = await process(url, html);
+		const result = await process(url, '', html);
 
 		// Assert archiveUrl is extracted into YAML frontmatter
 		assert.ok(result.markdown.includes(`archive: "${archiveBase}"`), 'Should include archive URL in YAML');
@@ -86,7 +86,7 @@ test('ingest/html.js - process', async t => {
 	await t.test('Malformed HTML should fall back to URL-only Markdown', async () => {
 		const html = '   '; // Empty/whitespace only
 		const url = 'https://example.com/failed';
-		const result = await process(url, html);
+		const result = await process(url, '', html);
 
 		assert.ok(result.markdown.includes('source: "https://example.com/failed"'), 'Should still include URL in YAML');
 		assert.strictEqual(result.markdown.includes('title:'), false, 'Should not include title');
@@ -97,7 +97,7 @@ test('ingest/html.js - process', async t => {
 	await t.test('Page with only script tag should process gracefully without TypeError', async () => {
 		const html = '<script>sessionStorage.x5referer = window.location.href;</script>';
 		const url = 'https://example.com/test';
-		const result = await process(url, html);
+		const result = await process(url, '', html);
 
 		assert.ok(result.markdown.includes('source: "https://example.com/test"'));
 		assert.strictEqual(result.markdown.includes('title:'), false);
@@ -109,14 +109,14 @@ test('ingest/html.js - process', async t => {
 			<html>
 			<body>
 				<h1>Test Page</h1>
-				<iframe src="https://example.com/embed/123" frameborder="0"></iframe>
+				<iframe src="https://youtube.com/embed/123" frameborder="0"></iframe>
 			</body>
 			</html>
 		`;
 		const url = 'https://example.com/test-iframe';
-		const result = await process(url, html);
+		const result = await process(url, '', html);
 
-		assert.ok(result.markdown.includes('<iframe src="https://example.com/embed/123"></iframe>'), 'Should preserve iframe');
+		assert.ok(result.markdown.includes('<iframe src="https://youtube.com/embed/123"></iframe>'), 'Should preserve iframe');
 	});
 
 	await t.test('Page with wrapped iframe (negative class names) should preserve the iframe in Markdown output', async () => {
@@ -127,15 +127,32 @@ test('ingest/html.js - process', async t => {
 				<h1>Test Page</h1>
 				<div class="jetpack-video-wrapper">
 					<div class="embed-youtube">
-						<iframe title="Test Video" src="https://example.com/embed/456" frameborder="0"></iframe>
+						<iframe title="Test Video" src="https://youtube.com/embed/456" frameborder="0"></iframe>
 					</div>
 				</div>
 			</body>
 			</html>
 		`;
 		const url = 'https://example.com/test-wrapped-iframe';
-		const result = await process(url, html);
+		const result = await process(url, '', html);
 
-		assert.ok(result.markdown.includes('<iframe src="https://example.com/embed/456"></iframe>'), 'Should preserve wrapped iframe');
+		assert.ok(result.markdown.includes('<iframe src="https://youtube.com/embed/456"></iframe>'), 'Should preserve wrapped iframe');
+	});
+
+	await t.test('processByDefuddle should also extract and output archiveUrl', async () => {
+		const archiveBase = 'https://web.archive.org/web/20241130163753/https://techable.jp/archives/95388';
+		const html = `
+			<base href="${archiveBase}">
+			<!DOCTYPE html>
+			<html>
+			<body>
+				<p>Fallback test content</p>
+			</body>
+			</html>
+		`;
+		const url = 'https://techable.jp/archives/95388';
+		const result = await processByDefuddle(url, 'Techable Archive', html);
+
+		assert.ok(result.markdown.includes(`archive: "${archiveBase}"`), 'Defuddle fallback should include archive URL in YAML');
 	});
 });

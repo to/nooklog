@@ -170,7 +170,7 @@ const nooklog = {
 		const original = { ...b };
 
 		// Prioritize user-edited data
-		n.markdown = (this.isEdited(b.markdown) || !n.markdown)
+		n.markdown = ((this.isEdited(b.markdown) && !this.isEdited(n.markdown)) || n.markdown === undefined)
 			? b.markdown
 			: n.markdown;
 
@@ -179,8 +179,8 @@ const nooklog = {
 		await this._fillHTML(b);
 		await this._fillMarkdown(b);
 
-		// If we now have both title and markdown, it's no longer in an error state
-		if (b.title && b.markdown) {
+		// If we now have markdown, it's no longer in an error state
+		if (b.markdown) {
 			delete b.meta.fetch_error;
 			delete b.meta.archive_error;
 		}
@@ -208,13 +208,13 @@ const nooklog = {
 		return b;
 	},
 
-	async backfillContent({ limit = 100, force = false } = {}) {
+	async backfillContent({ limit = 100 } = {}) {
 		// Fetch only IDs to save memory
-		const targets = await store.getBackfillContentTargets({ limit, force });
+		const targets = await store.getBackfillContentTargets({ limit });
 		if (targets.length === 0)
 			return { count: 0 };
 
-		log.info({ count: targets.length, force }, 'backfilling content');
+		log.info({ count: targets.length }, 'backfilling content');
 
 		queue.batch('Backfilling content', async ([target]) => {
 			const b = await store.find({ id: target.id });
@@ -222,11 +222,6 @@ const nooklog = {
 				return;
 
 			try {
-				await this._fillHTML(b, { force });
-
-				// Default to missing content; save() will clear it on success
-				b.meta.fetch_error = 'missing_content';
-
 				await this.save(b);
 			} catch (e) {
 				// Continue to next target if it was a transient error (already handled in _fillHTML)
@@ -239,9 +234,9 @@ const nooklog = {
 	},
 
 	// Fill content by crawling the URL
-	async _fillHTML(b, { force = false } = {}) {
-		// Fetch content if missing or forced, provided there's no existing error
-		if (((!b.html && !b.markdown) || !b.title) && b.url && (!b.meta.fetch_error || force)) {
+	async _fillHTML(b) {
+		// Fetch content if missing, provided there's no existing error
+		if (!b.html && !b.markdown && b.url && !b.meta.fetch_error) {
 			try {
 				// Fetch content and handle potential redirects
 				const res = await ingest.browser.fetch(b.url);
@@ -280,8 +275,9 @@ const nooklog = {
 	// Process HTML into Markdown
 	async _fillMarkdown(b) {
 		if (b.html) {
-			const res = await ingest.html.process(b.url, b.html);
+			const res = await ingest.html.process(b.url, b.title, b.html);
 			b.html = res.html;
+			b.title = b.title || res.title;
 
 			if (!this.isEdited(b.markdown))
 				b.markdown = res.markdown;

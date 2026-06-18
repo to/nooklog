@@ -253,11 +253,11 @@ const store = {
 		return this.indexFts(bookmarks, { priority: 5, mode: 'replace' });
 	},
 
-	async getBackfillContentTargets({ limit = 100, force = false } = {}) {
+	async getBackfillContentTargets({ limit = 100 } = {}) {
 		const sql = `
 			SELECT id FROM bookmark
-			WHERE (markdown IS NULL OR markdown = '' OR title IS NULL OR title = '')
-			${force ? '' : "AND json_extract(meta, '$.fetch_error') IS NULL"}
+			WHERE (markdown IS NULL OR markdown = '')
+			AND json_extract(meta, '$.fetch_error') IS NULL
 			ORDER BY created_at DESC
 			LIMIT ?`;
 		return await this.query(sql, [limit]);

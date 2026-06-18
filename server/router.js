@@ -224,7 +224,6 @@ export const router = {
 		.route({ method: 'POST', path: '/backfillContent' })
 		.input(z.object({
 			limit: z.number().int().min(1).default(100),
-			force: z.boolean().default(false),
 		}))
 		.output(z.object({
 			count: z.number(),
