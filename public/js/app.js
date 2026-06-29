@@ -134,48 +134,10 @@ eventSource.onerror = error => { };
 window.onerror = error => app.error(error);
 window.onunhandledrejection = event => app.error(event.reason);
 
-const matchingGrays = {
-	'tomato': 'mauve',
-	'red': 'mauve',
-	'ruby': 'mauve',
-	'crimson': 'mauve',
-	'pink': 'mauve',
-	'plum': 'mauve',
-	'purple': 'mauve',
-	'violet': 'mauve',
-	'iris': 'slate',
-	'indigo': 'slate',
-	'blue': 'slate',
-	'cyan': 'slate',
-	'teal': 'sage',
-	'jade': 'sage',
-	'green': 'olive',
-	'grass': 'olive',
-	'bronze': 'sand',
-	'gold': 'sand',
-	'brown': 'sand',
-	'orange': 'sand',
-	'amber': 'sand',
-	'yellow': 'sand',
-	'lime': 'olive',
-	'mint': 'olive',
-	'sky': 'slate',
-};
 const updateTint = () => {
-	const root = document.documentElement;
 	const tint = config['client.tint'];
-	const theme = config['client.theme'];
-	const ink = matchingGrays[tint];
-	const steps = theme.endsWith('-gray')
-		? [5, 6, 8, 9, 10, 11, 12]
-		: [2, 3, 6, 8, 10, 11, 12];
-	steps.forEach((step, i) => {
-		root.style.setProperty(`--ink-${i}`,
-			theme.endsWith('-gray') ?
-				`hsl(from var(--${ink}-${step}) h calc(s * 0.2) l)` :
-				`var(--${ink}-${step})`);
-	});
-	root.style.setProperty('--color-1', `var(--${tint}-11)`);
+	document.documentElement.style
+		.setProperty('--color-1', `var(--${tint}-11)`);
 };
 
 function parseFrontmatter(text = '') {

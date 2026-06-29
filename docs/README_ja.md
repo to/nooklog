@@ -178,4 +178,6 @@ dockerや pm2や クラウドへの配備など 詳細なインストール方�
 - [Karakeep](https://github.com/karakeep-app/karakeep)
 - [Linkwarden](https://github.com/linkwarden/linkwarden)
 - [Readeck](https://codeberg.org/readeck/readeck)
+- [Hister](https://github.com/asciimoo/hister)
 - [Archivist](https://github.com/tokuhirom/Archivist)
+- [Yasumaro](https://github.com/armaniacs/yasumaro)

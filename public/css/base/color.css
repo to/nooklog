@@ -27,29 +27,29 @@
 }
 
 .dark, .dark-theme {
-	--tomato-11: color-mix(in hsl, #ff977d 80%, #fbd3cb 20%);
-	--red-11: color-mix(in hsl, #ff9592 80%, #ffd1d9 20%);
-	--ruby-11: color-mix(in hsl, #ff949d 80%, #fed2e1 20%);
-	--crimson-11: color-mix(in hsl, #ff92ad 80%, #fdd3e8 20%);
-	--pink-11: color-mix(in hsl, #ff8dcc 80%, #fdd1ea 20%);
-	--plum-11: color-mix(in hsl, #e796f3 80%, #f4d4f4 20%);
-	--purple-11: color-mix(in hsl, #d19dff 80%, #ecd9fa 20%);
-	--violet-11: color-mix(in hsl, #baa7ff 80%, #e2ddfe 20%);
-	--iris-11: color-mix(in hsl, #b1a9ff 80%, #e0dffe 20%);
-	--indigo-11: color-mix(in hsl, #9eb1ff 80%, #d6e1ff 20%);
-	--blue-11: color-mix(in hsl, #70b8ff 80%, #c2e6ff 20%);
-	--cyan-11: color-mix(in hsl, #4ccce6 80%, #b6ecf7 20%);
-	--teal-11: color-mix(in hsl, #0bd8b6 80%, #adf0dd 20%);
-	--jade-11: color-mix(in hsl, #1fd8a4 80%, #adf0d4 20%);
-	--green-11: color-mix(in hsl, #3dd68c 80%, #b1f1cb 20%);
-	--grass-11: color-mix(in hsl, #71d083 80%, #c2f0c2 20%);
-	--bronze-11: color-mix(in hsl, #d4b3a5 80%, #ede0d9 20%);
-	--gold-11: color-mix(in hsl, #cbb99f 80%, #e8e2d9 20%);
-	--brown-11: color-mix(in hsl, #dbb594 80%, #f2e1ca 20%);
-	--orange-11: color-mix(in hsl, #ffa057 80%, #ffe0c2 20%);
-	--amber-11: color-mix(in hsl, #ffca16 80%, #ffe7b3 20%);
-	--yellow-11: color-mix(in hsl, #f5e147 80%, #f6eeb4 20%);
-	--lime-11: color-mix(in hsl, #bde56c 80%, #e3f7ba 20%);
-	--mint-11: color-mix(in hsl, #58d5ba 80%, #c4f5e1 20%);
-	--sky-11: color-mix(in hsl, #75c7f0 80%, #c2f3ff 20%);
+	--tomato-11: color-mix(in hsl, #ff977d 80%, #fbd3cb 4%);
+	--red-11: color-mix(in hsl, #ff9592 80%, #ffd1d9 8%);
+	--ruby-11: color-mix(in hsl, #ff949d 80%, #fed2e1 6%);
+	--crimson-11: color-mix(in hsl, #ff92ad 80%, #fdd3e8 8%);
+	--pink-11: color-mix(in hsl, #ff8dcc 75%, #fdd1ea 16%);
+	--plum-11: color-mix(in hsl, #e796f3 80%, #f4d4f4 12%);
+	--purple-11: color-mix(in hsl, #d19dff 66%, #ecd9fa 16%);
+	--violet-11: color-mix(in hsl, #baa7ff 80%, #e2ddfe 8%);
+	--iris-11: color-mix(in hsl, #b1a9ff 80%, #e0dffe 12%);
+	--indigo-11: color-mix(in hsl, #9eb1ff 80%, #d6e1ff 13%);
+	--blue-11: color-mix(in hsl, #70b8ff 60%, #c2e6ff 23%);
+	--cyan-11: color-mix(in hsl, #4ccce6 65%, #b6ecf7 20%);
+	--teal-11: color-mix(in hsl, #0bd8b6 40%, #adf0dd 30%);
+	--jade-11: color-mix(in hsl, #1fd8a4 45%, #adf0d4 30%);
+	--green-11: color-mix(in hsl, #3dd68c 65%, #b1f1cb 14%);
+	--grass-11: color-mix(in hsl, #71d083 80%, #c2f0c2 10%);
+	--bronze-11: color-mix(in hsl, #d4b3a5 80%, #ede0d9 13%);
+	--gold-11: color-mix(in hsl, #cbb99f 85%, #e8e2d9 10%);
+	--brown-11: color-mix(in hsl, #dbb594 80%, #f2e1ca 10%);
+	--orange-11: color-mix(in hsl, #ffa057 65%, #ffe0c2 12%);
+	--amber-11: color-mix(in hsl, #ffca16 60%, #ffe7b3 20%);
+	--yellow-11: color-mix(in hsl, #f5e147 60%, #f6eeb4 28%);
+	--lime-11: color-mix(in hsl, #bde56c 80%, #e3f7ba 10%);
+	--mint-11: color-mix(in hsl, #58d5ba 70%, #c4f5e1 15%);
+	--sky-11: color-mix(in hsl, #75c7f0 78%, #c2f3ff 10%);
 }
